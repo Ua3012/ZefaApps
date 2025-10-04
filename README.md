@@ -1,2 +1,0 @@
-# Zefagram
-А
