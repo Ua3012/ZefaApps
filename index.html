@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Зєфаграм</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f0f2f5;
+    }
+    #auth, #chat {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #0084ff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0066cc;
+    }
+    #messages {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #e9ecef;
+      border-radius: 4px;
+    }
+    .message strong {
+      color: #0084ff;
+    }
+  </style>
+</head>
+<body>
+  <div id="auth">
+    <h2>Зєфаграм</h2>
+    <input type="text" id="username" placeholder="Введіть ім'я користувача">
+    <button onclick="register()">Зареєструватися</button>
+  </div>
+  <div id="chat" style="display: none;">
+    <h2>Чат</h2>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Введіть повідомлення">
+    <button onclick="sendMessage()">Надіслати</button>
+    <button onclick="logout()">Вийти</button>
+  </div>
+
+  <script>
+    let currentUser = localStorage.getItem('currentUser');
+    const messages = JSON.parse(localStorage.getItem('messages')) || [];
+
+    function displayMessages() {
+      const messagesDiv = document.getElementById('messages');
+      messagesDiv.innerHTML = '';
+      messages.forEach(msg => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'message';
+        msgDiv.innerHTML = `<strong>${msg.user}</strong>: ${msg.text} <small>(${msg.time})</small>`;
+        messagesDiv.appendChild(msgDiv);
+      });
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function register() {
+      const username = document.getElementById('username').value.trim();
+      if (username) {
+        currentUser = username;
+        localStorage.setItem('currentUser', username);
+        document.getElementById('auth').style.display = 'none';
+        document.getElementById('chat').style.display = 'block';
+        displayMessages();
+      } else {
+        alert('Введіть ім\'я користувача!');
+      }
+    }
+
+    function sendMessage() {
+      const messageInput = document.getElementById('messageInput');
+      const text = messageInput.value.trim();
+      if (text && currentUser) {
+        const time = new Date().toLocaleTimeString();
+        messages.push({ user: currentUser, text, time });
+        localStorage.setItem('messages', JSON.stringify(messages));
+        messageInput.value = '';
+        displayMessages();
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('currentUser');
+      currentUser = null;
+      document.getElementById('auth').style.display = 'block';
+      document.getElementById('chat').style.display = 'none';
+      document.getElementById('username').value = '';
+    }
+
+    // Перевірка, чи користувач уже зареєстрований
+    if (currentUser) {
+      document.getElementById('auth').style.display = 'none';
+      document.getElementById('chat').style.display = 'block';
+      displayMessages();
+    }
+
+    // Дозволяємо відправляти повідомлення клавішею Enter
+    document.getElementById('messageInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    document.getElementById('username').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        register();
+      }
+    });
+  </script>
+</body>
+</html>
