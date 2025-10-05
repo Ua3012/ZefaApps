@@ -63,29 +63,36 @@
     <h2>Чат</h2>
     <div id="messages"></div>
     <input type="text" id="messageInput" placeholder="Введіть повідомлення">
-    <button onclick="sendMessage()">Атправіть</button>
+    <button onclick="sendMessage()">Надіслати</button>
     <button onclick="logout()">Вийти</button>
   </div>
 
-  <!-- Pusher SDK -->
-  <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Налаштування Pusher (заміни на свої ключі після реєстрації)
-    const pusher = new Pusher('549b80d55b4d725e24ff', {
-      cluster: 'eu',
-      encrypted: true
-    });
-    const channel = pusher.subscribe('zefagram-chat');
+    // Налаштування Supabase (заміни на свої ключі)
+    const supabaseUrl = 'https://supabase.com/dashboard/project/aeumckqddjsevjnboboh/';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFldW1ja3FkZGpzZXZqbmJvYm9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2MTUyODgsImV4cCI6MjA3NTE5MTI4OH0.72DLY3KUnqvUE8L7x8f6SelmzHXN5BgZsvBbWxxvaS4';
+    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
 
     let currentUser = localStorage.getItem('currentUser');
 
-    function displayMessages(msg) {
+    async function displayMessages() {
       const messagesDiv = document.getElementById('messages');
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'message';
-      msgDiv.innerHTML = `<strong>${msg.user}</strong>: ${msg.text} <small>(${msg.time})</small>`;
-      messagesDiv.appendChild(msgDiv);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      messagesDiv.innerHTML = '';
+      const { data: messages } = await supabase
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (messages) {
+        messages.forEach(msg => {
+          const msgDiv = document.createElement('div');
+          msgDiv.className = 'message';
+          msgDiv.innerHTML = `<strong>${msg.user}</strong>: ${msg.text} <small>(${new Date(msg.created_at).toLocaleTimeString()})</small>`;
+          messagesDiv.appendChild(msgDiv);
+        });
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
     }
 
     function register() {
@@ -95,24 +102,26 @@
         localStorage.setItem('currentUser', username);
         document.getElementById('auth').style.display = 'none';
         document.getElementById('chat').style.display = 'block';
-        // Підписка на повідомлення
-        channel.bind('message', displayMessages);
+        displayMessages();
+        // Підписка на нові повідомлення в реальному часі
+        supabase
+          .channel('public:messages')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+            displayMessages();
+          })
+          .subscribe();
       } else {
         alert('Введіть ім\'я користувача!');
       }
     }
 
-    function sendMessage() {
+    async function sendMessage() {
       const messageInput = document.getElementById('messageInput');
       const text = messageInput.value.trim();
       if (text && currentUser) {
-        const time = new Date().toLocaleTimeString();
-        // Відправка через Pusher
-        fetch('https://YOUR_PUSHER_HTTP_ENDPOINT/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: currentUser, text, time })
-        });
+        await supabase
+          .from('messages')
+          .insert([{ user: currentUser, text }]);
         messageInput.value = '';
       }
     }
@@ -120,7 +129,7 @@
     function logout() {
       localStorage.removeItem('currentUser');
       currentUser = null;
-      pusher.unsubscribe('zefagram-chat');
+      supabase.channel('public:messages').unsubscribe();
       document.getElementById('auth').style.display = 'block';
       document.getElementById('chat').style.display = 'none';
       document.getElementById('username').value = '';
@@ -130,7 +139,13 @@
     if (currentUser) {
       document.getElementById('auth').style.display = 'none';
       document.getElementById('chat').style.display = 'block';
-      channel.bind('message', displayMessages);
+      displayMessages();
+      supabase
+        .channel('public:messages')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+          displayMessages();
+        })
+        .subscribe();
     }
 
     // Дозволяємо відправляти повідомлення клавішею Enter
