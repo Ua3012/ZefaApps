@@ -57,43 +57,38 @@
   <div id="auth">
     <h2>Зєфаграм</h2>
     <input type="text" id="username" placeholder="Введіть ім'я користувача">
-    <button onclick="register()">Зареєструватися</button>
+    <button onclick="register()">Увійти</button>
   </div>
-  <div id="chat" style="display: none;">
-    <h2>Чат</h2>
+
+  <div id="chat" style="display:none;">
+    <h2 id="welcome"></h2>
     <div id="messages"></div>
     <input type="text" id="messageInput" placeholder="Введіть повідомлення">
     <button onclick="sendMessage()">Надіслати</button>
     <button onclick="logout()">Вийти</button>
   </div>
 
-  <!-- Supabase SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-database-compat.js"></script>
+
   <script>
-    // Налаштування Supabase (заміни на свої ключі)
-    const supabaseUrl = 'https://aeumckqddjsevjnboboh.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFldW1ja3FkZGpzZXZqbmJvYm9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2MTUyODgsImV4cCI6MjA3NTE5MTI4OH0.72DLY3KUnqvUE8L7x8f6SelmzHXN5BgZsvBbWxxvaS4';
-    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+    // Твої Firebase налаштування (створи свій проект на https://firebase.google.com)
+    const firebaseConfig = {
+      apiKey: "AIzaSyD-...твій_ключ...",
+      authDomain: "zefagram.firebaseapp.com",
+      databaseURL: "https://zefagram-default-rtdb.firebaseio.com",
+      projectId: "zefagram",
+      storageBucket: "zefagram.appspot.com",
+      messagingSenderId: "000000000000",
+      appId: "1:000000000000:web:00000000000000"
+    };
+
+    // Ініціалізація Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
     let currentUser = localStorage.getItem('currentUser');
-
-    async function displayMessages() {
-      const messagesDiv = document.getElementById('messages');
-      messagesDiv.innerHTML = '';
-      const { data: messages } = await supabase
-        .from('messages')
-        .select('*')
-        .order('created_at', { ascending: true });
-      if (messages) {
-        messages.forEach(msg => {
-          const msgDiv = document.createElement('div');
-          msgDiv.className = 'message';
-          msgDiv.innerHTML = `<strong>${msg.user}</strong>: ${msg.text} <small>(${new Date(msg.created_at).toLocaleTimeString()})</small>`;
-          messagesDiv.appendChild(msgDiv);
-        });
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-      }
-    }
 
     function register() {
       const username = document.getElementById('username').value.trim();
@@ -102,63 +97,55 @@
         localStorage.setItem('currentUser', username);
         document.getElementById('auth').style.display = 'none';
         document.getElementById('chat').style.display = 'block';
-        displayMessages();
-        // Підписка на нові повідомлення в реальному часі
-        supabase
-          .channel('public:messages')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-            displayMessages();
-          })
-          .subscribe();
+        document.getElementById('welcome').textContent = 'Привіт, ' + username + '!';
       } else {
         alert('Введіть ім\'я користувача!');
       }
     }
 
-    async function sendMessage() {
-      const messageInput = document.getElementById('messageInput');
-      const text = messageInput.value.trim();
+    function sendMessage() {
+      const text = document.getElementById('messageInput').value.trim();
       if (text && currentUser) {
-        await supabase
-          .from('messages')
-          .insert([{ user: currentUser, text }]);
-        messageInput.value = '';
+        const time = new Date().toLocaleTimeString();
+        db.ref('messages').push({
+          user: currentUser,
+          text: text,
+          time: time
+        });
+        document.getElementById('messageInput').value = '';
       }
     }
+
+    function displayMessage(data) {
+      const msg = data.val();
+      const messagesDiv = document.getElementById('messages');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message';
+      msgDiv.innerHTML = `<strong>${msg.user}</strong>: ${msg.text} <small>(${msg.time})</small>`;
+      messagesDiv.appendChild(msgDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    db.ref('messages').on('child_added', displayMessage);
 
     function logout() {
       localStorage.removeItem('currentUser');
       currentUser = null;
-      supabase.channel('public:messages').unsubscribe();
       document.getElementById('auth').style.display = 'block';
       document.getElementById('chat').style.display = 'none';
-      document.getElementById('username').value = '';
     }
 
-    // Перевірка, чи користувач уже зареєстрований
     if (currentUser) {
       document.getElementById('auth').style.display = 'none';
       document.getElementById('chat').style.display = 'block';
-      displayMessages();
-      supabase
-        .channel('public:messages')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-          displayMessages();
-        })
-        .subscribe();
+      document.getElementById('welcome').textContent = 'Привіт, ' + currentUser + '!';
     }
 
-    // Дозволяємо відправляти повідомлення клавішею Enter
-    document.getElementById('messageInput').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        sendMessage();
-      }
+    document.getElementById('messageInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') sendMessage();
     });
-
-    document.getElementById('username').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        register();
-      }
+    document.getElementById('username').addEventListener('keypress', e => {
+      if (e.key === 'Enter') register();
     });
   </script>
 </body>
