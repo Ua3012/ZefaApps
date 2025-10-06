@@ -92,8 +92,7 @@
     <button id="texture9" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 9 (+70%) - 25000 ZefaCoin</button>
     <button id="texture10" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 10 (+80%) - 32000 ZefaCoin</button>
     <button id="texture11" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 11 (+100%) - 40000 ZefaCoin</button>
-    <button id="texture12" class="upgrade-button bg-purple-600 px-4 py-2 rounded-lg mb-2">
-      <img src="path-to-texture12-image.jpg" alt="Текстура 12" class="w-16 h-16">
+    <button id="texture12" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 11 (+100%) - 40000 ZefaCoin</button>
     </button>
   </div>
   <div id="zefaCoinTop" class="flex items-center justify-center w-full mt-4">
@@ -104,7 +103,7 @@
   <div id="progressBar">
     <div id="progress"></div>
   </div>
-  <img id="gameArea" src="zefacoin.png" class="w-32 h-32 rounded-full mt-4">
+  <img id="gameArea" src="zefaclickerbuttontexture1.png" class="w-32 h-32 rounded-full mt-4">
 
   <audio id="clickSound" src="Sound1.png"></audio>
 
@@ -145,14 +144,14 @@
     const textures = [
       { id: 'texture1', cost: 0, bonus: 0, minLevel: 1 },
       { id: 'texture2', cost: 1000, bonus: 5, minLevel: 2 },
-      { id: 'texture3', cost: 2000, bonus: 10, minLevel: 5 },
-      { id: 'texture4', cost: 4000, bonus: 20, minLevel: 10 },
-      { id: 'texture5', cost: 7000, bonus: 30, minLevel: 15 },
-      { id: 'texture6', cost: 10000, bonus: 40, minLevel: 20 },
-      { id: 'texture7', cost: 14000, bonus: 50, minLevel: 25 },
-      { id: 'texture8', cost: 19000, bonus: 60, minLevel: 30 },
-      { id: 'texture9', cost: 25000, bonus: 70, minLevel: 40 },
-      { id: 'texture10', cost: 32000, bonus: 80, minLevel: 50 },
+      { id: 'texture3', cost: 2000, bonus: 10, minLevel: 3 },
+      { id: 'texture4', cost: 4000, bonus: 20, minLevel: 4 },
+      { id: 'texture5', cost: 7000, bonus: 30, minLevel: 5 },
+      { id: 'texture6', cost: 10000, bonus: 40, minLevel: 6 },
+      { id: 'texture7', cost: 14000, bonus: 50, minLevel: 7 },
+      { id: 'texture8', cost: 19000, bonus: 60, minLevel: 8 },
+      { id: 'texture9', cost: 25000, bonus: 70, minLevel: 9 },
+      { id: 'texture10', cost: 32000, bonus: 80, minLevel: 10 },
       { id: 'texture11', cost: 40000, bonus: 100, minLevel: 100 },
       { id: 'texture12', cost: 48000, bonus: 100, minLevel: 100 }
     ];
@@ -176,7 +175,7 @@
         zefaCoinCount.textContent = Math.floor(zefaCoin);
         zefaCoinCountTop.textContent = Math.floor(zefaCoin);
         upgradeClickCost = Math.floor(upgradeClickCost * 1.5);
-        upgradeClick.textContent = `Покращити клік (+5%) - ${upgradeClickCost} ZefaCoin`;
+        upgradeClick.textContent = `Апграде клік - ${upgradeClickCost} ZefaCoin`;
       }
     });
 
@@ -187,7 +186,7 @@
         zefaCoinCount.textContent = Math.floor(zefaCoin);
         zefaCoinCountTop.textContent = Math.floor(zefaCoin);
         upgradeAutoCost = Math.floor(upgradeAutoCost * 1.5);
-        upgradeAuto.textContent = `Автоклік (${autoClickValue}/с) - ${upgradeAutoCost} ZefaCoin`;
+        upgradeAuto.textContent = `Автоклікєр (${autoClickValue}/с) - ${upgradeAutoCost} ZefaCoin`;
         setInterval(() => {
           if (autoClickValue > 0) {
             zefaCoin += autoClickValue;
@@ -204,7 +203,7 @@
         zefaCoinCount.textContent = Math.floor(zefaCoin);
         zefaCoinCountTop.textContent = Math.floor(zefaCoin);
         upgradeAutoCost = Math.floor(upgradeAutoCost * 1.5);
-        upgradeAuto.textContent = `Автоклік (${autoClickValue.toFixed(1)}/с) - ${upgradeAutoCost} ZefaCoin`;
+        upgradeAuto.textContent = `Автоклікєр (${autoClickValue.toFixed(1)}/с) - ${upgradeAutoCost} ZefaCoin`;
         clearInterval(autoClickInterval);
         autoClickInterval = setInterval(() => {
           if (autoClickValue > 0) {
@@ -244,7 +243,7 @@
       progress.style.width = Math.min(progressPercent, 100) + '%';
       if (zefaCoin >= nextLevel) {
         level++;
-        levelDisplay.textContent = `Рівень ${level}`;
+        levelDisplay.textContent = `Лєвєл ${level}`;
         updateShopButtons();
       }
     }
