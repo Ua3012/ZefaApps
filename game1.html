@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>3D Лабіринт — Three.js (FPS)</title>
+  <title>3D Лабіринт — Three.js (FPS, авто Pointer Lock)</title>
   <style>
     html,body{height:100%;margin:0;background:#111;font-family:sans-serif;user-select:none;}
     #container{position:relative;width:100vw;height:100vh;overflow:hidden}
@@ -20,19 +20,17 @@
 <body>
 <div id="container">
   <div id="minimap"><canvas id="mm" width="180" height="180"></canvas></div>
-  <div id="ui">WASD / стрілки — рух<br>Миша — огляд (клікни по екрану)</div>
+  <div id="ui">WASD / стрілки — рух<br>Миша — огляд</div>
   <button id="reset">Відновити позицію</button>
-  <div id="pointerlock-instruct"><span>Клікни для керування мишею</span></div>
+  <div id="pointerlock-instruct"><span>Почни рух миші або натисни клавішу для керування</span></div>
 </div>
 <script type="module">
-// --- THREE.js завантаження (fallback CDN) ---
 async function loadThree() {
   try { return await import('./three.module.min.js'); }
   catch { return await import('https://unpkg.com/three@0.162.0/build/three.module.min.js'); }
 }
 const THREE = await loadThree();
 
-// --- Конфігурація лабіринту ---
 const map = [
   [1,1,1,1,1,1,1,1,1,1,1,1],
   [1,0,0,0,0,0,0,0,0,0,0,1],
@@ -48,7 +46,6 @@ const map = [
 ];
 const TILE = 64, HALF = TILE/2;
 
-// --- Three.js базова ініціалізація ---
 const container = document.getElementById('container');
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -56,21 +53,16 @@ container.insertBefore(renderer.domElement, container.firstChild);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x7fbfff);
-
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 5000);
 
-// --- Освітлення ---
 scene.add(new THREE.DirectionalLight(0xffffff, 0.9).position.set(1,2,1).normalize());
 scene.add(new THREE.AmbientLight(0x606060));
-
-// --- Побудова лабіринту ---
 const wallMat = new THREE.MeshStandardMaterial({color:0x888888});
 const wallGeo = new THREE.BoxGeometry(TILE, TILE, TILE);
 for(let z=0; z<map.length; z++)
   for(let x=0; x<map[0].length; x++)
     if(map[z][x])
       scene.add(new THREE.Mesh(wallGeo, wallMat).position.set(x*TILE+HALF,HALF,z*TILE+HALF));
-
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(map[0].length*TILE, map.length*TILE),
   new THREE.MeshStandardMaterial({color:0x444})
@@ -79,7 +71,6 @@ floor.rotation.x = -Math.PI/2;
 floor.position.set(map[0].length*TILE/2, 0, map.length*TILE/2);
 scene.add(floor);
 
-// --- Гравець (позиція, напрямок) ---
 const startPos = { x:1.5, z:1.5, yaw:0, pitch:0 };
 const player = {
   x: startPos.x * TILE, z: startPos.z * TILE, y: 32,
@@ -93,24 +84,27 @@ function syncCamera(){
 }
 syncCamera();
 
-// --- Колізія ---
 function isWallAt(px, pz){
   const mx = Math.floor(px/TILE), mz = Math.floor(pz/TILE);
   if(mz<0||mz>=map.length||mx<0||mx>=map[0].length) return true;
   return map[mz][mx] === 1;
 }
 
-// --- Pointer Lock FPS керування ---
 let pointerLocked = false;
 const instruct = document.getElementById('pointerlock-instruct');
 function showInstruct(visible) { instruct.style.display = visible?'flex':'none'; }
 showInstruct(true);
-renderer.domElement.addEventListener('click', ()=>{
-  renderer.domElement.requestPointerLock();
-});
-instruct.addEventListener('click', ()=>{
-  renderer.domElement.requestPointerLock();
-});
+
+// --- Активуємо PointerLock при першій дії користувача ---
+function autoPointerLock(e) {
+  if (!pointerLocked) {
+    renderer.domElement.requestPointerLock();
+  }
+}
+window.addEventListener('mousemove', autoPointerLock, {once:true});
+window.addEventListener('keydown', autoPointerLock, {once:true});
+instruct.addEventListener('click', autoPointerLock);
+
 document.addEventListener('pointerlockchange', ()=>{
   pointerLocked = document.pointerLockElement === renderer.domElement;
   showInstruct(!pointerLocked);
@@ -119,17 +113,14 @@ renderer.domElement.addEventListener('mousemove',e=>{
   if(pointerLocked){
     player.yaw -= e.movementX * player.turnSpeed;
     player.pitch -= e.movementY * player.pitchSpeed;
-    // Clamp pitch
     player.pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, player.pitch));
   }
 });
 
-// --- Керування клавіатурою ---
 const keys = {};
 window.addEventListener('keydown', e=>keys[e.key.toLowerCase()]=true);
 window.addEventListener('keyup', e=>keys[e.key.toLowerCase()]=false);
 
-// --- Головний цикл ---
 let prev=performance.now();
 function loop(now){
   const dt = (now-prev)/1000; prev=now;
@@ -141,9 +132,7 @@ function loop(now){
   const mag = Math.hypot(forward,strafe)||1;
   forward/=mag; strafe/=mag;
 
-  // Обчислюється відносно напряму камери!
   const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
-  // Вектор вперед (cos,sin), вектор вправо (sin,-cos)
   const vx = (cos * forward + sin * strafe) * player.speed * dt;
   const vz = (sin * forward - cos * strafe) * player.speed * dt;
   const pad=18, nx=player.x+vx, nz=player.z+vz;
@@ -157,7 +146,6 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 
-// --- Мінікарта ---
 const mm = document.getElementById('mm'), mmCtx = mm.getContext('2d');
 function renderMinimap(){
   const W=mm.width,H=mm.height,scale=Math.min((W-8)/(map[0].length*TILE),(H-8)/(map.length*TILE)),ox=4,oy=4;
@@ -170,7 +158,6 @@ function renderMinimap(){
     }
   const px=ox+player.x*scale, pz=oy+player.z*scale;
   mmCtx.fillStyle='lime'; mmCtx.beginPath(); mmCtx.arc(px,pz,6,0,Math.PI*2); mmCtx.fill();
-  // Малюємо напрямок погляду
   mmCtx.strokeStyle='green';
   mmCtx.beginPath();
   mmCtx.moveTo(px,pz);
@@ -178,13 +165,11 @@ function renderMinimap(){
   mmCtx.stroke();
 }
 
-// --- Reset ---
 document.getElementById('reset').onclick=()=>{
   player.x = startPos.x*TILE; player.z = startPos.z*TILE;
   player.yaw = startPos.yaw; player.pitch = startPos.pitch; syncCamera();
 };
 
-// --- Resize ---
 window.addEventListener('resize',()=>{
   renderer.setSize(window.innerWidth, window.innerHeight);
   camera.aspect = window.innerWidth/window.innerHeight;
