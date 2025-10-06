@@ -108,6 +108,9 @@ showInstruct(true);
 renderer.domElement.addEventListener('click', ()=>{
   renderer.domElement.requestPointerLock();
 });
+instruct.addEventListener('click', ()=>{
+  renderer.domElement.requestPointerLock();
+});
 document.addEventListener('pointerlockchange', ()=>{
   pointerLocked = document.pointerLockElement === renderer.domElement;
   showInstruct(!pointerLocked);
@@ -116,7 +119,7 @@ renderer.domElement.addEventListener('mousemove',e=>{
   if(pointerLocked){
     player.yaw -= e.movementX * player.turnSpeed;
     player.pitch -= e.movementY * player.pitchSpeed;
-    // Clamp pitch (щоб не перевернутися)
+    // Clamp pitch
     player.pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, player.pitch));
   }
 });
