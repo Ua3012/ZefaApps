@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>3D Лабіринт — Three.js (модуль, локальний fallback)</title>
+<title>3D Лабіринт — Three.js (фіксований, рух працює)</title>
 <style>
   :root{--ui-bg:rgba(0,0,0,0.35);--ui-fg:#fff}
   html,body{height:100%;margin:0;background:#111;font-family:Arial,Helvetica,sans-serif;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -32,12 +32,15 @@
 </div>
 
 <script type="module">
+// === Overlay для помилок загрузки ===
 function showOverlay(html){
   const overlay = document.getElementById('overlay');
   const box = document.getElementById('overlayBox');
   box.innerHTML = html;
   overlay.style.display = 'flex';
 }
+
+// === Динамічно підключаємо Three.js ===
 async function loadThreeModule(){
   try {
     return await import('./three.module.min.js');
@@ -48,10 +51,10 @@ async function loadThreeModule(){
       showOverlay(
         `<h3>Не вдалося завантажити Three.js</h3>
          <p>Браузер або середовище (наприклад, Telegram Web App) блокує завантаження модулів з CDN і локального файлу.</p>
-         <p>Рішення (виконай одне з наступного):</p>
+         <p>Рішення:</p>
          <ol>
-           <li>Скачай файл <code>three.module.min.js</code> версії 0.162.0 з офіційного джерела та помісти поруч з цим файлом (в ту ж папку). Наприклад, завантажити можна з <strong>https://unpkg.com/three@0.162.0/build/three.module.min.js</strong></li>
-           <li>Або скопіюй вміст того файлу прямо в <code>./three.module.min.js</code> в твоєму репозиторії.</li>
+           <li>Скачай файл <code>three.module.min.js</code> версії 0.162.0 з <a href="https://unpkg.com/three@0.162.0/build/three.module.min.js" target="_blank">офіційного джерела</a> та помісти поруч з цим файлом.</li>
+           <li>Або скопіюй вміст файлу прямо у <code>./three.module.min.js</code> у твоєму репозиторії.</li>
          </ol>
          <p>Після цього перезавантаж сторінку — гра запуститься локально без додаткових підключень.</p>`
       );
@@ -62,6 +65,7 @@ async function loadThreeModule(){
 const THREEmod = await loadThreeModule();
 const THREE = THREEmod;
 
+// === Three.js сцена, камера, рендерер ===
 const container = document.getElementById('container');
 const renderer = new THREE.WebGLRenderer({ antialias:true });
 renderer.setPixelRatio(window.devicePixelRatio || 1);
@@ -73,13 +77,8 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x7fbfff);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 5000);
-const startPos = { x:2.5, z:2.5, yaw:0, pitch:0 };
-camera.position.set(startPos.x * 64, 32, startPos.z * 64);
-camera.rotation.order = 'YXZ';
 
-scene.add(new THREE.DirectionalLight(0xffffff, 0.9).position.set(1,2,1).normalize());
-scene.add(new THREE.AmbientLight(0x606060));
-
+// === Карта лабіринту ===
 const map = [
   [1,1,1,1,1,1,1,1,1,1,1,1],
   [1,0,0,0,0,0,0,0,0,0,0,1],
@@ -94,9 +93,16 @@ const map = [
   [1,1,1,1,1,1,1,1,1,1,1,1]
 ];
 const TILE = 64, HALF = TILE/2;
+
+// === Cвітло ===
+const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+dir.position.set(1,2,1).normalize();
+scene.add(dir);
+scene.add(new THREE.AmbientLight(0x606060));
+
+// === Стіни ===
 const wallMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
 const wallGeo = new THREE.BoxGeometry(TILE, TILE, TILE);
-
 for(let z=0; z<map.length; z++){
   for(let x=0; x<map[0].length; x++){
     if(map[z][x] === 1){
@@ -106,6 +112,8 @@ for(let z=0; z<map.length; z++){
     }
   }
 }
+
+// === Підлога ===
 const floorGeo = new THREE.PlaneGeometry(map[0].length * TILE, map.length * TILE);
 const floorMat = new THREE.MeshStandardMaterial({ color: 0x4b4b4b });
 const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -113,6 +121,8 @@ floor.rotation.x = -Math.PI/2;
 floor.position.set((map[0].length * TILE)/2, 0, (map.length * TILE)/2);
 scene.add(floor);
 
+// === Гравець ===
+const startPos = { x: 1.5, z: 1.5, yaw: 0, pitch: 0 };
 const player = {
   x: startPos.x * TILE,
   z: startPos.z * TILE,
@@ -128,16 +138,20 @@ function syncCamera(){
   camera.rotation.y = player.yaw;
 }
 syncCamera();
+
 function isWallAt(px, pz){
   const mx = Math.floor(px / TILE);
   const mz = Math.floor(pz / TILE);
   if(mz < 0 || mz >= map.length || mx < 0 || mx >= map[0].length) return true;
   return map[mz][mx] === 1;
 }
+
+// === Керування: клавіатура ===
 const keys = {};
 window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
 window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
+// === Керування: джойстик ===
 const joy = document.getElementById('joy');
 const knob = document.getElementById('knob');
 let joyRect = joy.getBoundingClientRect();
@@ -145,7 +159,6 @@ window.addEventListener('resize', () => joyRect = joy.getBoundingClientRect());
 let moveJoy = { x:0, y:0 };
 let knobId = null, knobDragging = false;
 function updateKnobCenter(){ joyRect = joy.getBoundingClientRect(); }
-updateKnobCenter();
 function setKnobPos(nx, ny){
   const max = (joyRect.width - knob.offsetWidth)/2;
   const px = nx * max, py = ny * max;
@@ -153,7 +166,6 @@ function setKnobPos(nx, ny){
   moveJoy.x = nx; moveJoy.y = -ny;
 }
 function resetKnob(){ knob.style.transform = 'translate(0,0)'; moveJoy.x = 0; moveJoy.y = 0; }
-
 knob.addEventListener('mousedown', e => { knobDragging = true; updateKnobCenter(); e.preventDefault(); });
 window.addEventListener('mouseup', () => { knobDragging = false; resetKnob(); });
 window.addEventListener('mousemove', e => {
@@ -185,13 +197,18 @@ joy.addEventListener('touchmove', e => {
 }, { passive:false });
 joy.addEventListener('touchend', e => { for(const t of e.changedTouches){ if(t.identifier===knobId){ knobDragging=false; knobId=null; resetKnob(); } } e.preventDefault(); }, { passive:false });
 
+// === Огляд: миша та touch справа ===
 let lastPointerX = null;
 renderer.domElement.addEventListener('mouseenter', e => { lastPointerX = e.clientX; });
 renderer.domElement.addEventListener('mousemove', e => {
   if(lastPointerX === null){ lastPointerX = e.clientX; return; }
-  const dx = e.clientX - lastPointerX;
-  lastPointerX = e.clientX;
-  player.yaw -= dx * player.turnSpeed;
+  if (document.pointerLockElement) {
+    player.yaw -= e.movementX * player.turnSpeed;
+  } else {
+    const dx = e.clientX - lastPointerX;
+    lastPointerX = e.clientX;
+    player.yaw -= dx * player.turnSpeed;
+  }
 });
 renderer.domElement.addEventListener('mouseleave', () => { lastPointerX = null; });
 
@@ -213,6 +230,7 @@ renderer.domElement.addEventListener('touchmove', e => {
 }, { passive:false });
 renderer.domElement.addEventListener('touchend', e => { for(const t of e.changedTouches){ if(t.identifier===touchViewId) touchViewId=null; } }, { passive:false });
 
+// === Основний цикл ===
 let prev = performance.now();
 function loop(now){
   const dt = (now - prev) / 1000; prev = now;
@@ -226,8 +244,9 @@ function loop(now){
   const mag = Math.hypot(forward, strafe) || 1;
   forward /= mag; strafe /= mag;
 
-  const vx = (Math.cos(player.yaw) * forward - Math.sin(player.yaw) * strafe) * player.speed * dt;
-  const vz = (Math.sin(player.yaw) * forward + Math.cos(player.yaw) * strafe) * player.speed * dt;
+  const angle = player.yaw;
+  const vx = (Math.cos(angle) * forward - Math.sin(angle) * strafe) * player.speed * dt;
+  const vz = (Math.sin(angle) * forward + Math.cos(angle) * strafe) * player.speed * dt;
 
   const pad = 18;
   const nx = player.x + vx;
@@ -242,6 +261,7 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 
+// === Мінікарта ===
 const mm = document.getElementById('mm');
 const mmCtx = mm.getContext('2d');
 function renderMinimap(){
@@ -265,16 +285,22 @@ function renderMinimap(){
   mmCtx.restore();
 }
 
+// === Reset позиції ===
 document.getElementById('reset').addEventListener('click', () => {
   player.x = startPos.x * TILE; player.z = startPos.z * TILE; player.yaw = startPos.yaw; player.pitch = startPos.pitch; syncCamera();
 });
 
+// === Resize ===
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
   joyRect = joy.getBoundingClientRect();
 });
+
+// === Pointer Lock (за бажанням) ===
+// renderer.domElement.addEventListener('click', ()=>{ renderer.domElement.requestPointerLock(); });
+
 </script>
 </body>
 </html>
