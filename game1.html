@@ -1,156 +1,280 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Лабіринт (чистий код)</title>
-  <style>
-    html, body {margin:0; height:100%; overflow:hidden; background:black;}
-    canvas {display:block;}
-    #info {
-      position: absolute; top: 10px; left: 10px;
-      color: white; background: rgba(0,0,0,0.5);
-      padding: 6px 10px; border-radius: 6px;
-      font-family: sans-serif; user-select:none;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>3D Лабіринт — Three.js (модуль, локальний fallback)</title>
+<style>
+  :root{--ui-bg:rgba(0,0,0,0.35);--ui-fg:#fff}
+  html,body{height:100%;margin:0;background:#111;font-family:Arial,Helvetica,sans-serif;user-select:none;-webkit-tap-highlight-color:transparent}
+  #container{position:relative;width:100vw;height:100vh;overflow:hidden}
+  canvas{display:block; width:100%; height:100%; touch-action:none}
+  #ui{position:absolute; z-index:30; right:12px; top:12px; color:var(--ui-fg); background:var(--ui-bg); padding:8px 10px; border-radius:8px;}
+  #joy{position:absolute; left:18px; bottom:18px; width:120px; height:120px; border-radius:50%; background:var(--ui-bg); display:flex; align-items:center; justify-content:center; z-index:30}
+  #knob{width:56px;height:56px;border-radius:50%;background:rgba(0,200,120,0.9);transform:translate(0,0);touch-action:none}
+  #minimap{position:absolute; left:12px; top:12px; width:180px; height:180px; background:rgba(0,0,0,0.22); border-radius:8px; z-index:30; padding:6px; box-sizing:border-box}
+  #minimap canvas{width:100%;height:100%;display:block}
+  #overlay{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:999; pointer-events:none}
+  #overlay .box{pointer-events:auto; background:#111; color:#fff; padding:16px; border-radius:8px; max-width:780px; box-shadow:0 8px 40px rgba(0,0,0,0.7)}
+  #reset{position:absolute; right:12px; bottom:18px; z-index:30}
+  button{background:transparent;color:var(--ui-fg);border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:8px;cursor:pointer}
+</style>
 </head>
 <body>
-  <div id="info">Клікни мишею для керування. WASD — рух, миша — огляд</div>
-  <!-- Three.js та PointerLockControls -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.159.0/examples/js/controls/PointerLockControls.js"></script>
-  <script>
-    // --- Конфігурація лабіринту (можна легко змінити) ---
-    const MAZE_LAYOUT = [
-      "##########",
-      "#        #",
-      "#  ##    #",
-      "#     #  #",
-      "#  ##    #",
-      "#        #",
-      "##########"
-    ];
+<div id="container">
+  <div id="minimap"><canvas id="mm" width="180" height="180"></canvas></div>
+  <div id="joy"><div id="knob"></div></div>
+  <div id="ui">WASD / стрілки — рух<br>Миша/дотик справа — огляд</div>
+  <button id="reset">Відновити позицію</button>
+  <div id="overlay" style="display:none">
+    <div class="box" id="overlayBox"></div>
+  </div>
+</div>
 
-    // --- Ініціалізація сцени ---
-    let camera, scene, renderer, controls;
-    let velocity = new THREE.Vector3();
-    const move = {forward: false, backward: false, left: false, right: false};
-    const MOVE_SPEED = 4;
-
-    function init() {
-      // Сцена та камера
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x000000);
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-
-      // Рендерер
-      renderer = new THREE.WebGLRenderer({antialias: true});
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
-
-      // Освітлення
-      scene.add(new THREE.AmbientLight(0x404040));
-      const pl = new THREE.PointLight(0xffffff, 1, 100);
-      pl.position.set(0, 5, 0);
-      scene.add(pl);
-
-      // Підлога
-      const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(50, 50),
-        new THREE.MeshStandardMaterial({color: 0x222222})
+<script type="module">
+function showOverlay(html){
+  const overlay = document.getElementById('overlay');
+  const box = document.getElementById('overlayBox');
+  box.innerHTML = html;
+  overlay.style.display = 'flex';
+}
+async function loadThreeModule(){
+  try {
+    return await import('./three.module.min.js');
+  } catch(errLocal){
+    try {
+      return await import('https://unpkg.com/three@0.162.0/build/three.module.min.js');
+    } catch(errCDN){
+      showOverlay(
+        `<h3>Не вдалося завантажити Three.js</h3>
+         <p>Браузер або середовище (наприклад, Telegram Web App) блокує завантаження модулів з CDN і локального файлу.</p>
+         <p>Рішення (виконай одне з наступного):</p>
+         <ol>
+           <li>Скачай файл <code>three.module.min.js</code> версії 0.162.0 з офіційного джерела та помісти поруч з цим файлом (в ту ж папку). Наприклад, завантажити можна з <strong>https://unpkg.com/three@0.162.0/build/three.module.min.js</strong></li>
+           <li>Або скопіюй вміст того файлу прямо в <code>./three.module.min.js</code> в твоєму репозиторії.</li>
+         </ol>
+         <p>Після цього перезавантаж сторінку — гра запуститься локально без додаткових підключень.</p>`
       );
-      floor.rotation.x = -Math.PI/2;
-      floor.position.y = 0;
-      scene.add(floor);
-
-      // Лабіринт
-      buildMaze(MAZE_LAYOUT);
-
-      // Контролер руху
-      controls = new THREE.PointerLockControls(camera, document.body);
-      camera.position.set(1, 0.5, 1); // Початкова позиція (можна змінити)
-      scene.add(controls.getObject());
-
-      // Управління
-      document.addEventListener('keydown', onKeyDown);
-      document.addEventListener('keyup', onKeyUp);
-      document.body.addEventListener('click', () => controls.lock());
-
-      // Адаптація до розміру вікна
-      window.addEventListener('resize', onWindowResize);
-
-      // Старт анімації
-      animate();
+      throw new Error('Three.js module not available');
     }
+  }
+}
+const THREEmod = await loadThreeModule();
+const THREE = THREEmod;
 
-    // --- Побудова лабіринту ---
-    function buildMaze(layout) {
-      const wallGeo = new THREE.BoxGeometry(1, 1, 1);
-      const wallMat = new THREE.MeshStandardMaterial({color: 0x0077ff});
-      layout.forEach((row, z) => {
-        [...row].forEach((cell, x) => {
-          if (cell === '#') {
-            const wall = new THREE.Mesh(wallGeo, wallMat);
-            wall.position.set(x, 0.5, z);
-            scene.add(wall);
-          }
-        });
-      });
+const container = document.getElementById('container');
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(window.devicePixelRatio || 1);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.domElement.style.display = 'block';
+container.insertBefore(renderer.domElement, container.firstChild);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x7fbfff);
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 5000);
+const startPos = { x:2.5, z:2.5, yaw:0, pitch:0 };
+camera.position.set(startPos.x * 64, 32, startPos.z * 64);
+camera.rotation.order = 'YXZ';
+
+scene.add(new THREE.DirectionalLight(0xffffff, 0.9).position.set(1,2,1).normalize());
+scene.add(new THREE.AmbientLight(0x606060));
+
+const map = [
+  [1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,1,0,1,1,1,0,1,1,0,1],
+  [1,0,1,0,0,0,1,0,0,1,0,1],
+  [1,0,1,1,1,0,1,1,0,1,0,1],
+  [1,0,0,0,1,0,0,0,0,1,0,1],
+  [1,1,1,0,1,1,1,1,0,1,0,1],
+  [1,0,0,0,0,0,0,1,0,0,0,1],
+  [1,0,1,1,1,1,0,1,1,1,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1]
+];
+const TILE = 64, HALF = TILE/2;
+const wallMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+const wallGeo = new THREE.BoxGeometry(TILE, TILE, TILE);
+
+for(let z=0; z<map.length; z++){
+  for(let x=0; x<map[0].length; x++){
+    if(map[z][x] === 1){
+      const m = new THREE.Mesh(wallGeo, wallMat);
+      m.position.set(x * TILE + HALF, HALF, z * TILE + HALF);
+      scene.add(m);
     }
+  }
+}
+const floorGeo = new THREE.PlaneGeometry(map[0].length * TILE, map.length * TILE);
+const floorMat = new THREE.MeshStandardMaterial({ color: 0x4b4b4b });
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI/2;
+floor.position.set((map[0].length * TILE)/2, 0, (map.length * TILE)/2);
+scene.add(floor);
 
-    // --- Керування клавішами ---
-    function onKeyDown(e) {
-      switch (e.code) {
-        case 'KeyW': move.forward = true; break;
-        case 'KeyS': move.backward = true; break;
-        case 'KeyA': move.left = true; break;
-        case 'KeyD': move.right = true; break;
-      }
+const player = {
+  x: startPos.x * TILE,
+  z: startPos.z * TILE,
+  y: 32,
+  yaw: startPos.yaw,
+  pitch: startPos.pitch,
+  speed: 150,
+  turnSpeed: 0.0025
+};
+function syncCamera(){
+  camera.position.set(player.x, player.y, player.z);
+  camera.rotation.x = player.pitch;
+  camera.rotation.y = player.yaw;
+}
+syncCamera();
+function isWallAt(px, pz){
+  const mx = Math.floor(px / TILE);
+  const mz = Math.floor(pz / TILE);
+  if(mz < 0 || mz >= map.length || mx < 0 || mx >= map[0].length) return true;
+  return map[mz][mx] === 1;
+}
+const keys = {};
+window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+const joy = document.getElementById('joy');
+const knob = document.getElementById('knob');
+let joyRect = joy.getBoundingClientRect();
+window.addEventListener('resize', () => joyRect = joy.getBoundingClientRect());
+let moveJoy = { x:0, y:0 };
+let knobId = null, knobDragging = false;
+function updateKnobCenter(){ joyRect = joy.getBoundingClientRect(); }
+updateKnobCenter();
+function setKnobPos(nx, ny){
+  const max = (joyRect.width - knob.offsetWidth)/2;
+  const px = nx * max, py = ny * max;
+  knob.style.transform = `translate(${px}px, ${py}px)`;
+  moveJoy.x = nx; moveJoy.y = -ny;
+}
+function resetKnob(){ knob.style.transform = 'translate(0,0)'; moveJoy.x = 0; moveJoy.y = 0; }
+
+knob.addEventListener('mousedown', e => { knobDragging = true; updateKnobCenter(); e.preventDefault(); });
+window.addEventListener('mouseup', () => { knobDragging = false; resetKnob(); });
+window.addEventListener('mousemove', e => {
+  if(!knobDragging) return;
+  const dx = e.clientX - (joyRect.left + joyRect.width/2);
+  const dy = e.clientY - (joyRect.top + joyRect.height/2);
+  const max = (joyRect.width - knob.offsetWidth)/2;
+  let nx = dx / max, ny = dy / max;
+  const mag = Math.hypot(nx, ny); if(mag > 1){ nx/=mag; ny/=mag; }
+  setKnobPos(nx, ny);
+});
+joy.addEventListener('touchstart', e => {
+  for(const t of e.changedTouches){ knobId = t.identifier; knobDragging=true; updateKnobCenter();
+    const dx = t.clientX - (joyRect.left + joyRect.width/2);
+    const dy = t.clientY - (joyRect.top + joyRect.height/2);
+    const max = (joyRect.width - knob.offsetWidth)/2;
+    let nx = dx / max, ny = dy / max; const mag = Math.hypot(nx,ny); if(mag>1){nx/=mag;ny/=mag;}
+    setKnobPos(nx, ny); break;
+  } e.preventDefault();
+}, { passive:false });
+joy.addEventListener('touchmove', e => {
+  for(const t of e.changedTouches){ if(t.identifier !== knobId) continue;
+    const dx = t.clientX - (joyRect.left + joyRect.width/2);
+    const dy = t.clientY - (joyRect.top + joyRect.height/2);
+    const max = (joyRect.width - knob.offsetWidth)/2;
+    let nx = dx / max, ny = dy / max; const mag = Math.hypot(nx,ny); if(mag>1){nx/=mag;ny/=mag;}
+    setKnobPos(nx, ny); break;
+  } e.preventDefault();
+}, { passive:false });
+joy.addEventListener('touchend', e => { for(const t of e.changedTouches){ if(t.identifier===knobId){ knobDragging=false; knobId=null; resetKnob(); } } e.preventDefault(); }, { passive:false });
+
+let lastPointerX = null;
+renderer.domElement.addEventListener('mouseenter', e => { lastPointerX = e.clientX; });
+renderer.domElement.addEventListener('mousemove', e => {
+  if(lastPointerX === null){ lastPointerX = e.clientX; return; }
+  const dx = e.clientX - lastPointerX;
+  lastPointerX = e.clientX;
+  player.yaw -= dx * player.turnSpeed;
+});
+renderer.domElement.addEventListener('mouseleave', () => { lastPointerX = null; });
+
+let touchViewId = null, lastTouchX = 0;
+renderer.domElement.addEventListener('touchstart', e => {
+  for(const t of e.changedTouches){
+    if(t.clientX > window.innerWidth * 0.45 && touchViewId === null){
+      touchViewId = t.identifier; lastTouchX = t.clientX;
     }
-    function onKeyUp(e) {
-      switch (e.code) {
-        case 'KeyW': move.forward = false; break;
-        case 'KeyS': move.backward = false; break;
-        case 'KeyA': move.left = false; break;
-        case 'KeyD': move.right = false; break;
-      }
+  }
+}, { passive:false });
+renderer.domElement.addEventListener('touchmove', e => {
+  for(const t of e.changedTouches){
+    if(t.identifier === touchViewId){
+      const dx = t.clientX - lastTouchX; lastTouchX = t.clientX;
+      player.yaw -= dx * player.turnSpeed;
     }
-    function onWindowResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+  } e.preventDefault();
+}, { passive:false });
+renderer.domElement.addEventListener('touchend', e => { for(const t of e.changedTouches){ if(t.identifier===touchViewId) touchViewId=null; } }, { passive:false });
+
+let prev = performance.now();
+function loop(now){
+  const dt = (now - prev) / 1000; prev = now;
+
+  let forward = 0, strafe = 0;
+  if(keys['w']||keys['arrowup']) forward += 1;
+  if(keys['s']||keys['arrowdown']) forward -= 1;
+  if(keys['a']||keys['arrowleft']) strafe -= 1;
+  if(keys['d']||keys['arrowright']) strafe += 1;
+  forward += moveJoy.y; strafe += moveJoy.x;
+  const mag = Math.hypot(forward, strafe) || 1;
+  forward /= mag; strafe /= mag;
+
+  const vx = (Math.cos(player.yaw) * forward - Math.sin(player.yaw) * strafe) * player.speed * dt;
+  const vz = (Math.sin(player.yaw) * forward + Math.cos(player.yaw) * strafe) * player.speed * dt;
+
+  const pad = 18;
+  const nx = player.x + vx;
+  const nz = player.z + vz;
+  if(!isWallAt(nx + pad * Math.sign(vx || 1), player.z)) player.x = nx;
+  if(!isWallAt(player.x, nz + pad * Math.sign(vz || 1))) player.z = nz;
+
+  syncCamera();
+  renderer.render(scene, camera);
+  renderMinimap();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+const mm = document.getElementById('mm');
+const mmCtx = mm.getContext('2d');
+function renderMinimap(){
+  const W = mm.width, H = mm.height;
+  mmCtx.clearRect(0,0,W,H);
+  mmCtx.save();
+  mmCtx.fillStyle = 'rgba(0,0,0,0.15)';
+  mmCtx.fillRect(0,0,W,H);
+  const scale = Math.min((W-8) / (map[0].length * TILE), (H-8) / (map.length * TILE));
+  const ox = 4, oy = 4;
+  for(let z=0; z<map.length; z++){
+    for(let x=0; x<map[0].length; x++){
+      mmCtx.fillStyle = map[z][x] === 1 ? '#222' : '#ddd';
+      mmCtx.fillRect(ox + x * TILE * scale, oy + z * TILE * scale, TILE * scale - 1, TILE * scale - 1);
     }
+  }
+  const px = ox + player.x * scale;
+  const pz = oy + player.z * scale;
+  mmCtx.fillStyle = 'lime';
+  mmCtx.beginPath(); mmCtx.arc(px, pz, 6, 0, Math.PI*2); mmCtx.fill();
+  mmCtx.restore();
+}
 
-    // --- Головний цикл анімації ---
-    let prevTime = performance.now();
+document.getElementById('reset').addEventListener('click', () => {
+  player.x = startPos.x * TILE; player.z = startPos.z * TILE; player.yaw = startPos.yaw; player.pitch = startPos.pitch; syncCamera();
+});
 
-    function animate() {
-      requestAnimationFrame(animate);
-
-      const time = performance.now();
-      const delta = (time - prevTime) / 1000; // в секундах
-      prevTime = time;
-
-      // Спадання швидкості (гальмування)
-      velocity.x -= velocity.x * 10 * delta;
-      velocity.z -= velocity.z * 10 * delta;
-
-      // Прискорення від натискання
-      if (move.forward)  velocity.z -= MOVE_SPEED * delta;
-      if (move.backward) velocity.z += MOVE_SPEED * delta;
-      if (move.left)     velocity.x -= MOVE_SPEED * delta;
-      if (move.right)    velocity.x += MOVE_SPEED * delta;
-
-      // Рух
-      controls.moveRight(velocity.x * delta);
-      controls.moveForward(velocity.z * delta);
-
-      renderer.render(scene, camera);
-    }
-
-    // --- Запуск ---
-    window.onload = init;
-  </script>
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  joyRect = joy.getBoundingClientRect();
+});
+</script>
 </body>
 </html>
