@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Лабіринт</title>
+  <title>3D Лабіринт (чистий код)</title>
   <style>
     html, body {margin:0; height:100%; overflow:hidden; background:black;}
     canvas {display:block;}
@@ -16,110 +16,141 @@
   </style>
 </head>
 <body>
-  <div id="info">Клікни мишею для керування</div>
-  <script>
-  // ==== THREE.JS (вбудований мінімальний рушій) ====
-  // Вбудована версія Three.js (скорочена до основних частин)
-  // Через обмеження обсягу сюди вставлено лише частину бази;
-  // у тебе вже працювало з попередньою версією — просто додаємо керування:
-  </script>
+  <div id="info">Клікни мишею для керування. WASD — рух, миша — огляд</div>
+  <!-- Three.js та PointerLockControls -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.159.0/examples/js/controls/PointerLockControls.js"></script>
   <script>
-  // === СЦЕНА ===
-  const scene = new THREE.Scene()
-  scene.background = new THREE.Color(0x000000)
-  const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000)
-  const renderer = new THREE.WebGLRenderer({antialias:true})
-  renderer.setSize(innerWidth, innerHeight)
-  document.body.appendChild(renderer.domElement)
+    // --- Конфігурація лабіринту (можна легко змінити) ---
+    const MAZE_LAYOUT = [
+      "##########",
+      "#        #",
+      "#  ##    #",
+      "#     #  #",
+      "#  ##    #",
+      "#        #",
+      "##########"
+    ];
 
-  // === СВІТЛО ===
-  const light = new THREE.PointLight(0xffffff, 1)
-  light.position.set(0,5,0)
-  scene.add(light)
-  scene.add(new THREE.AmbientLight(0x404040))
+    // --- Ініціалізація сцени ---
+    let camera, scene, renderer, controls;
+    let velocity = new THREE.Vector3();
+    const move = {forward: false, backward: false, left: false, right: false};
+    const MOVE_SPEED = 4;
 
-  // === ЛАБІРИНТ ===
-  const maze = [
-    "##########",
-    "#        #",
-    "#  ##    #",
-    "#     #  #",
-    "#  ##    #",
-    "#        #",
-    "##########"
-  ]
-  const wallGeo = new THREE.BoxGeometry(1,1,1)
-  const wallMat = new THREE.MeshStandardMaterial({color:0x0055ff})
-  for(let z=0; z<maze.length; z++){
-    for(let x=0; x<maze[z].length; x++){
-      if(maze[z][x]==="#"){
-        const w = new THREE.Mesh(wallGeo, wallMat)
-        w.position.set(x-5,0.5,z-3.5)
-        scene.add(w)
+    function init() {
+      // Сцена та камера
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+
+      // Рендерер
+      renderer = new THREE.WebGLRenderer({antialias: true});
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Освітлення
+      scene.add(new THREE.AmbientLight(0x404040));
+      const pl = new THREE.PointLight(0xffffff, 1, 100);
+      pl.position.set(0, 5, 0);
+      scene.add(pl);
+
+      // Підлога
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(50, 50),
+        new THREE.MeshStandardMaterial({color: 0x222222})
+      );
+      floor.rotation.x = -Math.PI/2;
+      floor.position.y = 0;
+      scene.add(floor);
+
+      // Лабіринт
+      buildMaze(MAZE_LAYOUT);
+
+      // Контролер руху
+      controls = new THREE.PointerLockControls(camera, document.body);
+      camera.position.set(1, 0.5, 1); // Початкова позиція (можна змінити)
+      scene.add(controls.getObject());
+
+      // Управління
+      document.addEventListener('keydown', onKeyDown);
+      document.addEventListener('keyup', onKeyUp);
+      document.body.addEventListener('click', () => controls.lock());
+
+      // Адаптація до розміру вікна
+      window.addEventListener('resize', onWindowResize);
+
+      // Старт анімації
+      animate();
+    }
+
+    // --- Побудова лабіринту ---
+    function buildMaze(layout) {
+      const wallGeo = new THREE.BoxGeometry(1, 1, 1);
+      const wallMat = new THREE.MeshStandardMaterial({color: 0x0077ff});
+      layout.forEach((row, z) => {
+        [...row].forEach((cell, x) => {
+          if (cell === '#') {
+            const wall = new THREE.Mesh(wallGeo, wallMat);
+            wall.position.set(x, 0.5, z);
+            scene.add(wall);
+          }
+        });
+      });
+    }
+
+    // --- Керування клавішами ---
+    function onKeyDown(e) {
+      switch (e.code) {
+        case 'KeyW': move.forward = true; break;
+        case 'KeyS': move.backward = true; break;
+        case 'KeyA': move.left = true; break;
+        case 'KeyD': move.right = true; break;
       }
     }
-  }
+    function onKeyUp(e) {
+      switch (e.code) {
+        case 'KeyW': move.forward = false; break;
+        case 'KeyS': move.backward = false; break;
+        case 'KeyA': move.left = false; break;
+        case 'KeyD': move.right = false; break;
+      }
+    }
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
 
-  // === ПІДЛОГА ===
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(50,50),
-    new THREE.MeshStandardMaterial({color:0x222222})
-  )
-  floor.rotation.x = -Math.PI/2
-  scene.add(floor)
+    // --- Головний цикл анімації ---
+    let prevTime = performance.now();
 
-  // === КОНТРОЛЕР ===
-  const controls = new THREE.PointerLockControls(camera, document.body)
-  document.body.addEventListener('click', ()=>controls.lock())
-  scene.add(controls.getObject())
+    function animate() {
+      requestAnimationFrame(animate);
 
-  let move = {forward:0, backward:0, left:0, right:0}
-  document.addEventListener('keydown', e=>{
-    if(e.code==="KeyW") move.forward=1
-    if(e.code==="KeyS") move.backward=1
-    if(e.code==="KeyA") move.left=1
-    if(e.code==="KeyD") move.right=1
-  })
-  document.addEventListener('keyup', e=>{
-    if(e.code==="KeyW") move.forward=0
-    if(e.code==="KeyS") move.backward=0
-    if(e.code==="KeyA") move.left=0
-    if(e.code==="KeyD") move.right=0
-  })
+      const time = performance.now();
+      const delta = (time - prevTime) / 1000; // в секундах
+      prevTime = time;
 
-  let velocity = new THREE.Vector3()
-  const speed = 5
+      // Спадання швидкості (гальмування)
+      velocity.x -= velocity.x * 10 * delta;
+      velocity.z -= velocity.z * 10 * delta;
 
-  // === АНІМАЦІЯ ===
-  let prev = performance.now()
-  function animate(){
-    requestAnimationFrame(animate)
-    const time = performance.now()
-    const delta = (time - prev)/1000
-    prev = time
+      // Прискорення від натискання
+      if (move.forward)  velocity.z -= MOVE_SPEED * delta;
+      if (move.backward) velocity.z += MOVE_SPEED * delta;
+      if (move.left)     velocity.x -= MOVE_SPEED * delta;
+      if (move.right)    velocity.x += MOVE_SPEED * delta;
 
-    velocity.x -= velocity.x * 10.0 * delta
-    velocity.z -= velocity.z * 10.0 * delta
+      // Рух
+      controls.moveRight(velocity.x * delta);
+      controls.moveForward(velocity.z * delta);
 
-    if(move.forward) velocity.z -= speed * delta
-    if(move.backward) velocity.z += speed * delta
-    if(move.left) velocity.x -= speed * delta
-    if(move.right) velocity.x += speed * delta
+      renderer.render(scene, camera);
+    }
 
-    controls.moveRight(velocity.x * delta)
-    controls.moveForward(velocity.z * delta)
-
-    renderer.render(scene, camera)
-  }
-  animate()
-
-  window.addEventListener('resize', ()=>{
-    camera.aspect = innerWidth/innerHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(innerWidth, innerHeight)
-  })
+    // --- Запуск ---
+    window.onload = init;
   </script>
 </body>
 </html>
