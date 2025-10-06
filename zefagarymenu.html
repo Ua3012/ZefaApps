@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ЗєфаГари</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f0f2f5;
+      text-align: center;
+    }
+    #menu {
+      background: white;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      margin-top: 80px;
+    }
+    h1 {
+      color: #222;
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+    p {
+      color: #555;
+      margin-bottom: 30px;
+      font-size: 17px;
+    }
+    .game-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+    button {
+      width: 80%;
+      max-width: 400px;
+      padding: 15px;
+      border: none;
+      border-radius: 8px;
+      background-color: #0084ff;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      background-color: #0066cc;
+      transform: scale(1.05);
+    }
+    .back {
+      background-color: #555;
+      margin-top: 30px;
+    }
+    .back:hover {
+      background-color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <h1>ЗєфаГари</h1>
+    <p>Оберіть гру, у яку хочете пограти:</p>
+
+    <div class="game-list">
+      <button onclick="location.href='game1.html'">ЗєфаКлікєр</button>
+      <button onclick="location.href='game2.html'">ЗєфаЗєфа</button>
+      <button onclick="location.href='game3.html'">Мнє лєнь</button>
+      <button onclick="location.href='game4.html'">Шота дєлать</button>
+    </div>
+
+    <button class="back" onclick="location.href='index.html'">⬅ Назад до меню</button>
+  </div>
+</body>
+</html>
