@@ -51,21 +51,30 @@
     .message strong {
       color: #0084ff;
     }
+    .back {
+      background-color: #555;
+      margin-top: 10px;
+    }
+    .back:hover {
+      background-color: #333;
+    }
   </style>
 </head>
 <body>
   <div id="auth">
     <h2>Зєфаграм</h2>
-    <input type="text" id="username" placeholder="Введіть ім'я користувача">
+    <input type="text" id="username" placeholder="Введіть імя користувача">
     <button id="loginBtn">Увійти</button>
+    <button class="back" onclick="location.href='index.html'">⬅ Назад</button>
   </div>
 
   <div id="chat" style="display:none;">
     <h2 id="welcome"></h2>
     <div id="messages"></div>
-    <input type="text" id="messageInput" placeholder="Введіть повідомлення">
-    <button id="sendBtn">Надіслати</button>
+    <input type="text" id="messageInput" placeholder="ПІШИ!!!">
+    <button id="sendBtn">Атправіть</button>
     <button id="logoutBtn">Вийти</button>
+    <button class="back" onclick="location.href='index.html'">⬅ Назад</button>
   </div>
 
   <script type="module">
@@ -142,7 +151,6 @@
     usernameInput.addEventListener('keypress', e => { if (e.key === 'Enter') register(); });
     messageInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
 
-    // Якщо користувач вже увійшов
     if (currentUser) {
       authDiv.style.display = 'none';
       chatDiv.style.display = 'block';
