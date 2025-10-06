@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Зєфаграм</title>
+  <title>Меню Зєфа</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,143 +11,41 @@
       margin: 0 auto;
       padding: 20px;
       background-color: #f0f2f5;
+      text-align: center;
     }
-    #auth, #chat {
+    #menu {
       background: white;
-      padding: 20px;
+      padding: 40px;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      margin-top: 100px;
     }
-    input, button {
-      padding: 10px;
-      margin: 5px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+    h2 {
+      color: #333;
+      margin-bottom: 30px;
     }
     button {
+      padding: 15px 30px;
+      margin: 10px;
+      border: none;
+      border-radius: 6px;
       background-color: #0084ff;
       color: white;
-      border: none;
+      font-size: 18px;
       cursor: pointer;
+      transition: 0.2s;
     }
     button:hover {
       background-color: #0066cc;
-    }
-    #messages {
-      max-height: 400px;
-      overflow-y: auto;
-      border: 1px solid #ddd;
-      padding: 10px;
-      border-radius: 4px;
-      margin-bottom: 10px;
-    }
-    .message {
-      margin: 10px 0;
-      padding: 10px;
-      background-color: #e9ecef;
-      border-radius: 4px;
-    }
-    .message strong {
-      color: #0084ff;
+      transform: scale(1.05);
     }
   </style>
 </head>
 <body>
-  <div id="auth">
-    <h2>Зєфаграм</h2>
-    <input type="text" id="username" placeholder="Введіть ім'я користувача">
-    <button id="loginBtn">Увійти</button>
+  <div id="menu">
+    <h2>Оберіть застосунок</h2>
+    <button onclick="location.href='zefagram.html'">Зєфаграм</button>
+    <button onclick="location.href='zefagarymenu.html'">Гари</button>
   </div>
-
-  <div id="chat" style="display:none;">
-    <h2 id="welcome"></h2>
-    <div id="messages"></div>
-    <input type="text" id="messageInput" placeholder="Введіть повідомлення">
-    <button id="sendBtn">Надіслати</button>
-    <button id="logoutBtn">Вийти</button>
-  </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA",
-      authDomain: "zefagram.firebaseapp.com",
-      databaseURL: "https://zefagram-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "zefagram",
-      storageBucket: "zefagram.firebasestorage.app",
-      messagingSenderId: "664999563847",
-      appId: "1:664999563847:web:3051100a05bdb41dc59762",
-      measurementId: "G-CFS89PSQNK"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    let currentUser = localStorage.getItem('currentUser');
-
-    const authDiv = document.getElementById('auth');
-    const chatDiv = document.getElementById('chat');
-    const usernameInput = document.getElementById('username');
-    const messageInput = document.getElementById('messageInput');
-    const messagesDiv = document.getElementById('messages');
-    const welcome = document.getElementById('welcome');
-    const loginBtn = document.getElementById('loginBtn');
-    const sendBtn = document.getElementById('sendBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-
-    function register() {
-      const username = usernameInput.value.trim();
-      if (!username) return alert("Введіть ім'я користувача!");
-      currentUser = username;
-      localStorage.setItem('currentUser', username);
-      authDiv.style.display = 'none';
-      chatDiv.style.display = 'block';
-      welcome.textContent = `Привіт, ${username}!`;
-    }
-
-    function sendMessage() {
-      const text = messageInput.value.trim();
-      if (!text || !currentUser) return;
-      const time = new Date().toLocaleTimeString();
-      push(ref(db, 'messages'), { user: currentUser, text, time });
-      messageInput.value = '';
-    }
-
-    function addMessage(data) {
-      const msg = data.val();
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'message';
-      msgDiv.innerHTML = `<strong>${msg.user}</strong>: ${msg.text} <small>(${msg.time})</small>`;
-      messagesDiv.appendChild(msgDiv);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    onChildAdded(ref(db, 'messages'), addMessage);
-
-    function logout() {
-      localStorage.removeItem('currentUser');
-      currentUser = null;
-      chatDiv.style.display = 'none';
-      authDiv.style.display = 'block';
-    }
-
-    // Події
-    loginBtn.onclick = register;
-    sendBtn.onclick = sendMessage;
-    logoutBtn.onclick = logout;
-
-    usernameInput.addEventListener('keypress', e => { if (e.key === 'Enter') register(); });
-    messageInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
-
-    // Якщо користувач вже увійшов
-    if (currentUser) {
-      authDiv.style.display = 'none';
-      chatDiv.style.display = 'block';
-      welcome.textContent = `Привіт, ${currentUser}!`;
-    }
-  </script>
 </body>
 </html>
