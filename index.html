@@ -29,23 +29,33 @@
       margin: 10px;
       border: none;
       border-radius: 6px;
-      background-color: #0084ff;
       color: white;
       font-size: 18px;
       cursor: pointer;
       transition: 0.2s;
     }
     button:hover {
-      background-color: #0066cc;
       transform: scale(1.05);
     }
+    /* Кольори для кожної кнопки */
+    .blue { background-color: #0084ff; }
+    .blue:hover { background-color: #0066cc; }
+
+    .red { background-color: #ff0000; }
+    .red:hover { background-color: #cc0000; }
+
+    .telegram { background-color: #0088cc; }
+    .telegram:hover { background-color: #006699; }
   </style>
 </head>
 <body>
   <div id="menu">
     <h2>Вибірай праграму</h2>
-    <button onclick="location.href='zefagram.html'">Зєфаграм</button>
-    <button onclick="location.href='zefagarymenu.html'">Гари</button>
+    <button class="blue" onclick="location.href='zefagram.html'">Зєфаграм</button>
+    <button class="blue" onclick="location.href='zefagarymenu.html'">Гари</button>
+    <br>
+    <button class="red" onclick="window.open('https://www.youtube.com/@yazefa', '_blank')">YouTube язєфа</button>
+    <button class="telegram" onclick="window.open('https://t.me/zefushkin', '_blank')">Telegram Зєфушка прикалуєца</button>
   </div>
 </body>
 </html>
