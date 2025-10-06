@@ -1,180 +1,268 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>3D Лабіринт — Three.js (FPS, авто Pointer Lock)</title>
+  <title>ЗєфаКлікєр</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    html,body{height:100%;margin:0;background:#111;font-family:sans-serif;user-select:none;}
-    #container{position:relative;width:100vw;height:100vh;overflow:hidden}
-    canvas{display:block;width:100%;height:100%}
-    #ui{position:absolute;z-index:2;right:12px;top:12px;color:#fff;background:rgba(0,0,0,0.35);padding:8px 10px;border-radius:8px;}
-    #minimap{position:absolute;left:12px;top:12px;width:180px;height:180px;background:rgba(0,0,0,0.22);border-radius:8px;z-index:2;padding:6px;}
-    #minimap canvas{display:block;width:100%;height:100%;}
-    #reset{position:absolute;right:12px;bottom:18px;z-index:2}
-    button{background:transparent;color:#fff;border:1px solid #fff3;padding:8px 10px;border-radius:8px;cursor:pointer}
-    #pointerlock-instruct { position:absolute; left:0; right:0; top:0; bottom:0;display:flex;align-items:center;justify-content:center;z-index:10;}
-    #pointerlock-instruct span{background:rgba(0,0,0,.7);color:#fff;padding:18px 24px;border-radius:10px;font-size:1.2em;}
+    body {
+      background: url('path-to-your-background-image.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Arial', sans-serif;
+      height: 100vh;
+      margin: 0;
+      position: relative;
+    }
+    #gameArea {
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    #gameArea.clicked {
+      transform: scale(0.9);
+    }
+    .upgrade-button {
+      transition: all 0.3s ease;
+    }
+    .upgrade-button:hover {
+      transform: scale(1.1);
+      background-color: #10b981;
+    }
+    #progressBar {
+      width: 300px;
+      height: 20px;
+      background-color: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #progress {
+      height: 100%;
+      background-color: #4CAF50;
+      width: 0%;
+      transition: width 0.5s;
+    }
+    #shopButton {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: #ff4444;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #shopButton:hover {
+      background-color: #cc0000;
+    }
+    .shop {
+      display: none;
+      position: absolute;
+      top: 60px;
+      left: 10px;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px;
+      border-radius: 5px;
+      z-index: 10;
+    }
+    .shop.active {
+      display: block;
+    }
+    .disabled-button {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   </style>
 </head>
-<body>
-<div id="container">
-  <div id="minimap"><canvas id="mm" width="180" height="180"></canvas></div>
-  <div id="ui">WASD / стрілки — рух<br>Миша — огляд</div>
-  <button id="reset">Відновити позицію</button>
-  <div id="pointerlock-instruct"><span>Почни рух миші або натисни клавішу для керування</span></div>
-</div>
-<script type="module">
-async function loadThree() {
-  try { return await import('./three.module.min.js'); }
-  catch { return await import('https://unpkg.com/three@0.162.0/build/three.module.min.js'); }
-}
-const THREE = await loadThree();
+<body class="flex flex-col items-center justify-center text-white relative">
+  <div id="zefaCoin" class="absolute top-4 right-4 flex items-center">
+    <img src="path-to-zefa-coin-image.png" alt="ZefaCoin" class="w-8 h-8 mr-2">
+    <span id="zefaCoinCount" class="text-2xl font-bold">0</span>
+  </div>
+  <div id="shopButton">Магазин</div>
+  <div id="shop" class="shop">
+    <button id="upgradeClick" class="upgrade-button bg-green-600 text-white px-4 py-2 rounded-lg mb-2">Покращити клік (+5%) - 500 ZefaCoin</button>
+    <button id="upgradeAuto" class="upgrade-button bg-blue-600 text-white px-4 py-2 rounded-lg mb-2">Автоклік (1/с) - 1000 ZefaCoin</button>
+    <button id="texture1" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 1 (0%) - Безкоштовно</button>
+    <button id="texture2" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 2 (+5%) - 1000 ZefaCoin</button>
+    <button id="texture3" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 3 (+10%) - 2000 ZefaCoin</button>
+    <button id="texture4" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 4 (+20%) - 4000 ZefaCoin</button>
+    <button id="texture5" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 5 (+30%) - 7000 ZefaCoin</button>
+    <button id="texture6" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 6 (+40%) - 10000 ZefaCoin</button>
+    <button id="texture7" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 7 (+50%) - 14000 ZefaCoin</button>
+    <button id="texture8" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 8 (+60%) - 19000 ZefaCoin</button>
+    <button id="texture9" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 9 (+70%) - 25000 ZefaCoin</button>
+    <button id="texture10" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 10 (+80%) - 32000 ZefaCoin</button>
+    <button id="texture11" class="upgrade-button bg-purple-600 text-white px-4 py-2 rounded-lg mb-2">Текстура 11 (+100%) - 40000 ZefaCoin</button>
+    <button id="texture12" class="upgrade-button bg-purple-600 px-4 py-2 rounded-lg mb-2">
+      <img src="path-to-texture12-image.jpg" alt="Текстура 12" class="w-16 h-16">
+    </button>
+  </div>
+  <div id="zefaCoinTop" class="flex items-center justify-center w-full mt-4">
+    <img src="path-to-zefa-coin-image.png" alt="ZefaCoin" class="w-6 h-6 mr-2">
+    <span id="zefaCoinCountTop" class="text-xl font-bold">0</span>
+  </div>
+  <div id="level" class="text-xl mb-2">Рівень 1</div>
+  <div id="progressBar">
+    <div id="progress"></div>
+  </div>
+  <img id="gameArea" src="path-to-default-texture.jpg" class="w-32 h-32 rounded-full mt-4">
 
-const map = [
-  [1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,1,0,1,1,1,0,1,1,0,1],
-  [1,0,1,0,0,0,1,0,0,1,0,1],
-  [1,0,1,1,1,0,1,1,0,1,0,1],
-  [1,0,0,0,1,0,0,0,0,1,0,1],
-  [1,1,1,0,1,1,1,1,0,1,0,1],
-  [1,0,0,0,0,0,0,1,0,0,0,1],
-  [1,0,1,1,1,1,0,1,1,1,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1]
-];
-const TILE = 64, HALF = TILE/2;
+  <audio id="clickSound" src="path-to-your-sound-file.mp3"></audio>
 
-const container = document.getElementById('container');
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth, window.innerHeight);
-container.insertBefore(renderer.domElement, container.firstChild);
+  <script>
+    let zefaCoin = 0;
+    let clickValue = 1;
+    let autoClickValue = 0;
+    let autoClickSpeed = 1000;
+    let currentTexture = 0;
+    let textureBonus = 0;
+    let upgradeClickCost = 500;
+    let upgradeAutoCost = 1000;
+    let level = 1;
+    const zefaCoinCount = document.getElementById('zefaCoinCount');
+    const zefaCoinCountTop = document.getElementById('zefaCoinCountTop');
+    const gameArea = document.getElementById('gameArea');
+    const clickSound = document.getElementById('clickSound');
+    const upgradeClick = document.getElementById('upgradeClick');
+    const upgradeAuto = document.getElementById('upgradeAuto');
+    const shopButton = document.getElementById('shopButton');
+    const shop = document.getElementById('shop');
+    const progress = document.getElementById('progress');
+    const levelDisplay = document.getElementById('level');
+    const texturePaths = [
+      'path-to-default-texture.jpg',
+      'path-to-texture2.jpg',
+      'path-to-texture3.jpg',
+      'path-to-texture4.jpg',
+      'path-to-texture5.jpg',
+      'path-to-texture6.jpg',
+      'path-to-texture7.jpg',
+      'path-to-texture8.jpg',
+      'path-to-texture9.jpg',
+      'path-to-texture10.jpg',
+      'path-to-texture11.jpg',
+      'path-to-texture12-image.jpg'
+    ];
+    const textures = [
+      { id: 'texture1', cost: 0, bonus: 0, minLevel: 1 },
+      { id: 'texture2', cost: 1000, bonus: 5, minLevel: 2 },
+      { id: 'texture3', cost: 2000, bonus: 10, minLevel: 5 },
+      { id: 'texture4', cost: 4000, bonus: 20, minLevel: 10 },
+      { id: 'texture5', cost: 7000, bonus: 30, minLevel: 15 },
+      { id: 'texture6', cost: 10000, bonus: 40, minLevel: 20 },
+      { id: 'texture7', cost: 14000, bonus: 50, minLevel: 25 },
+      { id: 'texture8', cost: 19000, bonus: 60, minLevel: 30 },
+      { id: 'texture9', cost: 25000, bonus: 70, minLevel: 40 },
+      { id: 'texture10', cost: 32000, bonus: 80, minLevel: 50 },
+      { id: 'texture11', cost: 40000, bonus: 100, minLevel: 100 },
+      { id: 'texture12', cost: 48000, bonus: 100, minLevel: 100 }
+    ];
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x7fbfff);
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 5000);
+    gameArea.addEventListener('click', () => {
+      const totalClickValue = clickValue * (1 + textureBonus / 100);
+      zefaCoin += totalClickValue;
+      zefaCoinCount.textContent = Math.floor(zefaCoin);
+      zefaCoinCountTop.textContent = Math.floor(zefaCoin);
+      gameArea.classList.add('clicked');
+      clickSound.play();
+      setTimeout(() => gameArea.classList.remove('clicked'), 100);
+      updateProgress();
+      updateShopButtons();
+    });
 
-scene.add(new THREE.DirectionalLight(0xffffff, 0.9).position.set(1,2,1).normalize());
-scene.add(new THREE.AmbientLight(0x606060));
-const wallMat = new THREE.MeshStandardMaterial({color:0x888888});
-const wallGeo = new THREE.BoxGeometry(TILE, TILE, TILE);
-for(let z=0; z<map.length; z++)
-  for(let x=0; x<map[0].length; x++)
-    if(map[z][x])
-      scene.add(new THREE.Mesh(wallGeo, wallMat).position.set(x*TILE+HALF,HALF,z*TILE+HALF));
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(map[0].length*TILE, map.length*TILE),
-  new THREE.MeshStandardMaterial({color:0x444})
-);
-floor.rotation.x = -Math.PI/2;
-floor.position.set(map[0].length*TILE/2, 0, map.length*TILE/2);
-scene.add(floor);
+    upgradeClick.addEventListener('click', () => {
+      if (zefaCoin >= upgradeClickCost) {
+        zefaCoin -= upgradeClickCost;
+        clickValue *= 1.05;
+        zefaCoinCount.textContent = Math.floor(zefaCoin);
+        zefaCoinCountTop.textContent = Math.floor(zefaCoin);
+        upgradeClickCost = Math.floor(upgradeClickCost * 1.5);
+        upgradeClick.textContent = `Покращити клік (+5%) - ${upgradeClickCost} ZefaCoin`;
+      }
+    });
 
-const startPos = { x:1.5, z:1.5, yaw:0, pitch:0 };
-const player = {
-  x: startPos.x * TILE, z: startPos.z * TILE, y: 32,
-  yaw: startPos.yaw, pitch: startPos.pitch,
-  speed: 150, turnSpeed: 0.0025, pitchSpeed: 0.002
-};
-function syncCamera(){
-  camera.position.set(player.x, player.y, player.z);
-  camera.rotation.x = player.pitch;
-  camera.rotation.y = player.yaw;
-}
-syncCamera();
+    upgradeAuto.addEventListener('click', () => {
+      if (zefaCoin >= upgradeAutoCost && autoClickValue === 0) {
+        zefaCoin -= upgradeAutoCost;
+        autoClickValue = 1;
+        zefaCoinCount.textContent = Math.floor(zefaCoin);
+        zefaCoinCountTop.textContent = Math.floor(zefaCoin);
+        upgradeAutoCost = Math.floor(upgradeAutoCost * 1.5);
+        upgradeAuto.textContent = `Автоклік (${autoClickValue}/с) - ${upgradeAutoCost} ZefaCoin`;
+        setInterval(() => {
+          if (autoClickValue > 0) {
+            zefaCoin += autoClickValue;
+            zefaCoinCount.textContent = Math.floor(zefaCoin);
+            zefaCoinCountTop.textContent = Math.floor(zefaCoin);
+            gameArea.classList.add('clicked');
+            setTimeout(() => gameArea.classList.remove('clicked'), 100);
+          }
+        }, autoClickSpeed);
+      } else if (zefaCoin >= upgradeAutoCost) {
+        zefaCoin -= upgradeAutoCost;
+        autoClickValue *= 1.5;
+        autoClickSpeed = Math.floor(autoClickSpeed / 1.5);
+        zefaCoinCount.textContent = Math.floor(zefaCoin);
+        zefaCoinCountTop.textContent = Math.floor(zefaCoin);
+        upgradeAutoCost = Math.floor(upgradeAutoCost * 1.5);
+        upgradeAuto.textContent = `Автоклік (${autoClickValue.toFixed(1)}/с) - ${upgradeAutoCost} ZefaCoin`;
+        clearInterval(autoClickInterval);
+        autoClickInterval = setInterval(() => {
+          if (autoClickValue > 0) {
+            zefaCoin += autoClickValue;
+            zefaCoinCount.textContent = Math.floor(zefaCoin);
+            zefaCoinCountTop.textContent = Math.floor(zefaCoin);
+            gameArea.classList.add('clicked');
+            setTimeout(() => gameArea.classList.remove('clicked'), 100);
+          }
+        }, autoClickSpeed);
+      }
+    });
 
-function isWallAt(px, pz){
-  const mx = Math.floor(px/TILE), mz = Math.floor(pz/TILE);
-  if(mz<0||mz>=map.length||mx<0||mx>=map[0].length) return true;
-  return map[mz][mx] === 1;
-}
+    textures.forEach((texture, index) => {
+      document.getElementById(texture.id).addEventListener('click', () => {
+        if (zefaCoin >= texture.cost && level >= texture.minLevel && currentTexture < index) {
+          zefaCoin -= texture.cost;
+          currentTexture = index + 1;
+          textureBonus = texture.bonus;
+          zefaCoinCount.textContent = Math.floor(zefaCoin);
+          zefaCoinCountTop.textContent = Math.floor(zefaCoin);
+          gameArea.src = texturePaths[currentTexture];
+          document.getElementById(texture.id).disabled = true;
+          document.getElementById(texture.id).classList.add('disabled-button');
+        }
+      });
+    });
 
-let pointerLocked = false;
-const instruct = document.getElementById('pointerlock-instruct');
-function showInstruct(visible) { instruct.style.display = visible?'flex':'none'; }
-showInstruct(true);
+    shopButton.addEventListener('click', () => {
+      shop.classList.toggle('active');
+      updateShopButtons();
+    });
 
-// --- Активуємо PointerLock при першій дії користувача ---
-function autoPointerLock(e) {
-  if (!pointerLocked) {
-    renderer.domElement.requestPointerLock();
-  }
-}
-window.addEventListener('mousemove', autoPointerLock, {once:true});
-window.addEventListener('keydown', autoPointerLock, {once:true});
-instruct.addEventListener('click', autoPointerLock);
-
-document.addEventListener('pointerlockchange', ()=>{
-  pointerLocked = document.pointerLockElement === renderer.domElement;
-  showInstruct(!pointerLocked);
-});
-renderer.domElement.addEventListener('mousemove',e=>{
-  if(pointerLocked){
-    player.yaw -= e.movementX * player.turnSpeed;
-    player.pitch -= e.movementY * player.pitchSpeed;
-    player.pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, player.pitch));
-  }
-});
-
-const keys = {};
-window.addEventListener('keydown', e=>keys[e.key.toLowerCase()]=true);
-window.addEventListener('keyup', e=>keys[e.key.toLowerCase()]=false);
-
-let prev=performance.now();
-function loop(now){
-  const dt = (now-prev)/1000; prev=now;
-  let forward=0,strafe=0;
-  if(keys['w']||keys['arrowup'])forward+=1;
-  if(keys['s']||keys['arrowdown'])forward-=1;
-  if(keys['a']||keys['arrowleft'])strafe-=1;
-  if(keys['d']||keys['arrowright'])strafe+=1;
-  const mag = Math.hypot(forward,strafe)||1;
-  forward/=mag; strafe/=mag;
-
-  const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
-  const vx = (cos * forward + sin * strafe) * player.speed * dt;
-  const vz = (sin * forward - cos * strafe) * player.speed * dt;
-  const pad=18, nx=player.x+vx, nz=player.z+vz;
-  if(!isWallAt(nx+pad*Math.sign(vx||1), player.z)) player.x=nx;
-  if(!isWallAt(player.x, nz+pad*Math.sign(vz||1))) player.z=nz;
-
-  syncCamera();
-  renderer.render(scene, camera);
-  renderMinimap();
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-
-const mm = document.getElementById('mm'), mmCtx = mm.getContext('2d');
-function renderMinimap(){
-  const W=mm.width,H=mm.height,scale=Math.min((W-8)/(map[0].length*TILE),(H-8)/(map.length*TILE)),ox=4,oy=4;
-  mmCtx.clearRect(0,0,W,H);
-  mmCtx.fillStyle='rgba(0,0,0,0.15)'; mmCtx.fillRect(0,0,W,H);
-  for(let z=0;z<map.length;z++)
-    for(let x=0;x<map[0].length;x++){
-      mmCtx.fillStyle=map[z][x]?'#222':'#ddd';
-      mmCtx.fillRect(ox+x*TILE*scale, oy+z*TILE*scale, TILE*scale-1, TILE*scale-1);
+    function updateProgress() {
+      const nextLevel = level * 10000;
+      const progressPercent = (zefaCoin / nextLevel) * 100;
+      progress.style.width = Math.min(progressPercent, 100) + '%';
+      if (zefaCoin >= nextLevel) {
+        level++;
+        levelDisplay.textContent = `Рівень ${level}`;
+        updateShopButtons();
+      }
     }
-  const px=ox+player.x*scale, pz=oy+player.z*scale;
-  mmCtx.fillStyle='lime'; mmCtx.beginPath(); mmCtx.arc(px,pz,6,0,Math.PI*2); mmCtx.fill();
-  mmCtx.strokeStyle='green';
-  mmCtx.beginPath();
-  mmCtx.moveTo(px,pz);
-  mmCtx.lineTo(px+Math.cos(player.yaw)*24, pz+Math.sin(player.yaw)*24);
-  mmCtx.stroke();
-}
 
-document.getElementById('reset').onclick=()=>{
-  player.x = startPos.x*TILE; player.z = startPos.z*TILE;
-  player.yaw = startPos.yaw; player.pitch = startPos.pitch; syncCamera();
-};
+    function updateShopButtons() {
+      textures.forEach((texture, index) => {
+        const button = document.getElementById(texture.id);
+        if (level < texture.minLevel || (currentTexture >= index && index !== currentTexture)) {
+          button.disabled = true;
+          button.classList.add('disabled-button');
+        } else {
+          button.disabled = false;
+          button.classList.remove('disabled-button');
+        }
+      });
+    }
 
-window.addEventListener('resize',()=>{
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-});
-</script>
+    let autoClickInterval;
+  </script>
 </body>
 </html>
