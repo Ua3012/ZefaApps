@@ -3,11 +3,11 @@
 <head>
 <meta charset='utf-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1.0'>
-<title>3D Лабіринт (без бібліотек)</title>
+<title>3D Лабіринт — виправлено</title>
 <style>
-  html,body { height:100%; margin:0; background:#202020; font-family:Arial, sans-serif; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; margin:0; background:#202020; font-family:Arial, sans-serif; -webkit-tap-highlight-color:transparent; user-select:none; }
   #game { position:relative; width:100vw; height:100vh; overflow:hidden; }
-  canvas { display:block; width:100%; height:100%; background:#808080; touch-action:none; }
+  canvas { display:block; width:100%; height:100%; background:#808080; touch-action:none; cursor: none; }
   /* Джойстик для руху (лівий низ) */
   #joy {
     position:absolute; left:20px; bottom:20px; width:120px; height:120px;
@@ -19,12 +19,10 @@
     background:rgba(0,200,100,0.7); transform:translate(0,0);
     touch-action:none;
   }
-  /* Підказка для огляду праворуч (необов'язково) */
   #info {
     position:absolute; right:10px; top:10px; color:#fff; font-size:13px; background:rgba(0,0,0,0.3);
     padding:8px 10px; border-radius:6px;
   }
-  /* Кнопка reset (відновити позицію) */
   #reset {
     position:absolute; right:10px; bottom:20px; padding:8px 10px; border-radius:6px; background:rgba(255,255,255,0.08);
     color:#fff; border:1px solid rgba(255,255,255,0.06); cursor:pointer;
@@ -41,26 +39,23 @@
 
   <div id='info'>
     WASD / стрілки — рух<br>
-    Миша або дотик справа — огляд
+    Миша або дотик справа — огляд (без натиску)
   </div>
 
   <button id='reset'>Відновити позицію</button>
 </div>
 
 <script>
-/* 3D Лабіринт на чистому JS (raycasting)
-   Автор: ChatGPT (українська версія)
-   Пояснення в коментарях.
+/* 3D Лабіринт — оновлений
+   Камера: реагує на рух миші без натискання (mousemove)
+   Мінімап: стрілку напрямку прибрано
 */
 
-// КОМПОНЕНТИ СЦЕНИ
 const canvas = document.getElementById('screen');
 const ctx = canvas.getContext('2d');
 let W = canvas.width = window.innerWidth;
 let H = canvas.height = window.innerHeight;
 
-// КАРТА ЛАБІРИНТУ: 0 = прохід, 1 = стіна
-// змінюй як хочеш (повинна бути прямокутною решіткою)
 const map = [
   [1,1,1,1,1,1,1,1,1,1,1,1],
   [1,0,0,0,0,0,0,0,0,0,0,1],
@@ -74,33 +69,27 @@ const map = [
   [1,0,0,0,0,0,0,0,0,0,0,1],
   [1,1,1,1,1,1,1,1,1,1,1,1]
 ];
-// Розміри тайлу в "сцені"
 const TILE = 64;
 
-// Гравець: позиція (px,py) у пікселях карти, кут в радіанах
 let player = {
   x: 2.5 * TILE,
   y: 2.5 * TILE,
-  angle: 0,        // куди дивимося (0 = вправо по карті)
-  height: 32,      // "очі" гравця
-  speed: 150,      // рух у пікселях за секунду
-  turnSpeed: 3.0   // поворот при перетягуванні (чутливість)
+  angle: 0,
+  height: 32,
+  speed: 150,
+  turnSpeed: 3.0
 };
 
-// Збережена стартова позиція для reset
 const startState = { x: player.x, y: player.y, angle: player.angle };
 
-// Рендера параметри
-const FOV = Math.PI / 3; // 60 градусів
-let numRays = Math.floor(W / 2); // кількість променів (стовпчиків)
+const FOV = Math.PI / 3;
+let numRays = Math.floor(W / 2);
 const maxDepth = 1000;
 
-// Вхідні дані
 const keys = {};
 window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
 window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
-// Resize canvas
 function resize(){
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
@@ -108,7 +97,6 @@ function resize(){
 }
 window.addEventListener('resize', resize);
 
-// Функція перевірки колізії з картою
 function isWall(px, py){
   const mx = Math.floor(px / TILE);
   const my = Math.floor(py / TILE);
@@ -116,24 +104,14 @@ function isWall(px, py){
   return map[my][mx] !== 0;
 }
 
-// DDA raycasting: повертає об'єкт {distance, wallX, wallY, hitVertical, mapX, mapY}
 function castRay(rx, ry, angle){
-  // напрямок
   const dx = Math.cos(angle);
   const dy = Math.sin(angle);
-
-  // початкова карта
   let mapX = Math.floor(rx / TILE);
   let mapY = Math.floor(ry / TILE);
-
-  // довжина променя до наступної границі x або y
   let sideDistX, sideDistY;
-
-  // довжина променя від одного x/y до наступного x/y
   const deltaDistX = Math.abs(1 / dx) * TILE;
   const deltaDistY = Math.abs(1 / dy) * TILE;
-
-  // кроки (+1 або -1)
   let stepX, stepY;
   if(dx < 0){
     stepX = -1;
@@ -150,13 +128,11 @@ function castRay(rx, ry, angle){
     sideDistY = ((mapY + 1) * TILE - ry) * Math.abs(1 / dy);
   }
 
-  // перехід по карті
   let hit = false;
-  let side = 0; // 0 = вертикальна стіна (x), 1 = горизонтальна (y)
+  let side = 0;
   let distance = 0;
   let hitX = 0, hitY = 0;
 
-  // обмежимо кількість ітерацій
   for(let i = 0; i < 1000; i++){
     if(sideDistX < sideDistY){
       mapX += stepX;
@@ -169,13 +145,9 @@ function castRay(rx, ry, angle){
       sideDistY += deltaDistY;
       side = 1;
     }
-
-    // контролюємо межі масиву
     if(mapY < 0 || mapY >= map.length || mapX < 0 || mapX >= map[0].length) break;
-
     if(map[mapY][mapX] === 1){
       hit = true;
-      // позиція перетину в пікселях
       hitX = rx + dx * distance;
       hitY = ry + dy * distance;
       break;
@@ -183,121 +155,71 @@ function castRay(rx, ry, angle){
   }
 
   if(!hit) return { distance: maxDepth, wallX:0, wallY:0, hitVertical:false, mapX:-1, mapY:-1 };
-
-  // повертаємо дані, distance уже у "пікселях" по напрямку променя
   return { distance: distance, wallX: hitX, wallY: hitY, hitVertical: side === 0, mapX: mapX, mapY: mapY };
 }
 
-// Малюємо один кадр
 let lastTime = performance.now();
 function frame(now){
   const dt = (now - lastTime) / 1000;
   lastTime = now;
-
   updatePlayer(dt);
   renderScene();
-
   requestAnimationFrame(frame);
 }
 
-// Оновлення позиції гравця залежно від клавіш/джойстика
-let moveJoy = { x:0, y:0 }; // x: ліво-право, y: вперед-назад від джойстика
+let moveJoy = { x:0, y:0 };
 function updatePlayer(dt){
-  // клавіатура
   let forward = 0, strafe = 0;
   if(keys['w'] || keys['arrowup']) forward += 1;
   if(keys['s'] || keys['arrowdown']) forward -= 1;
   if(keys['a'] || keys['arrowleft']) strafe -= 1;
   if(keys['d'] || keys['arrowright']) strafe += 1;
-
-  // джойстик додається
   forward += moveJoy.y;
   strafe += moveJoy.x;
-
-  // нормалізуємо, щоб швидкість не перевищувала
   const mag = Math.hypot(forward, strafe) || 1;
   forward /= mag;
   strafe /= mag;
-
-  // рух у світових координатах: рух вперед/назад за кутом гравця + бічний
   const vx = (Math.cos(player.angle) * forward - Math.sin(player.angle) * strafe) * player.speed * dt;
   const vy = (Math.sin(player.angle) * forward + Math.cos(player.angle) * strafe) * player.speed * dt;
-
-  // перевірка колізій: крокуємо по x і y окремо
   let nx = player.x + vx;
   let ny = player.y + vy;
-
-  // перевірка невеликої відстані від стін (padding)
   const pad = 18;
-
-  // x-координата
-  if(!isWall(nx + pad * Math.sign(vx), player.y)){
-    player.x = nx;
-  } else {
-    // якщо є зіткнення, не рухатися по x
-  }
-  // y-координата
-  if(!isWall(player.x, ny + pad * Math.sign(vy))){
-    player.y = ny;
-  }
+  if(!isWall(nx + pad * Math.sign(vx), player.y)) player.x = nx;
+  if(!isWall(player.x, ny + pad * Math.sign(vy))) player.y = ny;
 }
 
-// Рендер сцени raycasting
 function renderScene(){
-  // очищення
   ctx.clearRect(0,0,W,H);
-
-  // небо та підлога
   const horizon = Math.floor(H / 2);
-  ctx.fillStyle = '#7fbfff'; // небо
+  ctx.fillStyle = '#7fbfff';
   ctx.fillRect(0, 0, W, horizon);
-  ctx.fillStyle = '#404040'; // підлога
+  ctx.fillStyle = '#404040';
   ctx.fillRect(0, horizon, W, H - horizon);
-
-  // проекція
   const rayStep = FOV / numRays;
   const distToProjPlane = (W / 2) / Math.tan(FOV / 2);
 
-  // кожен промінь
   for(let i = 0; i < numRays; i++){
-    // кут променя
     const rayAngle = player.angle - FOV/2 + i * rayStep;
     const ray = castRay(player.x, player.y, rayAngle);
-
-    // скоректуємо fisheye (щоб стіни не викривлялися)
     const correctedDist = ray.distance * Math.cos(rayAngle - player.angle);
-
-    // висота стіни на екрані
     const wallHeight = (TILE / correctedDist) * distToProjPlane;
     const wallTop = Math.floor(horizon - wallHeight / 2);
     const wallBottom = Math.floor(horizon + wallHeight / 2);
-
-    // просте затінення: чим далі - тим темніше
     const shade = Math.max(0.2, 1 - correctedDist / 800);
-    const baseColor = ray.hitVertical ? 200 : 160; // різні тони для вертик/гориз
+    const baseColor = ray.hitVertical ? 200 : 160;
     const colorVal = Math.floor(baseColor * shade);
     const col = 'rgb(' + colorVal + ',' + Math.floor(colorVal*0.9) + ',' + Math.floor(colorVal*0.7) + ')';
-
-    // ширина стовпчика
     const stripW = W / numRays;
     const x = Math.floor(i * stripW);
-
-    // малюємо стіну як вертикальний прямокутник
     ctx.fillStyle = col;
     ctx.fillRect(x, wallTop, Math.ceil(stripW)+1, Math.max(0, wallBottom - wallTop));
-
-    // малюємо трохи тіні на основі кута попадання
-    // (необов'язково) - тонка горизонтальна лінія
-    // можна додати текстуру/фактуру — але без зовнішніх ресурсів опустимо.
   }
 
-  // мінімальна міні-карта у верхньому лівому куті (зручність)
   drawMiniMap();
 }
 
-// Малюємо просту міні-карту
 function drawMiniMap(){
-  const scale = 0.18; // масштаб міні-карти
+  const scale = 0.18;
   const mmW = map[0].length * TILE * scale;
   const mmH = map.length * TILE * scale;
   const pad = 10;
@@ -308,70 +230,57 @@ function drawMiniMap(){
 
   for(let y = 0; y < map.length; y++){
     for(let x = 0; x < map[0].length; x++){
-      if(map[y][x] === 1) ctx.fillStyle = '#222';
-      else ctx.fillStyle = '#ddd';
+      ctx.fillStyle = map[y][x] === 1 ? '#222' : '#ddd';
       ctx.fillRect(pad + x * TILE * scale, pad + y * TILE * scale, TILE * scale - 1, TILE * scale - 1);
     }
   }
 
-  // гравець на міні-карті
+  // гравець на міні-карті (без стрілки напрямку)
   ctx.fillStyle = 'lime';
+  const px = pad + (player.x / TILE) * TILE * scale;
+  const py = pad + (player.y / TILE) * TILE * scale;
   ctx.beginPath();
-  ctx.arc(pad + (player.x / TILE) * TILE * scale, pad + (player.y / TILE) * TILE * scale, 6, 0, Math.PI * 2);
+  ctx.arc(px, py, 6, 0, Math.PI * 2);
   ctx.fill();
-
-  // напрям гравця
-  ctx.strokeStyle = 'yellow';
-  ctx.beginPath();
-  const nx = pad + (player.x / TILE) * TILE * scale;
-  const ny = pad + (player.y / TILE) * TILE * scale;
-  ctx.moveTo(nx, ny);
-  ctx.lineTo(nx + Math.cos(player.angle) * 18, ny + Math.sin(player.angle) * 18);
-  ctx.stroke();
 
   ctx.restore();
 }
 
-// Миша: click+drag для огляду (desktop)
-// Праворуч драг або миша аналогічно: дозволяємо огляд, навіть якщо торкаєшся правої частини екрану
-let draggingView = false;
-let lastPointerX = 0, lastPointerY = 0;
+// Миша: реагує на рух без натискання
+let lastPointerX = null;
+let lastPointerY = null;
 
-canvas.addEventListener('mousedown', e => {
-  draggingView = true;
+// при вході на полотно ініціалізуємо останні координати — щоб уникнути великого стрибка
+canvas.addEventListener('mouseenter', e => {
   lastPointerX = e.clientX;
   lastPointerY = e.clientY;
-  e.preventDefault();
 });
-window.addEventListener('mouseup', e => { draggingView = false; });
 
-window.addEventListener('mousemove', e => {
-  if(!draggingView) return;
+// Завжди слухаємо рух миші і обертаємо камеру
+canvas.addEventListener('mousemove', e => {
+  if(lastPointerX === null){ lastPointerX = e.clientX; lastPointerY = e.clientY; return; }
   const dx = e.clientX - lastPointerX;
-  const dy = e.clientY - lastPointerY;
   lastPointerX = e.clientX;
-  lastPointerY = e.clientY;
-  // горизонтальний рух обертає камеру
   player.angle += dx * -0.005 * player.turnSpeed;
-  // можна додати вертикальний огляд, але у простому raycaster ми не робимо pitch
 });
 
-// Сенсор: драг праворуч для огляду, ліворуч — джойстик контролю руху
+// Якщо курсор вийшов з полотна — обнуляємо lastPointer, щоб при поверненні не було стрибка
+canvas.addEventListener('mouseleave', () => {
+  lastPointerX = null;
+  lastPointerY = null;
+});
+
+// Сенсор: драг праворуч для огляду
 let touchIdView = null;
-let touchIdJoy = null;
-let lastTouchX = 0, lastTouchY = 0;
+let lastTouchX = 0;
 
 canvas.addEventListener('touchstart', e => {
   for(const t of e.changedTouches){
-    // якщо дотик з правого боку екрану — призначити для огляду
     if(t.clientX > window.innerWidth * 0.4 && touchIdView === null){
       touchIdView = t.identifier;
       lastTouchX = t.clientX;
-      lastTouchY = t.clientY;
     }
-    // інші торкання оброблює джойстик знизу (реально джойстик - в окремому елементі)
   }
-  e.preventDefault();
 }, { passive:false });
 
 canvas.addEventListener('touchmove', e => {
@@ -391,13 +300,12 @@ canvas.addEventListener('touchend', e => {
   }
 }, { passive:false });
 
-// Віртуальний джойстик (елементи в DOM)
+// Джойстик
 const joy = document.getElementById('joy');
 const knob = document.getElementById('knob');
 let joyRect = joy.getBoundingClientRect();
 window.addEventListener('resize', () => joyRect = joy.getBoundingClientRect());
 
-// Обробка дотиків/миші на джойстику
 let knobDragging = false;
 let knobId = null;
 let knobCenter = { x:0, y:0 };
@@ -405,22 +313,18 @@ function updateKnobCenter(){ joyRect = joy.getBoundingClientRect(); knobCenter.x
 updateKnobCenter();
 
 function setKnobPos(normX, normY){
-  // normX,normY в діапазоні [-1,1]
   const max = (joyRect.width - knob.offsetWidth) / 2;
   const px = normX * max;
   const py = normY * max;
   knob.style.transform = 'translate(' + px + 'px,' + py + 'px)';
-  // запис для руху гравця: вперед = -y, бок = x
   moveJoy.x = normX;
   moveJoy.y = -normY;
 }
-
 function resetKnob(){
   knob.style.transform = 'translate(0,0)';
   moveJoy.x = 0; moveJoy.y = 0;
 }
 
-// миша на джойстику (для десктопів з сенсорними панелями)
 knob.addEventListener('mousedown', e => {
   knobDragging = true;
   updateKnobCenter();
@@ -439,7 +343,6 @@ window.addEventListener('mousemove', e => {
   setKnobPos(nx, ny);
 });
 
-// сенсорні події для джойстика
 joy.addEventListener('touchstart', e => {
   for(const t of e.changedTouches){
     knobId = t.identifier;
@@ -483,14 +386,12 @@ joy.addEventListener('touchend', e => {
   e.preventDefault();
 }, { passive:false });
 
-// Кнопка reset
 document.getElementById('reset').addEventListener('click', () => {
   player.x = startState.x; player.y = startState.y; player.angle = startState.angle;
 });
 
-// Запуск
+// Старт
 requestAnimationFrame(frame);
-
 </script>
 </body>
 </html>
