@@ -3,59 +3,81 @@
 <head>
 <meta charset='utf-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1.0'>
-<title>3D Лабіринт — виправлено</title>
+<title>3D Лабіринт — Three.js</title>
 <style>
-  html,body { height:100%; margin:0; background:#202020; font-family:Arial, sans-serif; -webkit-tap-highlight-color:transparent; user-select:none; }
-  #game { position:relative; width:100vw; height:100vh; overflow:hidden; }
-  canvas { display:block; width:100%; height:100%; background:#808080; touch-action:none; cursor: none; }
-  /* Джойстик для руху (лівий низ) */
-  #joy {
-    position:absolute; left:20px; bottom:20px; width:120px; height:120px;
-    border-radius:50%; background:rgba(0,0,0,0.25); touch-action:none;
-    display:flex; align-items:center; justify-content:center;
-  }
-  #knob {
-    width:56px; height:56px; border-radius:50%;
-    background:rgba(0,200,100,0.7); transform:translate(0,0);
-    touch-action:none;
-  }
-  #info {
-    position:absolute; right:10px; top:10px; color:#fff; font-size:13px; background:rgba(0,0,0,0.3);
-    padding:8px 10px; border-radius:6px;
-  }
-  #reset {
-    position:absolute; right:10px; bottom:20px; padding:8px 10px; border-radius:6px; background:rgba(255,255,255,0.08);
-    color:#fff; border:1px solid rgba(255,255,255,0.06); cursor:pointer;
-  }
+  :root { --ui-bg: rgba(0,0,0,0.35); --ui-fg: #fff; }
+  html,body { height:100%; margin:0; background:#111; font-family:Arial, sans-serif; -webkit-tap-highlight-color:transparent; user-select:none; }
+  #container { position:relative; width:100vw; height:100vh; overflow:hidden; }
+  canvas { display:block; width:100%; height:100%; touch-action:none; }
+
+  /* UI */
+  #joy { position:absolute; left:18px; bottom:18px; width:120px; height:120px; border-radius:50%; background:var(--ui-bg); display:flex; align-items:center; justify-content:center; z-index:20; }
+  #knob { width:56px; height:56px; border-radius:50%; background:rgba(0,200,120,0.9); transform:translate(0,0); touch-action:none; }
+  #info { position:absolute; right:12px; top:12px; color:var(--ui-fg); font-size:13px; background:var(--ui-bg); padding:8px 10px; border-radius:8px; z-index:20; }
+  #reset { position:absolute; right:12px; bottom:18px; padding:8px 10px; border-radius:8px; background:transparent; color:var(--ui-fg); border:1px solid rgba(255,255,255,0.06); cursor:pointer; z-index:20; }
+  #minimap { position:absolute; left:12px; top:12px; width:180px; height:180px; background:rgba(0,0,0,0.25); border-radius:8px; z-index:20; }
+  #minimap canvas { width:100%; height:100%; display:block; }
+  /* приховуємо курсор, бо огляд без натиску */
+  #three-canvas { cursor:none; }
 </style>
 </head>
 <body>
-<div id='game'>
-  <canvas id='screen'></canvas>
+<div id='container'>
+  <!-- Three.js додає canvas автоматично -->
+  <div id='minimap'><canvas id='mm-canvas' width='180' height='180'></canvas></div>
 
-  <div id='joy'>
-    <div id='knob'></div>
-  </div>
+  <div id='joy'><div id='knob'></div></div>
 
-  <div id='info'>
-    WASD / стрілки — рух<br>
-    Миша або дотик справа — огляд (без натиску)
-  </div>
-
+  <div id='info'>WASD / стрілки — рух<br>Миша або дотик справа — огляд (без натиску)</div>
   <button id='reset'>Відновити позицію</button>
 </div>
 
+<!-- Спробуємо завантажити three.js з CDN -->
+<script src='https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.min.js'></script>
+<!-- Якщо CDN блокується у Telegram WebApp — скачай three.min.js і підключи локально:
+     <script src='three.min.js'></script>
+-->
+
 <script>
-/* 3D Лабіринт — оновлений
-   Камера: реагує на рух миші без натискання (mousemove)
-   Мінімап: стрілку напрямку прибрано
+/* Three.js 3D лабіринт
+   - рух: WASD/стрілки + віртуальний джойстик
+   - огляд: mousemove (без кліку) та touchmove справа
+   - міні-карта: показує тільки позицію гравця (без стрілки напряму)
+   Примітка: використовуємо global THREE з підключеного скрипта.
 */
 
-const canvas = document.getElementById('screen');
-const ctx = canvas.getContext('2d');
-let W = canvas.width = window.innerWidth;
-let H = canvas.height = window.innerHeight;
+// перевірка three
+if(typeof THREE === 'undefined'){
+  alert('Three.js не завантажено. Скачай three.min.js і підключи локально або забезпеч CDN.');
+}
 
+// Сцена, камера, рендерер
+const container = document.getElementById('container');
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio ? window.devicePixelRatio : 1);
+renderer.domElement.id = 'three-canvas';
+container.insertBefore(renderer.domElement, container.firstChild);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x7fbfff);
+
+// Камера — від першої особи
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
+camera.position.set(2.5 * 64, 32, 2.5 * 64); // y=height
+camera.rotation.order = 'YXZ'; // yaw (Y) then pitch (X)
+
+// Світло
+const light = new THREE.DirectionalLight(0xffffff, 0.9);
+light.position.set(1,2,1).normalize();
+scene.add(light);
+scene.add(new THREE.AmbientLight(0x606060));
+
+// Простий матеріал для стін/підлоги
+const wallMat = new THREE.MeshStandardMaterial({ color:0x888888 });
+const floorMat = new THREE.MeshStandardMaterial({ color:0x4b4b4b });
+
+// КАРТА лабіринту: 0 = прохід, 1 = стіна
 const map = [
   [1,1,1,1,1,1,1,1,1,1,1,1],
   [1,0,0,0,0,0,0,0,0,0,0,1],
@@ -70,288 +92,102 @@ const map = [
   [1,1,1,1,1,1,1,1,1,1,1,1]
 ];
 const TILE = 64;
+const HALF = TILE/2;
 
-let player = {
+// Генеруємо стіни як BoxGeometry
+const wallGeo = new THREE.BoxGeometry(TILE, TILE, TILE);
+for(let y=0; y<map.length; y++){
+  for(let x=0; x<map[0].length; x++){
+    if(map[y][x] === 1){
+      const mesh = new THREE.Mesh(wallGeo, wallMat);
+      mesh.position.set(x * TILE + HALF, HALF, y * TILE + HALF);
+      scene.add(mesh);
+    }
+  }
+}
+
+// Підлога (один великий плейн)
+const floorGeo = new THREE.PlaneGeometry(map[0].length * TILE, map.length * TILE);
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI/2;
+floor.position.set((map[0].length * TILE)/2, 0, (map.length * TILE)/2);
+scene.add(floor);
+
+// Структура гравця (позиція в "пікселях карти")
+const player = {
   x: 2.5 * TILE,
   y: 2.5 * TILE,
-  angle: 0,
-  height: 32,
-  speed: 150,
-  turnSpeed: 3.0
+  z: 32, // висота очей
+  yaw: 0, // поворот (в радіанах) навколо Y
+  pitch: 0, // нахил камери
+  speed: 150, // px/s
+  turnSpeed: 0.0025
 };
 
-const startState = { x: player.x, y: player.y, angle: player.angle };
+// синхронізуємо camera позицію
+function syncCamera(){
+  camera.position.set(player.x, player.z, player.y);
+  camera.rotation.x = player.pitch;
+  camera.rotation.y = player.yaw;
+}
 
-const FOV = Math.PI / 3;
-let numRays = Math.floor(W / 2);
-const maxDepth = 1000;
+// Ініціалізація
+syncCamera();
 
+// Колізії — перевірка по карті
+function isWallAt(px, pz){
+  const mx = Math.floor(px / TILE);
+  const mz = Math.floor(pz / TILE);
+  if(mz < 0 || mz >= map.length || mx < 0 || mx >= map[0].length) return true;
+  return map[mz][mx] === 1;
+}
+
+// Керування: клавіатура
 const keys = {};
 window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
 window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-
-function resize(){
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-  numRays = Math.floor(W / 2);
-}
-window.addEventListener('resize', resize);
-
-function isWall(px, py){
-  const mx = Math.floor(px / TILE);
-  const my = Math.floor(py / TILE);
-  if(my < 0 || my >= map.length || mx < 0 || mx >= map[0].length) return true;
-  return map[my][mx] !== 0;
-}
-
-function castRay(rx, ry, angle){
-  const dx = Math.cos(angle);
-  const dy = Math.sin(angle);
-  let mapX = Math.floor(rx / TILE);
-  let mapY = Math.floor(ry / TILE);
-  let sideDistX, sideDistY;
-  const deltaDistX = Math.abs(1 / dx) * TILE;
-  const deltaDistY = Math.abs(1 / dy) * TILE;
-  let stepX, stepY;
-  if(dx < 0){
-    stepX = -1;
-    sideDistX = (rx - mapX * TILE) * Math.abs(1 / dx);
-  } else {
-    stepX = 1;
-    sideDistX = ((mapX + 1) * TILE - rx) * Math.abs(1 / dx);
-  }
-  if(dy < 0){
-    stepY = -1;
-    sideDistY = (ry - mapY * TILE) * Math.abs(1 / dy);
-  } else {
-    stepY = 1;
-    sideDistY = ((mapY + 1) * TILE - ry) * Math.abs(1 / dy);
-  }
-
-  let hit = false;
-  let side = 0;
-  let distance = 0;
-  let hitX = 0, hitY = 0;
-
-  for(let i = 0; i < 1000; i++){
-    if(sideDistX < sideDistY){
-      mapX += stepX;
-      distance = sideDistX;
-      sideDistX += deltaDistX;
-      side = 0;
-    } else {
-      mapY += stepY;
-      distance = sideDistY;
-      sideDistY += deltaDistY;
-      side = 1;
-    }
-    if(mapY < 0 || mapY >= map.length || mapX < 0 || mapX >= map[0].length) break;
-    if(map[mapY][mapX] === 1){
-      hit = true;
-      hitX = rx + dx * distance;
-      hitY = ry + dy * distance;
-      break;
-    }
-  }
-
-  if(!hit) return { distance: maxDepth, wallX:0, wallY:0, hitVertical:false, mapX:-1, mapY:-1 };
-  return { distance: distance, wallX: hitX, wallY: hitY, hitVertical: side === 0, mapX: mapX, mapY: mapY };
-}
-
-let lastTime = performance.now();
-function frame(now){
-  const dt = (now - lastTime) / 1000;
-  lastTime = now;
-  updatePlayer(dt);
-  renderScene();
-  requestAnimationFrame(frame);
-}
-
-let moveJoy = { x:0, y:0 };
-function updatePlayer(dt){
-  let forward = 0, strafe = 0;
-  if(keys['w'] || keys['arrowup']) forward += 1;
-  if(keys['s'] || keys['arrowdown']) forward -= 1;
-  if(keys['a'] || keys['arrowleft']) strafe -= 1;
-  if(keys['d'] || keys['arrowright']) strafe += 1;
-  forward += moveJoy.y;
-  strafe += moveJoy.x;
-  const mag = Math.hypot(forward, strafe) || 1;
-  forward /= mag;
-  strafe /= mag;
-  const vx = (Math.cos(player.angle) * forward - Math.sin(player.angle) * strafe) * player.speed * dt;
-  const vy = (Math.sin(player.angle) * forward + Math.cos(player.angle) * strafe) * player.speed * dt;
-  let nx = player.x + vx;
-  let ny = player.y + vy;
-  const pad = 18;
-  if(!isWall(nx + pad * Math.sign(vx), player.y)) player.x = nx;
-  if(!isWall(player.x, ny + pad * Math.sign(vy))) player.y = ny;
-}
-
-function renderScene(){
-  ctx.clearRect(0,0,W,H);
-  const horizon = Math.floor(H / 2);
-  ctx.fillStyle = '#7fbfff';
-  ctx.fillRect(0, 0, W, horizon);
-  ctx.fillStyle = '#404040';
-  ctx.fillRect(0, horizon, W, H - horizon);
-  const rayStep = FOV / numRays;
-  const distToProjPlane = (W / 2) / Math.tan(FOV / 2);
-
-  for(let i = 0; i < numRays; i++){
-    const rayAngle = player.angle - FOV/2 + i * rayStep;
-    const ray = castRay(player.x, player.y, rayAngle);
-    const correctedDist = ray.distance * Math.cos(rayAngle - player.angle);
-    const wallHeight = (TILE / correctedDist) * distToProjPlane;
-    const wallTop = Math.floor(horizon - wallHeight / 2);
-    const wallBottom = Math.floor(horizon + wallHeight / 2);
-    const shade = Math.max(0.2, 1 - correctedDist / 800);
-    const baseColor = ray.hitVertical ? 200 : 160;
-    const colorVal = Math.floor(baseColor * shade);
-    const col = 'rgb(' + colorVal + ',' + Math.floor(colorVal*0.9) + ',' + Math.floor(colorVal*0.7) + ')';
-    const stripW = W / numRays;
-    const x = Math.floor(i * stripW);
-    ctx.fillStyle = col;
-    ctx.fillRect(x, wallTop, Math.ceil(stripW)+1, Math.max(0, wallBottom - wallTop));
-  }
-
-  drawMiniMap();
-}
-
-function drawMiniMap(){
-  const scale = 0.18;
-  const mmW = map[0].length * TILE * scale;
-  const mmH = map.length * TILE * scale;
-  const pad = 10;
-  ctx.save();
-  ctx.globalAlpha = 0.9;
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.fillRect(pad - 4, pad - 4, mmW + 8, mmH + 8);
-
-  for(let y = 0; y < map.length; y++){
-    for(let x = 0; x < map[0].length; x++){
-      ctx.fillStyle = map[y][x] === 1 ? '#222' : '#ddd';
-      ctx.fillRect(pad + x * TILE * scale, pad + y * TILE * scale, TILE * scale - 1, TILE * scale - 1);
-    }
-  }
-
-  // гравець на міні-карті (без стрілки напрямку)
-  ctx.fillStyle = 'lime';
-  const px = pad + (player.x / TILE) * TILE * scale;
-  const py = pad + (player.y / TILE) * TILE * scale;
-  ctx.beginPath();
-  ctx.arc(px, py, 6, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-}
-
-// Миша: реагує на рух без натискання
-let lastPointerX = null;
-let lastPointerY = null;
-
-// при вході на полотно ініціалізуємо останні координати — щоб уникнути великого стрибка
-canvas.addEventListener('mouseenter', e => {
-  lastPointerX = e.clientX;
-  lastPointerY = e.clientY;
-});
-
-// Завжди слухаємо рух миші і обертаємо камеру
-canvas.addEventListener('mousemove', e => {
-  if(lastPointerX === null){ lastPointerX = e.clientX; lastPointerY = e.clientY; return; }
-  const dx = e.clientX - lastPointerX;
-  lastPointerX = e.clientX;
-  player.angle += dx * -0.005 * player.turnSpeed;
-});
-
-// Якщо курсор вийшов з полотна — обнуляємо lastPointer, щоб при поверненні не було стрибка
-canvas.addEventListener('mouseleave', () => {
-  lastPointerX = null;
-  lastPointerY = null;
-});
-
-// Сенсор: драг праворуч для огляду
-let touchIdView = null;
-let lastTouchX = 0;
-
-canvas.addEventListener('touchstart', e => {
-  for(const t of e.changedTouches){
-    if(t.clientX > window.innerWidth * 0.4 && touchIdView === null){
-      touchIdView = t.identifier;
-      lastTouchX = t.clientX;
-    }
-  }
-}, { passive:false });
-
-canvas.addEventListener('touchmove', e => {
-  for(const t of e.changedTouches){
-    if(t.identifier === touchIdView){
-      const dx = t.clientX - lastTouchX;
-      lastTouchX = t.clientX;
-      player.angle += dx * -0.005 * player.turnSpeed;
-    }
-  }
-  e.preventDefault();
-}, { passive:false });
-
-canvas.addEventListener('touchend', e => {
-  for(const t of e.changedTouches){
-    if(t.identifier === touchIdView) touchIdView = null;
-  }
-}, { passive:false });
 
 // Джойстик
 const joy = document.getElementById('joy');
 const knob = document.getElementById('knob');
 let joyRect = joy.getBoundingClientRect();
 window.addEventListener('resize', () => joyRect = joy.getBoundingClientRect());
-
-let knobDragging = false;
-let knobId = null;
-let knobCenter = { x:0, y:0 };
-function updateKnobCenter(){ joyRect = joy.getBoundingClientRect(); knobCenter.x = joyRect.left + joyRect.width/2; knobCenter.y = joyRect.top + joyRect.height/2; }
+let moveJoy = { x:0, y:0 };
+let knobId = null, knobDragging = false;
+function updateKnobCenter(){ joyRect = joy.getBoundingClientRect(); }
 updateKnobCenter();
 
-function setKnobPos(normX, normY){
-  const max = (joyRect.width - knob.offsetWidth) / 2;
-  const px = normX * max;
-  const py = normY * max;
+function setKnobPos(nx, ny){
+  const max = (joyRect.width - knob.offsetWidth)/2;
+  const px = nx * max;
+  const py = ny * max;
   knob.style.transform = 'translate(' + px + 'px,' + py + 'px)';
-  moveJoy.x = normX;
-  moveJoy.y = -normY;
+  moveJoy.x = nx;
+  moveJoy.y = -ny;
 }
-function resetKnob(){
-  knob.style.transform = 'translate(0,0)';
-  moveJoy.x = 0; moveJoy.y = 0;
-}
+function resetKnob(){ knob.style.transform = 'translate(0,0)'; moveJoy.x = 0; moveJoy.y = 0; }
 
-knob.addEventListener('mousedown', e => {
-  knobDragging = true;
-  updateKnobCenter();
-  e.preventDefault();
-});
+knob.addEventListener('mousedown', e => { knobDragging = true; updateKnobCenter(); e.preventDefault(); });
 window.addEventListener('mouseup', e => { knobDragging = false; resetKnob(); });
-
 window.addEventListener('mousemove', e => {
   if(!knobDragging) return;
-  const dx = e.clientX - knobCenter.x;
-  const dy = e.clientY - knobCenter.y;
-  const max = (joyRect.width - knob.offsetWidth) / 2;
-  let nx = dx / max; let ny = dy / max;
+  const dx = e.clientX - (joyRect.left + joyRect.width/2);
+  const dy = e.clientY - (joyRect.top + joyRect.height/2);
+  const max = (joyRect.width - knob.offsetWidth)/2;
+  let nx = dx / max, ny = dy / max;
   const mag = Math.hypot(nx, ny);
   if(mag > 1){ nx /= mag; ny /= mag; }
   setKnobPos(nx, ny);
 });
-
 joy.addEventListener('touchstart', e => {
   for(const t of e.changedTouches){
     knobId = t.identifier;
     knobDragging = true;
     updateKnobCenter();
-    const dx = t.clientX - knobCenter.x;
-    const dy = t.clientY - knobCenter.y;
-    const max = (joyRect.width - knob.offsetWidth) / 2;
-    let nx = dx / max; let ny = dy / max;
+    const dx = t.clientX - (joyRect.left + joyRect.width/2);
+    const dy = t.clientY - (joyRect.top + joyRect.height/2);
+    const max = (joyRect.width - knob.offsetWidth)/2;
+    let nx = dx / max, ny = dy / max;
     const mag = Math.hypot(nx, ny);
     if(mag > 1){ nx /= mag; ny /= mag; }
     setKnobPos(nx, ny);
@@ -359,14 +195,13 @@ joy.addEventListener('touchstart', e => {
   }
   e.preventDefault();
 }, { passive:false });
-
 joy.addEventListener('touchmove', e => {
   for(const t of e.changedTouches){
     if(t.identifier !== knobId) continue;
-    const dx = t.clientX - knobCenter.x;
-    const dy = t.clientY - knobCenter.y;
-    const max = (joyRect.width - knob.offsetWidth) / 2;
-    let nx = dx / max; let ny = dy / max;
+    const dx = t.clientX - (joyRect.left + joyRect.width/2);
+    const dy = t.clientY - (joyRect.top + joyRect.height/2);
+    const max = (joyRect.width - knob.offsetWidth)/2;
+    let nx = dx / max, ny = dy / max;
     const mag = Math.hypot(nx, ny);
     if(mag > 1){ nx /= mag; ny /= mag; }
     setKnobPos(nx, ny);
@@ -374,24 +209,139 @@ joy.addEventListener('touchmove', e => {
   }
   e.preventDefault();
 }, { passive:false });
-
 joy.addEventListener('touchend', e => {
   for(const t of e.changedTouches){
-    if(t.identifier === knobId){
-      knobDragging = false;
-      knobId = null;
-      resetKnob();
+    if(t.identifier === knobId){ knobDragging = false; knobId = null; resetKnob(); }
+  }
+  e.preventDefault();
+}, { passive:false });
+
+// Огляд: миша без натискання (mousemove), а також touch справа
+let lastPointerX = null;
+renderer.domElement.addEventListener('mouseenter', e => { lastPointerX = e.clientX; });
+renderer.domElement.addEventListener('mousemove', e => {
+  if(lastPointerX === null){ lastPointerX = e.clientX; return; }
+  const dx = e.clientX - lastPointerX;
+  lastPointerX = e.clientX;
+  player.yaw -= dx * player.turnSpeed; // мінус — щоб рух миші вправо обертав вправо
+});
+renderer.domElement.addEventListener('mouseleave', () => { lastPointerX = null; });
+
+// Торкання: якщо торкаються праву частину екрану — огляд
+let touchViewId = null;
+let lastTouchX = 0;
+renderer.domElement.addEventListener('touchstart', e => {
+  for(const t of e.changedTouches){
+    if(t.clientX > window.innerWidth * 0.45 && touchViewId === null){
+      touchViewId = t.identifier;
+      lastTouchX = t.clientX;
+    }
+  }
+}, { passive:false });
+renderer.domElement.addEventListener('touchmove', e => {
+  for(const t of e.changedTouches){
+    if(t.identifier === touchViewId){
+      const dx = t.clientX - lastTouchX;
+      lastTouchX = t.clientX;
+      player.yaw -= dx * player.turnSpeed;
     }
   }
   e.preventDefault();
 }, { passive:false });
+renderer.domElement.addEventListener('touchend', e => {
+  for(const t of e.changedTouches){ if(t.identifier === touchViewId) touchViewId = null; }
+}, { passive:false });
 
+// Просте оновлення руху гравця
+let prevTime = performance.now();
+function animate(now){
+  const dt = (now - prevTime) / 1000;
+  prevTime = now;
+
+  // рух: клавіатура + джойстик
+  let forward = 0, strafe = 0;
+  if(keys['w'] || keys['arrowup']) forward += 1;
+  if(keys['s'] || keys['arrowdown']) forward -= 1;
+  if(keys['a'] || keys['arrowleft']) strafe -= 1;
+  if(keys['d'] || keys['arrowright']) strafe += 1;
+  // джойстик
+  forward += moveJoy.y;
+  strafe += moveJoy.x;
+
+  // нормалізація
+  const mag = Math.hypot(forward, strafe) || 1;
+  forward /= mag; strafe /= mag;
+
+  // напрям у світових координатах
+  const vx = (Math.cos(player.yaw) * forward - Math.sin(player.yaw) * strafe) * player.speed * dt;
+  const vz = (Math.sin(player.yaw) * forward + Math.cos(player.yaw) * strafe) * player.speed * dt;
+
+  // колізія: перевіряємо наступну позицію з padding
+  const pad = 18;
+  const nx = player.x + vx;
+  const nz = player.y + vz; // тут player.y відповідає Z у сцені (map y)
+  if(!isWallAt(nx + pad * Math.sign(vx), player.y)) player.x = nx;
+  if(!isWallAt(player.x, nz + pad * Math.sign(vz))) player.y = nz;
+
+  syncCamera();
+
+  renderer.render(scene, camera);
+
+  // оновлюємо міні-карту
+  renderMiniMap();
+
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+
+// Міні-карта (малюємо лише клітинки і позицію гравця без стрілки)
+const mmCanvas = document.getElementById('mm-canvas');
+const mmCtx = mmCanvas.getContext('2d');
+function renderMiniMap(){
+  const W = mmCanvas.width;
+  const H = mmCanvas.height;
+  const scale = Math.min(W / (map[0].length * TILE), H / (map.length * TILE));
+  mmCtx.clearRect(0,0,W,H);
+  mmCtx.save();
+  mmCtx.fillStyle = 'rgba(0,0,0,0.25)';
+  mmCtx.fillRect(0,0,W,H);
+
+  // відмалюємо карту
+  for(let y=0; y<map.length; y++){
+    for(let x=0; x<map[0].length; x++){
+      mmCtx.fillStyle = map[y][x] === 1 ? '#222' : '#ddd';
+      mmCtx.fillRect(x * TILE * scale + 4, y * TILE * scale + 4, TILE * scale - 2, TILE * scale - 2);
+    }
+  }
+  // гравець як зелений круг (без стрілки напряму)
+  const px = player.x * scale + 4;
+  const py = player.y * scale + 4;
+  mmCtx.fillStyle = 'lime';
+  mmCtx.beginPath();
+  mmCtx.arc(px, py, 6, 0, Math.PI * 2);
+  mmCtx.fill();
+
+  mmCtx.restore();
+}
+
+// Кнопка reset
 document.getElementById('reset').addEventListener('click', () => {
-  player.x = startState.x; player.y = startState.y; player.angle = startState.angle;
+  player.x = 2.5 * TILE;
+  player.y = 2.5 * TILE;
+  player.yaw = 0; player.pitch = 0;
+  syncCamera();
 });
 
-// Старт
-requestAnimationFrame(frame);
+// Додаткове: підготуємо resize
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  joyRect = joy.getBoundingClientRect();
+});
+
+// Порада: Pointer Lock (для безмежного руху миші) вимагає кліку — якщо захочеш, додам
+// кнопку 'Увімкнути pointer lock' і реалізую. Тут — огляд по mousemove / touchmove без кліку.
 </script>
 </body>
 </html>
