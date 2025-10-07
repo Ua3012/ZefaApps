@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЗєфаБургєр - Гра</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #222;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            border: 2px solid #fff;
+        }
+        #gameCanvas {
+            background-color: #333;
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+        #instructions {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 10;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="ui">
+            <div>Рахунок: <span id="score">0</span></div>
+            <div>Рівень: <span id="level">1</span></div>
+        </div>
+        <div id="instructions">
+            Управління: Миша - приціл і постріл. Пробіл - готувати бургер.
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const levelEl = document.getElementById('level');
+
+        // Ігрові змінні
+        let score = 0;
+        let level = 1;
+        let burgers = []; // Готові бургери для стрільби
+        let chickens = []; // Чікєн Зєфи
+        let mouseX = 0;
+        let mouseY = 0;
+        let isCooking = false;
+        let cookingTime = 0;
+        let maxCookingTime = 2000; // 2 секунди для приготування
+        let gameRunning = true;
+
+        // Завантаження зображень (плейсхолдери, бо zefaburgerchickenzefa.png не надано)
+        const burgerImg = new Image();
+        burgerImg.src = 'https://via.placeholder.com/50x50/ff0000/ffffff?text=🍔'; // Плейсхолдер для бургера
+
+        const chickenImg = new Image();
+        chickenImg.src = 'https://via.placeholder.com/60x60/ffff00/000000?text=🐔'; // Плейсхолдер для чікєн
+
+        // Проста 2.5D проекція
+        function project3D(x, y, z) {
+            const fov = 300; // Поле зору
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const scale = fov / (fov + z);
+            return {
+                x: centerX + x * scale,
+                y: centerY + y * scale,
+                size: scale * 20 // Розмір для перспективи
+            };
+        }
+
+        // Клас для бургера
+        class Burger {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.speed = 5;
+                this.size = 25;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.98; // Тертя
+                this.vy *= 0.98;
+                this.vy += 0.2; // Гравітація
+            }
+
+            draw() {
+                ctx.drawImage(burgerImg, this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+            }
+
+            isOffScreen() {
+                return this.x < 0 || this.x > canvas.width || this.y > canvas.height;
+            }
+        }
+
+        // Клас для чікєн Зєфа
+        class ChickenZefa {
+            constructor() {
+                this.x3d = (Math.random() - 0.5) * 400; // 3D позиція
+                this.y3d = (Math.random() - 0.5) * 300;
+                this.z3d = Math.random() * 500 + 100; // Глибина
+                this.size3d = 60;
+                this.health = 3;
+                this.rotation = 0;
+            }
+
+            update() {
+                this.z3d -= 1; // Рух ближче
+                this.rotation += 0.05;
+                if (this.z3d < 50) {
+                    this.z3d += 2; // Віддаляється
+                }
+            }
+
+            draw() {
+                const proj = project3D(this.x3d, this.y3d, this.z3d);
+                const size = this.size3d * (proj.size / 20); // Перспективний розмір
+                ctx.save();
+                ctx.translate(proj.x, proj.y);
+                ctx.rotate(this.rotation);
+                ctx.drawImage(chickenImg, -size/2, -size/2, size, size);
+                ctx.restore();
+            }
+
+            hit(burgerX, burgerY) {
+                const proj = project3D(this.x3d, this.y3d, this.z3d);
+                const dist = Math.sqrt((burgerX - proj.x)**2 + (burgerY - proj.y)**2);
+                return dist < proj.size / 2;
+            }
+        }
+
+        // Події миші
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('click', () => {
+            if (burgers.length > 0 && gameRunning) {
+                const burger = burgers.pop();
+                const dx = mouseX - canvas.width / 2;
+                const dy = mouseY - canvas.height / 2;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                burger.vx = (dx / dist) * burger.speed;
+                burger.vy = (dy / dist) * burger.speed;
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !isCooking && gameRunning) {
+                isCooking = true;
+                cookingTime = Date.now();
+            }
+        });
+
+        // Основний цикл гри
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Приготування бургера
+            if (isCooking) {
+                const elapsed = Date.now() - cookingTime;
+                if (elapsed >= maxCookingTime) {
+                    burgers.push(new Burger(canvas.width / 2, canvas.height - 50));
+                    isCooking = false;
+                } else {
+                    ctx.fillStyle = 'yellow';
+                    ctx.fillRect(canvas.width / 2 - 25, canvas.height - 50, 50, 20);
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(canvas.width / 2 - 25, canvas.height - 50, (elapsed / maxCookingTime) * 50, 20);
+                }
+            } else {
+                ctx.fillStyle = 'green';
+                ctx.fillRect(canvas.width / 2 - 25, canvas.height - 50, 50, 20);
+                ctx.fillStyle = 'white';
+                ctx.font = '12px Arial';
+                ctx.fillText('Гот.', canvas.width / 2 - 20, canvas.height - 35);
+            }
+
+            // Оновлення та малювання бургерів
+            for (let i = burgers.length - 1; i >= 0; i--) {
+                const burger = burgers[i];
+                burger.update();
+                burger.draw();
+                if (burger.isOffScreen()) {
+                    burgers.splice(i, 1);
+                }
+            }
+
+            // Спавн чікєн
+            if (Math.random() < 0.02 * level) {
+                chickens.push(new ChickenZefa());
+            }
+
+            // Оновлення та малювання чікєн
+            for (let i = chickens.length - 1; i >= 0; i--) {
+                const chicken = chickens[i];
+                chicken.update();
+                chicken.draw();
+
+                // Перевірка попадання
+                for (let j = burgers.length - 1; j >= 0; j--) {
+                    const burger = burgers[j];
+                    if (chicken.hit(burger.x, burger.y)) {
+                        chicken.health--;
+                        burgers.splice(j, 1);
+                        if (chicken.health <= 0) {
+                            chickens.splice(i, 1);
+                            score += 10 * level;
+                            scoreEl.textContent = score;
+                            if (score % 100 === 0) {
+                                level++;
+                                levelEl.textContent = level;
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                if (chicken.z3d < 0) {
+                    chickens.splice(i, 1);
+                    gameRunning = false;
+                }
+            }
+
+            // Приціл
+            ctx.strokeStyle = 'red';
+            ctx.beginPath();
+            ctx.moveTo(mouseX - 10, mouseY);
+            ctx.lineTo(mouseX + 10, mouseY);
+            ctx.moveTo(mouseX, mouseY - 10);
+            ctx.lineTo(mouseX, mouseY + 10);
+            ctx.stroke();
+
+            if (gameRunning) {
+                requestAnimationFrame(gameLoop);
+            } else {
+                ctx.fillStyle = 'red';
+                ctx.font = '48px Arial';
+                ctx.fillText('Гра закінчена! Рахунок: ' + score, 200, 300);
+            }
+        }
+
+        // Запуск
+        gameLoop();
+    </script>
+</body>
+</html>
