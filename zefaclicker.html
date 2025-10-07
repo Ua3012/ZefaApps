@@ -6,56 +6,191 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body { height: 100%; margin: 0; overflow: hidden; }
-    body { background: url('zefaclickerbackgroundtexture.png') no-repeat center center fixed; background-size: cover; font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
-    .coin-counter { background: rgba(0,0,0,0.7); color: #fff; border-radius: 12px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.18); padding: 4px 16px 4px 10px; display: flex; align-items: center; font-weight: bold; z-index: 25; }
-    .shop { display: none; position: absolute; top: 60px; left: 10px; background-color: rgba(0, 0, 0, 0.8); color: white; padding: 20px 18px; border-radius: 8px; z-index: 10; min-width: 320px; border: 2px solid #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    body {
+      background: url('zefaclickerbackgroundtexture.png') no-repeat center center fixed;
+      background-size: cover;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      position: relative;
+    }
+
+    .coin-counter {
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      border-radius: 12px;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      padding: 4px 16px 4px 10px;
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+    }
+
+    .shop {
+      display: none;
+      position: absolute;
+      top: 60px;
+      left: 10px;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px 18px;
+      border-radius: 8px;
+      z-index: 25;
+      min-width: 320px;
+      border: 2px solid #fff;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
     .shop.active { display: block; }
-    .shop-texture-thumb { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; box-shadow: 0 0 6px #0007; background: #222; margin-right: 10px; border: 2px solid #fff; }
-    .upgrade-button { transition: all 0.3s ease; display: flex; align-items: center; gap: 10px; width: 100%; }
+
+    .shop-texture-thumb {
+      width: 40px; height: 40px; object-fit: contain;
+      border-radius: 6px; box-shadow: 0 0 6px #0007;
+      background: #222; margin-right: 10px; border: 2px solid #fff;
+    }
+
+    .upgrade-button {
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
     .upgrade-button:hover { transform: scale(1.1); background-color: #10b981; }
-    .shop-label { display: flex; align-items: center; gap: 8px; font-size: 1.07em; text-align: left; flex: 1; }
-    .shop-level-label { color: #eee; font-size: 0.98em; margin-left: 50px; opacity: 0.9; margin-top: -6px; margin-bottom: 8px; font-style: italic; }
+
+    .shop-label { display: flex; align-items: center; gap: 8px; flex: 1; }
+
+    .shop-level-label {
+      color: #eee; font-size: 0.95em;
+      margin-left: 50px; opacity: 0.9;
+      margin-top: -4px; margin-bottom: 8px; font-style: italic;
+    }
+
     .disabled-button { opacity: 0.5; cursor: not-allowed; }
-    .text-panel { background: rgba(0,0,0,0.7); color: #fff; padding: 14px 24px; border-radius: 14px; border: 2px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.3); margin-bottom: 12px; text-align: center; max-width: 380px; }
-    .zefa-header { position: absolute; top: 18px; left: 0; width: 100%; text-align: center; z-index: 30; font-size: 2.5rem; font-weight: bold; color: #fff; text-shadow: 2px 2px 10px #000, 0 2px 2px #10b981; letter-spacing: 2px; pointer-events: none; user-select: none; }
-    #gameArea { cursor: pointer; transition: transform 0.1s; border-radius: 0; background: none; border: none; outline: none; width: 128px; height: 128px; object-fit: contain; }
+
+    .text-panel {
+      background: rgba(0,0,0,0.7);
+      color: #fff; padding: 10px 18px;
+      border-radius: 14px; border: 2px solid #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      margin-bottom: 12px; text-align: center;
+      max-width: 380px;
+    }
+
+    .zefa-header {
+      position: absolute;
+      top: 70px;
+      left: 0; width: 100%;
+      text-align: center;
+      z-index: 20;
+      font-size: 2.5rem; font-weight: bold;
+      color: #fff;
+      text-shadow: 2px 2px 10px #000, 0 2px 2px #10b981;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    #gameArea {
+      cursor: pointer;
+      transition: transform 0.1s;
+      background: none;
+      border: none;
+      outline: none;
+      width: 128px;
+      height: 128px;
+      object-fit: contain;
+    }
+
     #gameArea.clicked { transform: scale(0.9); }
-    #progressBar { width: 300px; height: 20px; background-color: #e0e0e0; border-radius: 10px; overflow: hidden; margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+
+    #progressBar {
+      width: 300px; height: 20px;
+      background-color: #e0e0e0;
+      border-radius: 10px; overflow: hidden;
+      margin-bottom: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
     #progress { height: 100%; background-color: #4CAF50; width: 0%; transition: width 0.5s; }
-    #shopButton { position: absolute; top: 10px; left: 10px; background-color: #ff4444; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; z-index: 20; }
+
+    #shopButton {
+      position: absolute;
+      top: 10px; left: 10px;
+      background-color: #ff4444; color: white;
+      padding: 10px 20px; border-radius: 5px;
+      cursor: pointer; font-weight: bold;
+      z-index: 30;
+    }
+
     #shopButton:hover { background-color: #cc0000; }
-    .back { position: fixed; bottom: 20px; left: 20px; background-color: #555; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; z-index: 20; transition: 0.3s; }
+
+    .back {
+      position: fixed; bottom: 20px; left: 20px;
+      background-color: #555; color: white;
+      padding: 10px 20px; border-radius: 5px;
+      cursor: pointer; font-weight: bold;
+      z-index: 15; transition: 0.3s;
+    }
+
     .back:hover { background-color: #333; }
+
+    #zefaCoinTop {
+      position: absolute;
+      top: 10px; right: 10px;
+      z-index: 30;
+    }
+
+    #zefaCoinBottom {
+      position: fixed;
+      bottom: 20px; right: 20px;
+      z-index: 5;
+    }
   </style>
 </head>
 <body>
-  <div class="zefa-header">ЗєфаКлікєр</div>
-  <button class="back" onclick="location.href='zefagarymenu.html'">⬅ Назад до меню</button>
-  <div id="zefaCoin" class="absolute top-4 right-4 coin-counter">
-    <img src="zefacoin.png" alt="ZefaCoin" class="w-8 h-8 mr-2">
-    <span id="zefaCoinCount" class="text-2xl font-bold">0</span>
-  </div>
   <div id="shopButton">Магаз</div>
+
+  <div id="zefaCoinTop" class="coin-counter">
+    <img src="zefacoin.png" class="w-8 h-8 mr-2">
+    <span id="zefaCoinCountTop" class="text-2xl font-bold">0</span>
+  </div>
+
+  <div class="zefa-header">ЗєфаКлікєр</div>
+
   <div id="shop" class="shop">
     <div id="textureShopList"></div>
     <button id="upgradeClick" class="upgrade-button bg-green-600 text-white px-4 py-2 rounded-lg mb-2 mt-3"></button>
     <button id="upgradeAuto" class="upgrade-button bg-blue-600 text-white px-4 py-2 rounded-lg mb-2"></button>
   </div>
-  <div id="zefaCoinTop" class="coin-counter flex items-center justify-center w-full mt-4 mx-auto" style="max-width: 160px;">
-    <img src="zefacoin.png" alt="ZefaCoin" class="w-6 h-6 mr-2">
-    <span id="zefaCoinCountTop" class="text-xl font-bold">0</span>
-  </div>
+
   <div id="level" class="text-panel py-1 px-3 mb-2" style="max-width: 150px;">Лєвєл 1</div>
   <div id="progressBar"><div id="progress"></div></div>
+
   <img id="gameArea" src="zefaclickerbuttontexture1.png">
+
+  <div id="zefaCoinBottom" class="coin-counter">
+    <img src="zefacoin.png" class="w-6 h-6 mr-2">
+    <span id="zefaCoinCount" class="text-xl font-bold">0</span>
+  </div>
+
+  <button class="back" onclick="location.href='zefagarymenu.html'">⬅ Назад до меню</button>
   <audio id="clickSound" src="Sound1.aac"></audio>
+
   <script>
-    let userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest';
-    let savedData = JSON.parse(localStorage.getItem('zefaData_' + userId)) || { coins: 0, level: 1, currentTexture: 0, clickValue: 1, autoClickValue: 0, autoClickSpeed: 1000 };
-    let zefaCoin = savedData.coins, clickValue = savedData.clickValue, autoClickValue = savedData.autoClickValue, autoClickSpeed = savedData.autoClickSpeed, currentTexture = savedData.currentTexture, textureBonus = 0;
-    let upgradeClickCost = 500, upgradeAutoCost = 1000, level = savedData.level, autoClickInterval = null;
+    let userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest'
+    let savedData = JSON.parse(localStorage.getItem('zefaData_' + userId)) || { coins: 0, level: 1, currentTexture: 0, clickValue: 1, autoClickValue: 0, autoClickSpeed: 1000 }
+    let zefaCoin = savedData.coins, clickValue = savedData.clickValue, autoClickValue = savedData.autoClickValue, autoClickSpeed = savedData.autoClickSpeed, currentTexture = savedData.currentTexture, textureBonus = 0
+    let upgradeClickCost = 500, upgradeAutoCost = 1000, level = savedData.level, autoClickInterval = null
     const texturePaths = ['zefaclickerbuttontexture1.png','zefaclickerbuttontexture2.png','zefaclickerbuttontexture3.png','zefaclickerbuttontexture4.png','zefaclickerbuttontexture5.png','zefaclickerbuttontexture6.png','zefaclickerbuttontexture7.png','zefaclickerbuttontexture8.png','zefaclickerbuttontexture9.png','zefaclickerbuttontexture10.png','zefaclickerbuttontexture11.png','zefaclickerbuttontexture12.png']
     const textures = [{ id: 'texture1', cost: 0, bonus: 0, minLevel: 1 },{ id: 'texture2', cost: 1000, bonus: 5, minLevel: 2 },{ id: 'texture3', cost: 2000, bonus: 10, minLevel: 3 },{ id: 'texture4', cost: 4000, bonus: 20, minLevel: 4 },{ id: 'texture5', cost: 7000, bonus: 30, minLevel: 5 },{ id: 'texture6', cost: 10000, bonus: 40, minLevel: 6 },{ id: 'texture7', cost: 14000, bonus: 50, minLevel: 7 },{ id: 'texture8', cost: 19000, bonus: 60, minLevel: 8 },{ id: 'texture9', cost: 25000, bonus: 70, minLevel: 9 },{ id: 'texture10', cost: 32000, bonus: 80, minLevel: 10 },{ id: 'texture11', cost: 40000, bonus: 100, minLevel: 100 },{ id: 'texture12', cost: 48000, bonus: 100, minLevel: 100 }]
+
     const zefaCoinCount = document.getElementById('zefaCoinCount')
     const zefaCoinCountTop = document.getElementById('zefaCoinCountTop')
     const gameArea = document.getElementById('gameArea')
@@ -67,12 +202,8 @@
 
     function saveData() {
       localStorage.setItem('zefaData_' + userId, JSON.stringify({
-        coins: zefaCoin,
-        level: level,
-        currentTexture: currentTexture,
-        clickValue: clickValue,
-        autoClickValue: autoClickValue,
-        autoClickSpeed: autoClickSpeed
+        coins: zefaCoin, level: level, currentTexture: currentTexture,
+        clickValue: clickValue, autoClickValue: autoClickValue, autoClickSpeed: autoClickSpeed
       }))
     }
 
@@ -89,7 +220,7 @@
         thumb.className = 'shop-texture-thumb'
         const label = document.createElement('span')
         label.className = 'shop-label'
-        label.innerHTML = `<span style="font-weight:bold;font-size:1.12em;">${index+1}</span> — ${texture.cost ? texture.cost + ' ЗєфаКоїнів' : 'Халява'}`
+        label.innerHTML = `<span style="font-weight:bold;">${index+1}</span> — ${texture.cost ? texture.cost + ' ЗєфаКоїнів' : 'Халява'}`
         btn.appendChild(thumb)
         btn.appendChild(label)
         btn.onclick = () => {
@@ -97,9 +228,7 @@
             zefaCoin -= texture.cost
             currentTexture = index
             textureBonus = texture.bonus
-            updateDisplay()
-            updateShopButtons()
-            saveData()
+            updateDisplay(); updateShopButtons(); saveData()
           }
         }
         container.appendChild(btn)
@@ -125,23 +254,22 @@
       clickSound.currentTime = 0
       clickSound.play()
       setTimeout(() => gameArea.classList.remove('clicked'), 100)
-      updateProgress()
-      updateShopButtons()
-      saveData()
+      updateProgress(); updateShopButtons(); saveData()
     }
 
     const upgradeClick = document.getElementById('upgradeClick')
     const upgradeAuto = document.getElementById('upgradeAuto')
+
     upgradeClick.onclick = () => {
       if (zefaCoin >= upgradeClickCost) {
         zefaCoin -= upgradeClickCost
         clickValue *= 1.05
         upgradeClickCost = Math.floor(upgradeClickCost * 1.5)
         upgradeClick.textContent = `Апграде клік - ${upgradeClickCost} ЗєфаКоїнів`
-        updateDisplay()
-        saveData()
+        updateDisplay(); saveData()
       }
     }
+
     upgradeAuto.onclick = () => {
       if (zefaCoin >= upgradeAutoCost) {
         zefaCoin -= upgradeAutoCost
@@ -152,13 +280,9 @@
         clearInterval(autoClickInterval)
         autoClickInterval = setInterval(() => {
           zefaCoin += autoClickValue
-          updateDisplay()
-          updateProgress()
-          updateShopButtons()
-          saveData()
+          updateDisplay(); updateProgress(); updateShopButtons(); saveData()
         }, autoClickSpeed)
-        updateDisplay()
-        saveData()
+        updateDisplay(); saveData()
       }
     }
 
@@ -175,14 +299,16 @@
       textures.forEach((texture, index) => {
         const button = document.getElementById(texture.id)
         if (!button) return
-        if (level < texture.minLevel || (currentTexture >= index && index !== currentTexture)) { button.disabled = true; button.classList.add('disabled-button') } 
-        else { button.disabled = false; button.classList.remove('disabled-button') }
+        if (level < texture.minLevel || (currentTexture >= index && index !== currentTexture)) {
+          button.disabled = true; button.classList.add('disabled-button')
+        } else {
+          button.disabled = false; button.classList.remove('disabled-button')
+        }
         button.style.outline = currentTexture === index ? '3px solid #10b981' : ''
       })
     }
 
-    updateDisplay()
-    updateShopButtons()
+    updateDisplay(); updateShopButtons()
     upgradeClick.textContent = `Апграде клік - ${upgradeClickCost} ЗєфаКоїнів`
     upgradeAuto.textContent = `Автоклікєр - ${upgradeAutoCost} ЗєфаКоїнів`
   </script>
