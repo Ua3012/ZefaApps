@@ -155,15 +155,36 @@
     #shopButton:hover {
       background-color: #cc0000;
     }
+    .back {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #555;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      z-index: 20;
+      transition: 0.3s;
+    }
+    .back:hover {
+      background-color: #333;
+    }
   </style>
 </head>
 <body class='flex flex-col items-center justify-center text-white relative'>
   <div class='zefa-header'>ЗєфаКлікєр</div>
+
+  <button class="back" onclick="location.href='index.html'">⬅ Назад до меню</button>
+
   <div id='zefaCoin' class='absolute top-4 right-4 coin-counter'>
     <img src='zefacoin.png' alt='ZefaCoin' class='w-8 h-8 mr-2'>
     <span id='zefaCoinCount' class='text-2xl font-bold'>0</span>
   </div>
+
   <div id='shopButton'>Магаз</div>
+
   <div id='shop' class='shop'>
     <div id='textureShopList'></div>
     <button id='upgradeClick' class='upgrade-button bg-green-600 text-white px-4 py-2 rounded-lg mb-2 mt-3'>
@@ -173,16 +194,21 @@
       Автоклікєр - 1000 ЗєфаКоїнів
     </button>
   </div>
+
   <div id='zefaCoinTop' class='coin-counter flex items-center justify-center w-full mt-4 mx-auto' style='max-width: 160px;'>
     <img src='zefacoin.png' alt='ZefaCoin' class='w-6 h-6 mr-2'>
     <span id='zefaCoinCountTop' class='text-xl font-bold'>0</span>
   </div>
+
   <div id='level' class='text-panel py-1 px-3 mb-2' style='max-width: 150px; margin-bottom: 10px;'>Лєвєл 1</div>
+
   <div id='progressBar'>
     <div id='progress'></div>
   </div>
+
   <img id='gameArea' src='zefaclickerbuttontexture1.png' width='128' height='128'>
   <audio id='clickSound' src='Sound1.aac'></audio>
+
   <script>
     let zefaCoin = 0
     let clickValue = 1
@@ -194,18 +220,10 @@
     let upgradeAutoCost = 1000
     let level = 1
     const texturePaths = [
-      'zefaclickerbuttontexture1.png',
-      'zefaclickerbuttontexture2.png',
-      'zefaclickerbuttontexture3.png',
-      'zefaclickerbuttontexture4.png',
-      'zefaclickerbuttontexture5.png',
-      'zefaclickerbuttontexture6.png',
-      'zefaclickerbuttontexture7.png',
-      'zefaclickerbuttontexture8.png',
-      'zefaclickerbuttontexture9.png',
-      'zefaclickerbuttontexture10.png',
-      'zefaclickerbuttontexture11.png',
-      'zefaclickerbuttontexture12.png'
+      'zefaclickerbuttontexture1.png','zefaclickerbuttontexture2.png','zefaclickerbuttontexture3.png',
+      'zefaclickerbuttontexture4.png','zefaclickerbuttontexture5.png','zefaclickerbuttontexture6.png',
+      'zefaclickerbuttontexture7.png','zefaclickerbuttontexture8.png','zefaclickerbuttontexture9.png',
+      'zefaclickerbuttontexture10.png','zefaclickerbuttontexture11.png','zefaclickerbuttontexture12.png'
     ]
     const textures = [
       { id: 'texture1', cost: 0, bonus: 0, minLevel: 1 },
@@ -230,6 +248,7 @@
     const progress = document.getElementById('progress')
     const levelDisplay = document.getElementById('level')
     let autoClickInterval = null
+
     function renderTextureShop() {
       const container = document.getElementById('textureShopList')
       container.innerHTML = ''
@@ -266,6 +285,7 @@
       })
     }
     renderTextureShop()
+
     gameArea.addEventListener('click', () => {
       const totalClickValue = clickValue * (1 + textureBonus / 100)
       zefaCoin += totalClickValue
@@ -278,6 +298,7 @@
       updateProgress()
       updateShopButtons()
     })
+
     const upgradeClick = document.getElementById('upgradeClick')
     upgradeClick.addEventListener('click', () => {
       if (zefaCoin >= upgradeClickCost) {
@@ -289,6 +310,7 @@
         upgradeClick.textContent = `Апграде клік - ${upgradeClickCost} ЗєфаКоїнів`
       }
     })
+
     const upgradeAuto = document.getElementById('upgradeAuto')
     upgradeAuto.addEventListener('click', () => {
       if (zefaCoin >= upgradeAutoCost && autoClickValue === 0) {
@@ -336,10 +358,12 @@
         }, autoClickSpeed)
       }
     })
+
     shopButton.addEventListener('click', () => {
       shop.classList.toggle('active')
       updateShopButtons()
     })
+
     function updateProgress() {
       const nextLevel = level * 10000
       const progressPercent = (zefaCoin / nextLevel) * 100
@@ -350,6 +374,7 @@
         updateShopButtons()
       }
     }
+
     function updateShopButtons() {
       textures.forEach((texture, index) => {
         const button = document.getElementById(texture.id)
@@ -368,6 +393,7 @@
         }
       })
     }
+
     updateShopButtons()
     zefaCoinCount.textContent = Math.floor(zefaCoin)
     zefaCoinCountTop.textContent = Math.floor(zefaCoin)
@@ -375,8 +401,18 @@
     upgradeAuto.textContent = `Автоклікєр - ${upgradeAutoCost} ЗєфаКоїнів`
     gameArea.src = texturePaths[currentTexture]
   </script>
+
   <script>
-    document.addEventListener('keydown', e=>{if(e.key==='F11'){e.preventDefault();document.documentElement.requestFullscreen();}})
+    document.addEventListener('keydown', e => {
+      if (e.key === 'F11') {
+        e.preventDefault()
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen()
+        } else {
+          document.exitFullscreen()
+        }
+      }
+    })
   </script>
 </body>
 </html>
