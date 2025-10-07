@@ -339,14 +339,6 @@
     upgradeClick.textContent = `Апграде клік - ${upgradeClickCost} ЗєфаКоїнів`
     upgradeAuto.textContent = `Автоклікєр - ${upgradeAutoCost} ЗєфаКоїнів`
     gameArea.src = texturePaths[currentTexture]
-
-    document.addEventListener('keydown', e => {
-      if (e.key === 'F11') {
-        e.preventDefault()
-        if (!document.fullscreenElement) document.documentElement.requestFullscreen()
-        else document.exitFullscreen()
-      }
-    })
   </script>
 </body>
 </html>
