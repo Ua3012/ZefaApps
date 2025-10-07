@@ -31,35 +31,29 @@
 <body>
   <div class="zefa-header">ЗєфаКлікєр</div>
   <button class="back" onclick="location.href='zefagarymenu.html'">⬅ Назад до меню</button>
-
   <div id="zefaCoin" class="absolute top-4 right-4 coin-counter">
     <img src="zefacoin.png" alt="ZefaCoin" class="w-8 h-8 mr-2">
     <span id="zefaCoinCount" class="text-2xl font-bold">0</span>
   </div>
-
   <div id="shopButton">Магаз</div>
   <div id="shop" class="shop">
     <div id="textureShopList"></div>
     <button id="upgradeClick" class="upgrade-button bg-green-600 text-white px-4 py-2 rounded-lg mb-2 mt-3"></button>
     <button id="upgradeAuto" class="upgrade-button bg-blue-600 text-white px-4 py-2 rounded-lg mb-2"></button>
   </div>
-
   <div id="zefaCoinTop" class="coin-counter flex items-center justify-center w-full mt-4 mx-auto" style="max-width: 160px;">
     <img src="zefacoin.png" alt="ZefaCoin" class="w-6 h-6 mr-2">
     <span id="zefaCoinCountTop" class="text-xl font-bold">0</span>
   </div>
-
   <div id="level" class="text-panel py-1 px-3 mb-2" style="max-width: 150px;">Лєвєл 1</div>
   <div id="progressBar"><div id="progress"></div></div>
-
   <img id="gameArea" src="zefaclickerbuttontexture1.png">
   <audio id="clickSound" src="Sound1.aac"></audio>
-
   <script>
     let userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest';
-    let zefaCoin = parseFloat(localStorage.getItem('zefaCoin_' + userId)) || 0;
-    let clickValue = 1, autoClickValue = 0, autoClickSpeed = 1000, currentTexture = 0, textureBonus = 0
-    let upgradeClickCost = 500, upgradeAutoCost = 1000, level = 1, autoClickInterval = null
+    let savedData = JSON.parse(localStorage.getItem('zefaData_' + userId)) || { coins: 0, level: 1, currentTexture: 0, clickValue: 1, autoClickValue: 0, autoClickSpeed: 1000 };
+    let zefaCoin = savedData.coins, clickValue = savedData.clickValue, autoClickValue = savedData.autoClickValue, autoClickSpeed = savedData.autoClickSpeed, currentTexture = savedData.currentTexture, textureBonus = 0;
+    let upgradeClickCost = 500, upgradeAutoCost = 1000, level = savedData.level, autoClickInterval = null;
     const texturePaths = ['zefaclickerbuttontexture1.png','zefaclickerbuttontexture2.png','zefaclickerbuttontexture3.png','zefaclickerbuttontexture4.png','zefaclickerbuttontexture5.png','zefaclickerbuttontexture6.png','zefaclickerbuttontexture7.png','zefaclickerbuttontexture8.png','zefaclickerbuttontexture9.png','zefaclickerbuttontexture10.png','zefaclickerbuttontexture11.png','zefaclickerbuttontexture12.png']
     const textures = [{ id: 'texture1', cost: 0, bonus: 0, minLevel: 1 },{ id: 'texture2', cost: 1000, bonus: 5, minLevel: 2 },{ id: 'texture3', cost: 2000, bonus: 10, minLevel: 3 },{ id: 'texture4', cost: 4000, bonus: 20, minLevel: 4 },{ id: 'texture5', cost: 7000, bonus: 30, minLevel: 5 },{ id: 'texture6', cost: 10000, bonus: 40, minLevel: 6 },{ id: 'texture7', cost: 14000, bonus: 50, minLevel: 7 },{ id: 'texture8', cost: 19000, bonus: 60, minLevel: 8 },{ id: 'texture9', cost: 25000, bonus: 70, minLevel: 9 },{ id: 'texture10', cost: 32000, bonus: 80, minLevel: 10 },{ id: 'texture11', cost: 40000, bonus: 100, minLevel: 100 },{ id: 'texture12', cost: 48000, bonus: 100, minLevel: 100 }]
     const zefaCoinCount = document.getElementById('zefaCoinCount')
@@ -70,7 +64,18 @@
     const shop = document.getElementById('shop')
     const progress = document.getElementById('progress')
     const levelDisplay = document.getElementById('level')
-    function saveZefaCoins(){ localStorage.setItem('zefaCoin_' + userId, zefaCoin) }
+
+    function saveData() {
+      localStorage.setItem('zefaData_' + userId, JSON.stringify({
+        coins: zefaCoin,
+        level: level,
+        currentTexture: currentTexture,
+        clickValue: clickValue,
+        autoClickValue: autoClickValue,
+        autoClickSpeed: autoClickSpeed
+      }))
+    }
+
     function renderTextureShop() {
       const container = document.getElementById('textureShopList')
       container.innerHTML = ''
@@ -94,7 +99,7 @@
             textureBonus = texture.bonus
             updateDisplay()
             updateShopButtons()
-            saveZefaCoins()
+            saveData()
           }
         }
         container.appendChild(btn)
@@ -105,11 +110,13 @@
       })
     }
     renderTextureShop()
+
     function updateDisplay() {
       zefaCoinCount.textContent = Math.floor(zefaCoin)
       zefaCoinCountTop.textContent = Math.floor(zefaCoin)
       gameArea.src = texturePaths[currentTexture]
     }
+
     gameArea.onclick = () => {
       const totalClickValue = clickValue * (1 + textureBonus / 100)
       zefaCoin += totalClickValue
@@ -120,8 +127,9 @@
       setTimeout(() => gameArea.classList.remove('clicked'), 100)
       updateProgress()
       updateShopButtons()
-      saveZefaCoins()
+      saveData()
     }
+
     const upgradeClick = document.getElementById('upgradeClick')
     const upgradeAuto = document.getElementById('upgradeAuto')
     upgradeClick.onclick = () => {
@@ -131,7 +139,7 @@
         upgradeClickCost = Math.floor(upgradeClickCost * 1.5)
         upgradeClick.textContent = `Апграде клік - ${upgradeClickCost} ЗєфаКоїнів`
         updateDisplay()
-        saveZefaCoins()
+        saveData()
       }
     }
     upgradeAuto.onclick = () => {
@@ -147,19 +155,22 @@
           updateDisplay()
           updateProgress()
           updateShopButtons()
-          saveZefaCoins()
+          saveData()
         }, autoClickSpeed)
         updateDisplay()
-        saveZefaCoins()
+        saveData()
       }
     }
+
     shopButton.onclick = () => { shop.classList.toggle('active'); updateShopButtons() }
+
     function updateProgress() {
       const nextLevel = level * 10000
       const progressPercent = (zefaCoin / nextLevel) * 100
       progress.style.width = Math.min(progressPercent, 100) + '%'
-      if (zefaCoin >= nextLevel) { level++; levelDisplay.textContent = `Лєвєл ${level}`; updateShopButtons(); saveZefaCoins() }
+      if (zefaCoin >= nextLevel) { level++; levelDisplay.textContent = `Лєвєл ${level}`; updateShopButtons(); saveData() }
     }
+
     function updateShopButtons() {
       textures.forEach((texture, index) => {
         const button = document.getElementById(texture.id)
@@ -169,6 +180,7 @@
         button.style.outline = currentTexture === index ? '3px solid #10b981' : ''
       })
     }
+
     updateDisplay()
     updateShopButtons()
     upgradeClick.textContent = `Апграде клік - ${upgradeClickCost} ЗєфаКоїнів`
