@@ -187,16 +187,17 @@ function renderTextureShop() {
     label.innerHTML='<span style="font-weight:bold;">'+(index+1)+'</span> — '+(texture.cost?texture.cost+' ЗєфаКоїнів':'Халява')
     btn.appendChild(thumb)
     btn.appendChild(label)
-    btn.onclick=()=>{
-      if(level>=texture.minLevel){
-        if(currentTexture<index && zefaCoin>=texture.cost){
-          zefaCoin-=texture.cost
-          textureBonus=texture.bonus
-        }else if(currentTexture>=index){
-          textureBonus=texture.bonus
+    btn.onclick = () => {
+      if(level >= texture.minLevel){
+        if(currentTexture === index) return;
+        if(currentTexture < index && zefaCoin >= texture.cost){
+          zefaCoin -= texture.cost;
         }
-        currentTexture=index
-        updateDisplay(); updateShopButtons(); saveData()
+        textureBonus = texture.bonus;
+        currentTexture = index;
+        updateDisplay();
+        updateShopButtons();
+        saveData();
       }
     }
     container.appendChild(btn)
