@@ -2,273 +2,214 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ЗєфаБургєр - Гра</title>
+    <title>ЗєфаБургєр</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #222;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-        #gameContainer {
-            position: relative;
-            border: 2px solid #fff;
-        }
-        #gameCanvas {
-            background-color: #333;
-            display: block;
-        }
-        #ui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 10;
-        }
-        #instructions {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            z-index: 10;
-            font-size: 12px;
-        }
+        body { margin:0; background:#222; overflow: hidden;}
+        canvas { display:block; margin:auto; background:#3a3a3a; }
+        #ui { position:fixed; top:10px; left:50%; transform:translateX(-50%); color:white; font-family:sans-serif; }
+        #cookBtn { padding:8px 16px; font-size:18px; background:#d2691e; border:none; border-radius:6px; cursor:pointer;}
+        #cookBtn:active { background:#b14b0b; }
     </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div id="ui">
-            <div>Рахунок: <span id="score">0</span></div>
-            <div>Рівень: <span id="level">1</span></div>
-        </div>
-        <div id="instructions">
-            Управління: Миша - приціл і постріл. Пробіл - готувати бургер.
-        </div>
+    <div id="ui">
+        <button id="cookBtn">Готувати бургер 🍔</button>
+        <span id="burgers">Бургерів: 0</span>
+        <span id="score" style="margin-left:20px;">Очки: 0</span>
     </div>
-
+    <canvas id="game" width="900" height="600"></canvas>
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreEl = document.getElementById('score');
-        const levelEl = document.getElementById('level');
+    // Canvas & Context
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    // UI
+    const burgerCountSpan = document.getElementById('burgers');
+    const scoreSpan = document.getElementById('score');
+    const cookBtn = document.getElementById('cookBtn');
 
-        // Ігрові змінні
-        let score = 0;
-        let level = 1;
-        let burgers = []; // Готові бургери для стрільби
-        let chickens = []; // Чікєн Зєфи
-        let mouseX = 0;
-        let mouseY = 0;
-        let isCooking = false;
-        let cookingTime = 0;
-        let maxCookingTime = 2000; // 2 секунди для приготування
-        let gameRunning = true;
+    // Assets
+    const chickenImg = new Image();
+    chickenImg.src = 'zefaburgerchickenzefa.png'; // 2D спрайт курки
 
-        // Завантаження зображень (плейсхолдери, бо zefaburgerchickenzefa.png не надано)
-        const burgerImg = new Image();
-        burgerImg.src = 'zefaburgerzefaburger.png'; // Плейсхолдер для бургера
+    // Game state
+    let burgers = 0; // готові бургери
+    let score = 0;
+    let bullets = []; // {x,y,z,vz}
+    let chickens = []; // {x,y,z,speedZ,dirX,baseY}
+    let lastChickenTime = 0;
 
-        const chickenImg = new Image();
-        chickenImg.src = 'zefaburgerchickenzefa.png'; // Плейсхолдер для чікєн
+    // Camera params
+    const camY = 300;
+    const camZ = -1200;
+    const burgerSpeed = 24;
+    const chickenMinZ = 300; // коли курка досягає цього Z — вона "проходить"
+    const chickenMaxZ = 1200;
 
-        // Проста 2.5D проекція
-        function project3D(x, y, z) {
-            const fov = 300; // Поле зору
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            const scale = fov / (fov + z);
-            return {
-                x: centerX + x * scale,
-                y: centerY + y * scale,
-                size: scale * 20 // Розмір для перспективи
-            };
+    // Burger cooking
+    cookBtn.addEventListener('click', () => {
+        burgers++;
+        burgerCountSpan.innerText = 'Бургерів: ' + burgers;
+    });
+
+    // Fire burger
+    canvas.addEventListener('mousedown', (e) => {
+        if (burgers <= 0) return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        // Вирахуємо напрямок (з центру екрана вперед до точки клику)
+        const target = screenToWorld(mx, my, chickenMinZ);
+        // Бургер летить з центру (x=0, y=camY, z=camZ)
+        const dx = target.x;
+        const dy = target.y - camY;
+        const dz = chickenMinZ - camZ;
+        const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        bullets.push({
+            x: 0,
+            y: camY,
+            z: camZ,
+            vx: dx/len * burgerSpeed,
+            vy: dy/len * burgerSpeed,
+            vz: dz/len * burgerSpeed
+        });
+        burgers--;
+        burgerCountSpan.innerText = 'Бургерів: ' + burgers;
+    });
+
+    // 2.5D Projection
+    function worldToScreen(x, y, z) {
+        // Проста перспектива
+        const scale = 700 / (z - camZ);
+        return {
+            sx: canvas.width/2 + x * scale,
+            sy: y * scale
+        };
+    }
+    function screenToWorld(sx, sy, z) {
+        // Навпаки, з екрана до світу (для прицілювання)
+        const scale = 700 / (z - camZ);
+        return {
+            x: (sx - canvas.width/2) / scale,
+            y: sy / scale
+        };
+    }
+
+    // Spawn chicken
+    function spawnChicken() {
+        // Випадкове X, Y, напрямок
+        const x = (Math.random()-0.5)*700;
+        const y = 180 + Math.random()*100;
+        const z = chickenMaxZ;
+        const dirX = Math.random() < 0.5 ? -1 : 1;
+        const speedZ = 4 + Math.random()*2;
+        chickens.push({ x, y, z, speedZ, dirX, baseY: y, walkPhase: Math.random()*Math.PI*2 });
+    }
+
+    // Game Loop
+    function update(dt) {
+        // Курки рухаються до гравця по Z, трохи гуляють по X
+        for (let c of chickens) {
+            c.z -= c.speedZ;
+            // 2D рух по X — гуляють синусоїдою
+            c.x += Math.sin(Date.now()/400 + c.walkPhase) * 1.5 * c.dirX;
+            c.y = c.baseY + Math.sin(Date.now()/360 + c.walkPhase) * 10;
         }
-
-        // Клас для бургера
-        class Burger {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.vx = 0;
-                this.vy = 0;
-                this.speed = 5;
-                this.size = 25;
+        // Видаляємо курок, що пройшли "лінію"
+        chickens = chickens.filter(c => {
+            if (c.z < chickenMinZ) {
+                // Гравець прогавив курку — мінус очки
+                score = Math.max(0, score-2);
+                scoreSpan.innerText = 'Очки: ' + score;
+                return false;
             }
+            return true;
+        });
 
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.vx *= 0.98; // Тертя
-                this.vy *= 0.98;
-                this.vy += 0.2; // Гравітація
-            }
-
-            draw() {
-                ctx.drawImage(burgerImg, this.x - this.size/2, this.y - this.size/2, this.size, this.size);
-            }
-
-            isOffScreen() {
-                return this.x < 0 || this.x > canvas.width || this.y > canvas.height;
-            }
+        // Бургери летять вперед
+        for (let b of bullets) {
+            b.x += b.vx;
+            b.y += b.vy;
+            b.z += b.vz;
         }
+        // Видалити бургери, які вилетіли далеко
+        bullets = bullets.filter(b => b.z < chickenMaxZ && b.z > camZ);
 
-        // Клас для чікєн Зєфа
-        class ChickenZefa {
-            constructor() {
-                this.x3d = (Math.random() - 0.5) * 400; // 3D позиція
-                this.y3d = (Math.random() - 0.5) * 300;
-                this.z3d = Math.random() * 500 + 100; // Глибина
-                this.size3d = 60;
-                this.health = 3;
-                this.rotation = 0;
-            }
-
-            update() {
-                this.z3d -= 1; // Рух ближче
-                this.rotation += 0.05;
-                if (this.z3d < 50) {
-                    this.z3d += 2; // Віддаляється
+        // Перевірка попадань
+        for (let bi = bullets.length-1; bi >= 0; bi--) {
+            const b = bullets[bi];
+            for (let ci = chickens.length-1; ci >= 0; ci--) {
+                const c = chickens[ci];
+                // Простий хітбокс
+                const dx = b.x - c.x;
+                const dy = b.y - c.y;
+                const dz = b.z - c.z;
+                if (Math.abs(dz) < 80 && dx*dx + dy*dy < 130*130) {
+                    // Влучив!
+                    bullets.splice(bi, 1);
+                    chickens.splice(ci, 1);
+                    score += 5;
+                    scoreSpan.innerText = 'Очки: ' + score;
+                    break;
                 }
             }
+        }
 
-            draw() {
-                const proj = project3D(this.x3d, this.y3d, this.z3d);
-                const size = this.size3d * (proj.size / 20); // Перспективний розмір
+        // Спавн курок
+        if (Date.now() - lastChickenTime > 1200 + Math.random()*600) {
+            spawnChicken();
+            lastChickenTime = Date.now();
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        // Кури — малюємо далі, потім ближче (по z)
+        chickens.slice().sort((a,b) => b.z-a.z).forEach(c => {
+            const {sx, sy} = worldToScreen(c.x, c.y, c.z);
+            const scale = 0.26 + 0.7*((chickenMaxZ-c.z)/(chickenMaxZ-chickenMinZ));
+            if (chickenImg.complete && chickenImg.naturalWidth) {
                 ctx.save();
-                ctx.translate(proj.x, proj.y);
-                ctx.rotate(this.rotation);
-                ctx.drawImage(chickenImg, -size/2, -size/2, size, size);
+                ctx.translate(sx, sy);
+                ctx.scale(scale, scale);
+                ctx.drawImage(chickenImg, -chickenImg.width/2, -chickenImg.height/1.5);
                 ctx.restore();
-            }
-
-            hit(burgerX, burgerY) {
-                const proj = project3D(this.x3d, this.y3d, this.z3d);
-                const dist = Math.sqrt((burgerX - proj.x)**2 + (burgerY - proj.y)**2);
-                return dist < proj.size / 2;
-            }
-        }
-
-        // Події миші
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouseX = e.clientX - rect.left;
-            mouseY = e.clientY - rect.top;
-        });
-
-        canvas.addEventListener('click', () => {
-            if (burgers.length > 0 && gameRunning) {
-                const burger = burgers.pop();
-                const dx = mouseX - canvas.width / 2;
-                const dy = mouseY - canvas.height / 2;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                burger.vx = (dx / dist) * burger.speed;
-                burger.vy = (dy / dist) * burger.speed;
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && !isCooking && gameRunning) {
-                isCooking = true;
-                cookingTime = Date.now();
-            }
-        });
-
-        // Основний цикл гри
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Приготування бургера
-            if (isCooking) {
-                const elapsed = Date.now() - cookingTime;
-                if (elapsed >= maxCookingTime) {
-                    burgers.push(new Burger(canvas.width / 2, canvas.height - 50));
-                    isCooking = false;
-                } else {
-                    ctx.fillStyle = 'yellow';
-                    ctx.fillRect(canvas.width / 2 - 25, canvas.height - 50, 50, 20);
-                    ctx.fillStyle = 'red';
-                    ctx.fillRect(canvas.width / 2 - 25, canvas.height - 50, (elapsed / maxCookingTime) * 50, 20);
-                }
             } else {
-                ctx.fillStyle = 'green';
-                ctx.fillRect(canvas.width / 2 - 25, canvas.height - 50, 50, 20);
-                ctx.fillStyle = 'white';
-                ctx.font = '12px Arial';
-                ctx.fillText('Гот.', canvas.width / 2 - 20, canvas.height - 35);
+                // Заглушка
+                ctx.fillStyle = 'yellow';
+                ctx.beginPath();
+                ctx.arc(sx, sy, 32*scale, 0, 2*Math.PI);
+                ctx.fill();
             }
+        });
 
-            // Оновлення та малювання бургерів
-            for (let i = burgers.length - 1; i >= 0; i--) {
-                const burger = burgers[i];
-                burger.update();
-                burger.draw();
-                if (burger.isOffScreen()) {
-                    burgers.splice(i, 1);
-                }
-            }
-
-            // Спавн чікєн
-            if (Math.random() < 0.02 * level) {
-                chickens.push(new ChickenZefa());
-            }
-
-            // Оновлення та малювання чікєн
-            for (let i = chickens.length - 1; i >= 0; i--) {
-                const chicken = chickens[i];
-                chicken.update();
-                chicken.draw();
-
-                // Перевірка попадання
-                for (let j = burgers.length - 1; j >= 0; j--) {
-                    const burger = burgers[j];
-                    if (chicken.hit(burger.x, burger.y)) {
-                        chicken.health--;
-                        burgers.splice(j, 1);
-                        if (chicken.health <= 0) {
-                            chickens.splice(i, 1);
-                            score += 10 * level;
-                            scoreEl.textContent = score;
-                            if (score % 100 === 0) {
-                                level++;
-                                levelEl.textContent = level;
-                            }
-                        }
-                        break;
-                    }
-                }
-
-                if (chicken.z3d < 0) {
-                    chickens.splice(i, 1);
-                    gameRunning = false;
-                }
-            }
-
-            // Приціл
-            ctx.strokeStyle = 'red';
+        // Бургери (куля)
+        for (let b of bullets) {
+            const {sx, sy} = worldToScreen(b.x, b.y, b.z);
+            ctx.save();
+            ctx.translate(sx, sy);
+            ctx.fillStyle = '#d2691e';
             ctx.beginPath();
-            ctx.moveTo(mouseX - 10, mouseY);
-            ctx.lineTo(mouseX + 10, mouseY);
-            ctx.moveTo(mouseX, mouseY - 10);
-            ctx.lineTo(mouseX, mouseY + 10);
-            ctx.stroke();
-
-            if (gameRunning) {
-                requestAnimationFrame(gameLoop);
-            } else {
-                ctx.fillStyle = 'red';
-                ctx.font = '48px Arial';
-                ctx.fillText('Гра закінчена! Рахунок: ' + score, 200, 300);
-            }
+            ctx.arc(0,0, 22*(1-(b.z-camZ)/(chickenMaxZ-camZ)), 0, 2*Math.PI);
+            ctx.shadowColor = "#fff0";
+            ctx.fill();
+            ctx.restore();
         }
+    }
 
-        // Запуск
-        gameLoop();
+    // Main loop
+    let lastTime = performance.now();
+    function loop(now) {
+        let dt = Math.min((now-lastTime)/16, 2); // max 2x speedup
+        update(dt);
+        draw();
+        lastTime = now;
+        requestAnimationFrame(loop);
+    }
+    // Старт
+    chickenImg.onload = () => { loop(performance.now()); };
+    // Якщо спрайт не завантажився, все одно стартуємо через 1 сек
+    setTimeout(() => { loop(performance.now()); }, 1000);
     </script>
 </body>
 </html>
