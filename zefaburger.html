@@ -1,307 +1,341 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <title>ЗєфаБургєр</title>
-  <style>
-    body { margin: 0; background: #222; color: #fff; font-family: sans-serif;}
-    canvas { background: #8fd07f; display: block; margin: 0 auto; }
-    #ui { position: absolute; top: 0; left: 0; right: 0; text-align: center; z-index: 10;}
-    button { margin: 8px; padding: 12px 32px; font-size: 1.2em;}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minecraft HTML Touch</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #87ceeb; }
+        canvas { display: block; }
+
+        /* Контейнер для сенсорного керування */
+        #touchControls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Дозволяє клікам проходити за замовчуванням */
+        }
+
+        /* Віртуальний джойстик (рух) */
+        #movementPad {
+            pointer-events: auto;
+            position: absolute;
+            bottom: 5vh;
+            left: 5vw;
+            width: 15vh;
+            height: 15vh;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0.8;
+            touch-action: none; /* Запобігає браузерному скролінгу */
+        }
+
+        .joystick-handle {
+            width: 6vh;
+            height: 6vh;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.6);
+            transform: translate(0, 0);
+            touch-action: none;
+        }
+
+        /* Кнопки дій */
+        #actionButtons {
+            position: absolute;
+            bottom: 5vh;
+            right: 5vw;
+            display: flex;
+            flex-direction: column;
+            gap: 2vh;
+        }
+
+        .action-btn {
+            pointer-events: auto;
+            width: 12vh;
+            height: 12vh;
+            border-radius: 50%;
+            border: 0.5vh solid #fff;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 2.5vh;
+            font-family: sans-serif;
+            font-weight: bold;
+            user-select: none;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            text-align: center;
+            line-height: 12vh;
+        }
+    </style>
 </head>
 <body>
-  <div id="ui"></div>
-  <canvas id="game" width="900" height="600"></canvas>
-  <script>
-    // --- Глобальні ---
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    const ui = document.getElementById('ui');
-    let gameState = 'menu'; // 'menu', 'shop', 'kitchen', 'fight'
-    let money = 100, health = 100, damage = 20, cookSpeed = 1.0;
-    let ingredients = { bun: 2, patty: 2, lettuce: 2 };
-    let burgers = 0;
-    let chickenZefas = [];
-    let projectiles = [];
-    let player = { x: 450, y: 500, width: 50, height: 80, hp: 100, move: 0 };
-    let fightTime = 0, fightTimer = 180, fightLevel = 1;
-    let keys = {};
-    let imgChicken = new Image(); imgChicken.src = 'zefaburgerchickenzefa.png';
-
-    // --- Utils ---
-    function drawButton(text, x, y, w, h, onclick) {
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(x, y, w, h);
-      ctx.fillStyle = "#222";
-      ctx.font = "22px sans-serif";
-      ctx.fillText(text, x + 20, y + h / 2 + 8);
-      // Немає справжніх кнопок на canvas — UI в div
-    }
-
-    function rand(a, b) { return a + Math.random() * (b - a); }
-
-    // --- Головне меню ---
-    function showMenu() {
-      ui.innerHTML = `
-        <button onclick="setState('shop')">Магаз</button>
-        <button onclick="setState('kitchen')">Кухня</button>
-        <button onclick="setState('fight')">Драка</button>
-        <div style='margin-top:12px'>💸 ${money} | 🍔 ${burgers} | 🥗 ${JSON.stringify(ingredients)}</div>
-      `;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.font = "48px monospace";
-      ctx.fillStyle = "#fff";
-      ctx.fillText("ЗєфаБургєр", 320, 150);
-      ctx.font = "32px monospace";
-      ctx.fillText("Магаз | Кухня | Драка", 320, 220);
-    }
-
-    window.setState = function(state) {
-      gameState = state;
-      ui.innerHTML = '';
-      if (state === 'menu') showMenu();
-      if (state === 'shop') showShop();
-      if (state === 'kitchen') showKitchen();
-      if (state === 'fight') startFight();
-    }
-
-    // --- Магаз ---
-    function showShop() {
-      ui.innerHTML = `
-        <button onclick="setState('menu')">← Назад</button>
-        <div style='margin:12px'>💸 Гроші: ${money}</div>
-        <div>
-          <button onclick="buy('bun')">Купити булку (10)</button>
-          <button onclick="buy('patty')">Купити котлету (15)</button>
-          <button onclick="buy('lettuce')">Купити салат (5)</button>
+    <div id="touchControls">
+        <div id="movementPad">
+            <div class="joystick-handle"></div>
         </div>
-        <div>
-          <button onclick="upgrade('cookSpeed')">Швидкість кухні (+20)</button>
-          <button onclick="upgrade('health')">Здоров'я (+30)</button>
-          <button onclick="upgrade('damage')">Демедж (+40)</button>
+
+        <div id="actionButtons">
+            <div id="placeBlockButton" class="action-btn">🧱</div>
+            <div id="breakBlockButton" class="action-btn">⛏️</div>
         </div>
-        <div>🍔 Інградієнти: ${JSON.stringify(ingredients)}</div>
-        <div>🧑‍🍳 Швидкість: ${cookSpeed.toFixed(2)} | ❤️ Здоров'я: ${health} | 🥊 Демедж: ${damage}</div>
-      `;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.font = "38px monospace";
-      ctx.fillStyle = "#fff";
-      ctx.fillText("МАГАЗ", 380, 120);
-    }
-    window.buy = function(type) {
-      let price = { bun: 10, patty: 15, lettuce: 5 }[type];
-      if (money >= price) {
-        money -= price;
-        ingredients[type]++;
-        showShop();
-      }
-    }
-    window.upgrade = function(type) {
-      let price = { cookSpeed: 20, health: 30, damage: 40 }[type];
-      if (money >= price) {
-        money -= price;
-        if (type === 'cookSpeed') cookSpeed += 0.2;
-        if (type === 'health') health += 20;
-        if (type === 'damage') damage += 5;
-        showShop();
-      }
-    }
+    </div>
 
-    // --- Кухня ---
-    function showKitchen() {
-      ui.innerHTML = `
-        <button onclick="setState('menu')">← Назад</button>
-        <button onclick="makeBurger()">Готовіть бургер</button>
-        <div>🍔 Бургерів: ${burgers}</div>
-        <div>Інградієнти: ${JSON.stringify(ingredients)}</div>
-      `;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.font = "38px monospace";
-      ctx.fillStyle = "#fff";
-      ctx.fillText("КУХНЯ", 380, 120);
-      ctx.font = "28px monospace";
-      ctx.fillText("Натисни, щоб готувати!", 300, 220);
-    }
-    window.makeBurger = function() {
-      if (ingredients.bun > 0 && ingredients.patty > 0 && ingredients.lettuce > 0) {
-        ingredients.bun--; ingredients.patty--; ingredients.lettuce--;
-        burgers++;
-        setTimeout(showKitchen, 1000 / cookSpeed); // швидкість впливає!
-      }
-    }
+    <script>
+        // === Налаштування THREE.js ===
+        let scene, camera, renderer;
+        let blocks = [];
+        const blockSize = 1;
+        const speed = 0.05;
 
-    // --- Драка (2.5D) ---
-    function startFight() {
-      fightTime = 0; fightTimer = 180; fightLevel = 1;
-      player.x = 450; player.hp = health;
-      chickenZefas = [];
-      projectiles = [];
-      ui.innerHTML = `<button onclick="setState('menu')">← Вийти</button>
-        <div>Здоров'я: <span id="hptxt">${player.hp}</span> | 🍔: <span id="burgertxt">${burgers}</span></div>
-        <div>Тримайся 3 хвилини! (Рівень <span id='lvltxt'>${fightLevel}</span>)</div>`;
-      window.requestAnimationFrame(fightTick);
-    }
+        function init() {
+            // Сцена
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb); // Світло-блакитне небо
 
-    function fightTick(ts) {
-      if (gameState !== 'fight') return;
-      // update
-      fightTime += 1 / 60;
-      fightTimer -= 1 / 60;
-      if (fightTime > fightLevel * 15) { fightLevel++; spawnZefas(); }
-      if (fightTimer <= 0) {
-        money += fightLevel * 50;
-        ui.innerHTML = `<button onclick="setState('menu')">← Назад</button>
-          <div><b>Перемога!</b> 💸 +${fightLevel * 50}</div>`;
-        return;
-      }
+            // Камера (Перспектива)
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.6, 5); // Позиція гравця (приблизно 1.6м висота)
 
-      // керування
-      if (keys['ArrowLeft']) player.x -= 8;
-      if (keys['ArrowRight']) player.x += 8;
-      player.x = Math.max(100, Math.min(800, player.x));
+            // Рендерер
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-      // стіни
-      let wall1 = 120, wall2 = 780;
-      if (player.x < wall1) player.x = wall1;
-      if (player.x > wall2) player.x = wall2;
+            // Світло
+            const ambientLight = new THREE.AmbientLight(0x404040, 5);
+            scene.add(ambientLight);
 
-      // оновлення ЧікєнЗєф
-      for (let c of chickenZefas) {
-        if (c.alive) {
-          let dx = player.x - c.x;
-          c.x += Math.sign(dx) * c.speed;
-          if (Math.abs(c.x - player.x) < 40 && c.z < 40) {
-            c.z = Math.max(0, c.z - 2);
-            if (c.z <= 5) {
-              player.hp -= 20;
-              c.alive = false;
+            // Генерація простого ґрунту (площина)
+            createBlock(0, 0, 0, 'grass');
+            createBlock(blockSize, 0, 0, 'grass');
+            createBlock(-blockSize, 0, 0, 'grass');
+            createBlock(0, 0, blockSize, 'grass');
+            
+            // Створення тестового блоку
+            createBlock(3, 1, 3, 'stone');
+
+            // Обробка зміни розміру вікна
+            window.addEventListener('resize', onWindowResize, false);
+
+            // Запускаємо ігровий цикл
+            animate();
+        }
+
+        function createBlock(x, y, z, type) {
+            let color;
+            switch (type) {
+                case 'grass': color = 0x228B22; break; // Темно-зелений
+                case 'stone': color = 0x808080; break; // Сірий
+                default: color = 0xff0000;
             }
-          } else {
-            c.z -= c.speed / 2;
-            if (c.z < 0) c.z = 0;
-          }
+
+            const geometry = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
+            const material = new THREE.MeshLambertMaterial({ color: color });
+            const block = new THREE.Mesh(geometry, material);
+            
+            // Вирівнюємо позицію по центрах блоків (координати мають бути кратні blockSize)
+            block.position.set(x * blockSize, y * blockSize + blockSize / 2, z * blockSize);
+            block.userData.type = type; // Додаємо дані для взаємодії
+            scene.add(block);
+            blocks.push(block);
         }
-      }
-
-      // оновлення бургерів-пострілів
-      for (let p of projectiles) {
-        p.z -= 15;
-        if (p.z < 0) p.active = false;
-        for (let c of chickenZefas) {
-          if (c.alive && p.active && Math.abs(p.x - c.x) < 30 && Math.abs(p.z - c.z) < 20) {
-            c.hp -= damage;
-            p.active = false;
-            if (c.hp <= 0) { c.alive = false; money += 10; }
-          }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         }
-      }
-      projectiles = projectiles.filter(p => p.active);
 
-      // поразка
-      if (player.hp <= 0) {
-        ui.innerHTML = `<button onclick="setState('menu')">← Назад</button>
-          <div><b>Ти програв!</b></div>`;
-        return;
-      }
-      // малювання
-      drawFight();
-      // UI
-      document.getElementById('hptxt').innerText = player.hp;
-      document.getElementById('burgertxt').innerText = burgers;
-      document.getElementById('lvltxt').innerText = fightLevel;
-      // спавн ЧікєнЗєф
-      if (Math.random() < 0.02 * fightLevel && chickenZefas.length < fightLevel * 5) spawnZefas(1);
-      window.requestAnimationFrame(fightTick);
-    }
+        // === Ігрова Логіка та Рендер ===
+        const tempVector = new THREE.Vector3();
+        let playerVelocity = new THREE.Vector3();
+        let isMoving = { forward: false, backward: false, left: false, right: false };
+        let yaw = 0; // Обертання камери по горизонталі
+        let pitch = 0; // Обертання камери по вертикалі (не використовується для простоти)
 
-    function spawnZefas(n = 3) {
-      for (let i = 0; i < n; i++)
-        chickenZefas.push({
-          x: rand(160, 760),
-          z: 400 + rand(0, 80),
-          speed: rand(1, 2) + fightLevel * 0.2,
-          hp: 40 + fightLevel * 10,
-          alive: true
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Обробка руху гравця на основі джойстика
+            playerVelocity.set(0, 0, 0);
+
+            // Визначаємо напрямок руху на основі поточного огляду (yaw)
+            const forwardVector = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+            const sideVector = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+
+            if (isMoving.forward) playerVelocity.add(forwardVector);
+            if (isMoving.backward) playerVelocity.sub(forwardVector);
+            if (isMoving.left) playerVelocity.sub(sideVector);
+            if (isMoving.right) playerVelocity.add(sideVector);
+
+            playerVelocity.normalize().multiplyScalar(speed);
+
+            camera.position.add(playerVelocity);
+
+            // Застосування огляду
+            camera.rotation.y = yaw; 
+            
+            renderer.render(scene, camera);
+        }
+
+        // === ЛОГІКА СЕНСОРНОГО КЕРУВАННЯ ===
+
+        // 1. Управління рухом (Джойстик)
+        const movementPad = document.getElementById('movementPad');
+        const joystickHandle = movementPad.querySelector('.joystick-handle');
+        const padCenter = movementPad.clientWidth / 2;
+        const maxDistance = padCenter * 0.7;
+        let movementTouchId = null;
+
+        movementPad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (movementTouchId === null) {
+                movementTouchId = e.changedTouches[0].identifier;
+                handleJoystickMove(e.changedTouches[0]);
+            }
         });
-    }
 
-    function drawFight() {
-      // фон 3д
-      ctx.clearRect(0,0,900,600);
-      // трава
-      ctx.fillStyle = "#70c33b";
-      ctx.fillRect(0, 330, 900, 270);
-      // гори (примітивно)
-      ctx.fillStyle = "#5d7d5a";
-      ctx.beginPath();
-      ctx.moveTo(0,330); ctx.lineTo(200,180); ctx.lineTo(400,330); ctx.closePath();
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(300,330); ctx.lineTo(500,190); ctx.lineTo(700,330); ctx.closePath();
-      ctx.fill();
-      // дерева
-      for(let i=0;i<7;i++){
-        let tx = 80 + i*120, ty = 330 - rand(40,90);
-        ctx.fillStyle="#2d4e1d"; ctx.fillRect(tx,ty,18,60);
-        ctx.beginPath(); ctx.arc(tx+9,ty,35,0,2*Math.PI); ctx.fillStyle="#348f3d"; ctx.fill();
-      }
-      // 3d стіни
-      ctx.fillStyle = "#666";
-      ctx.fillRect(100, 300, 20, 240);
-      ctx.fillRect(780, 300, 20, 240);
+        document.addEventListener('touchmove', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === movementTouchId) {
+                    handleJoystickMove(touch);
+                    return;
+                }
+            }
+        }, { passive: false });
 
-      // ЧікєнЗєфи
-      for (let c of chickenZefas) {
-        if (!c.alive) continue;
-        let scale = 1 + c.z/250;
-        let x = c.x, y = 300 + 200 - c.z;
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(scale, scale);
-        if (imgChicken.complete) ctx.drawImage(imgChicken, -30, -50, 60, 70);
-        else {
-          ctx.fillStyle = "#fff";
-          ctx.fillRect(-30, -50, 60, 70);
-          ctx.fillStyle = "#222";
-          ctx.fillText("🐔", -20, -10);
+        document.addEventListener('touchend', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === movementTouchId) {
+                    resetJoystick();
+                    return;
+                }
+            }
+        });
+
+        function handleJoystickMove(touch) {
+            const rect = movementPad.getBoundingClientRect();
+            let x = touch.clientX - rect.left - padCenter;
+            let y = touch.clientY - rect.top - padCenter;
+
+            const distance = Math.sqrt(x * x + y * y);
+            if (distance > maxDistance) {
+                const angle = Math.atan2(y, x);
+                x = Math.cos(angle) * maxDistance;
+                y = Math.sin(angle) * maxDistance;
+            }
+
+            joystickHandle.style.transform = `translate(${x}px, ${y}px)`;
+
+            // Визначення напрямку руху (залежить від Y)
+            const threshold = maxDistance * 0.3; 
+            isMoving.forward = y < -threshold;
+            isMoving.backward = y > threshold;
+            isMoving.left = x < -threshold;
+            isMoving.right = x > threshold;
         }
-        ctx.restore();
-        // HP бар
-        ctx.fillStyle = "#d11";
-        ctx.fillRect(x-30, y-60, 60*c.hp/100, 8);
-      }
-      // гравець
-      ctx.fillStyle = "#FFB400";
-      ctx.fillRect(player.x-25, player.y-70, 50, 80);
-      // бургер-постріли
-      for (let p of projectiles) {
-        let scale = 1 + p.z/200;
-        let px = p.x, py = player.y - 70 - p.z;
-        ctx.save();
-        ctx.translate(px, py);
-        ctx.scale(scale, scale);
-        ctx.fillStyle = "#dbb15c";
-        ctx.beginPath();
-        ctx.arc(0, 0, 18, 0, Math.PI*2);
-        ctx.fill();
-        ctx.restore();
-      }
-    }
 
-    // --- Стрільба бургером ---
-    window.addEventListener('keydown', e => {
-      keys[e.key] = true;
-      // Пробіл — постріл
-      if (gameState === 'fight' && e.key === ' ' && burgers > 0) {
-        projectiles.push({ x: player.x, z: 0, active: true });
-        burgers--;
-      }
-    });
-    window.addEventListener('keyup', e => { keys[e.key] = false; });
+        function resetJoystick() {
+            movementTouchId = null;
+            joystickHandle.style.transform = `translate(0, 0)`;
+            isMoving = { forward: false, backward: false, left: false, right: false };
+        }
 
-    // --- Старт ---
-    showMenu();
-  </script>
+        // 2. Управління оглядом (Свайп по решті екрану)
+        let lookTouchId = null;
+        let lastTouchX = null;
+        let lookSensitivity = 0.005; // Чутливість огляду
+
+        document.addEventListener('touchstart', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                // Якщо дотик НЕ на елементі керування (джойстик або кнопки)
+                if (!touch.target.closest('#touchControls')) {
+                    if (lookTouchId === null) {
+                        lookTouchId = touch.identifier;
+                        lastTouchX = touch.clientX;
+                        // Тут можна також ініціалізувати lastTouchY для огляду вгору/вниз
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === lookTouchId) {
+                    const deltaX = touch.clientX - lastTouchX;
+                    
+                    // Оновлення огляду по горизонталі
+                    yaw -= deltaX * lookSensitivity;
+
+                    lastTouchX = touch.clientX;
+                    return;
+                }
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === lookTouchId) {
+                    lookTouchId = null;
+                    lastTouchX = null;
+                    return;
+                }
+            }
+        });
+
+        // 3. Кнопки взаємодії
+        const placeButton = document.getElementById('placeBlockButton');
+        const breakButton = document.getElementById('breakBlockButton');
+        const raycaster = new THREE.Raycaster();
+
+        // Функція для визначення, на який блок ми дивимося
+        function getIntersectedBlock() {
+            // Встановлюємо промінь від центру екрану (камери)
+            raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+            
+            // Фільтруємо об'єкти, щоб перевіряти лише блоки
+            const intersects = raycaster.intersectObjects(blocks, false);
+            return intersects.length > 0 ? intersects[0] : null;
+        }
+
+        placeButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const intersection = getIntersectedBlock();
+            if (intersection) {
+                // Розміщення блоку
+                const newPosition = intersection.point.add(intersection.face.normal).floor().addScalar(0.5);
+                createBlock(newPosition.x - 0.5, newPosition.y - 0.5, newPosition.z - 0.5, 'stone');
+            }
+        });
+
+        breakButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const intersection = getIntersectedBlock();
+            if (intersection) {
+                // Видалення блоку (перевіряємо, чи це не ґрунт)
+                if (intersection.object.userData.type !== 'grass') {
+                    scene.remove(intersection.object);
+                    blocks = blocks.filter(b => b !== intersection.object);
+                    intersection.object.geometry.dispose();
+                    intersection.object.material.dispose();
+                }
+            }
+        });
+
+        // Запуск гри
+        init();
+    </script>
 </body>
 </html>
