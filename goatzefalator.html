@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Симулятор Козла (Three.js)</title>
+    <title>3D Симулятор Козла: ZEFAGOAT Edition</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #f0f0f0; }
-        canvas { display: block; } /* Видаляємо простір під Canvas */
+        canvas { display: block; }
         #ui {
             position: absolute;
             top: 10px;
@@ -14,16 +14,32 @@
             color: white;
             font-family: sans-serif;
             z-index: 10;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 250px;
+        }
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-size: 24px;
+            z-index: 999;
         }
         button {
-            padding: 10px;
+            padding: 10px 15px;
             font-size: 16px;
             cursor: pointer;
             margin-top: 10px;
-            background-color: #4CAF50;
+            background-color: #A0522D; /* Колір козла */
             color: white;
             border: none;
             border-radius: 5px;
@@ -32,19 +48,23 @@
 </head>
 <body>
 
-    <div id="ui">
-        <h2>🐐 3D Goat Sim (Мінімалістичний)</h2>
-        <p>Керування:</p>
-        <ul>
-            <li>**Миша (Натиснути та тягнути):** Обертати камеру навколо козла.</li>
-            <li>**Скрол миші:** Масштабування (наближення/віддалення).</li>
-        </ul>
+    <div id="loading-screen">
+        Завантаження ZEFAGOAT...
+        <p id="progress-status">0%</p>
+        <p style="font-size: 14px;">(Потрібен локальний сервер для завантаження файлів .glb та .png)</p>
+    </div>
+
+    <div id="ui" style="display: none;">
+        <h2>🐐 ZEFAGOAT WORLD</h2>
+        <p>Керування: обертання мишею, скрол для зуму.</p>
         <div id="stats">Хаос: 0</div>
         <button onclick="jumpGoat()">Стрибнути! (Space)</button>
+        <button onclick="ramGoat()">Буцнути!</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
     // --- 1. Ініціалізація Сцени ---
@@ -54,47 +74,86 @@
 
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+    renderer.setClearColor(0x87CEEB); // Небо
 
-    // --- 2. Створення Об'єктів ---
-
-    // Козел (Куб)
-    const goatGeometry = new THREE.BoxGeometry(1, 1, 1);
-    const goatMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 }); // Зелений, як колір козла в симуляторі
-    const goat = new THREE.Mesh(goatGeometry, goatMaterial);
-    goat.position.y = 0.5; // Піднімаємо над землею
-    scene.add(goat);
-
-    // Земля (Площина)
-    const groundGeometry = new THREE.PlaneGeometry(10, 10);
-    const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x8FBC8F, side: THREE.DoubleSide }); // Світло-зелена трава
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = Math.PI / 2; // Обертаємо на 90 градусів, щоб зробити горизонтальну площину
-    scene.add(ground);
-
-    // --- 3. Освітлення ---
-    const ambientLight = new THREE.AmbientLight(0x404040); // М'яке навколишнє світло
-    scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(5, 5, 5).normalize();
-    scene.add(directionalLight);
-
-    // --- 4. Камера та Контроль ---
-    camera.position.set(3, 3, 3);
-    camera.lookAt(goat.position);
-
-    // OrbitControls дозволяє обертати та масштабувати сцену мишею
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 0.5, 0); // Фокусуємо камеру на козлі
-    controls.update();
-
-    // --- 5. Логіка Гри ---
+    // --- 2. Глобальні Змінні ---
+    let goatModel;
     let chaos = 0;
     let isJumping = false;
     let jumpVelocity = 0;
     const gravity = -0.05;
-
     const statsDisplay = document.getElementById('stats');
+    const loadingScreen = document.getElementById('loading-screen');
+    const progressStatus = document.getElementById('progress-status');
+    const ui = document.getElementById('ui');
+
+    // --- 3. Завантаження Ресурсів ---
+
+    // Текстура для світу (goatzefalatorworldbox.png)
+    const textureLoader = new THREE.TextureLoader();
+    const worldTexture = textureLoader.load(
+        'goatzefalatorworldbox.png',
+        // on success
+        () => console.log('Текстура світу завантажена.'),
+        // on progress
+        (xhr) => { progressStatus.textContent = `Текстура: ${Math.round(xhr.loaded / xhr.total * 50)}%`; },
+        // on error
+        (error) => console.error('Помилка завантаження текстури світу:', error)
+    );
+
+    // GLTF Loader для моделі козла (zefagoat.glb)
+    const gltfLoader = new THREE.GLTFLoader();
+
+    gltfLoader.load(
+        'zefagoat.glb',
+        (gltf) => {
+            goatModel = gltf.scene;
+            goatModel.scale.set(1, 1, 1); // Масштабуйте, якщо потрібно
+            goatModel.position.y = 0.5; // Піднімаємо над землею
+            scene.add(goatModel);
+
+            // Після успішного завантаження
+            loadingScreen.style.display = 'none';
+            ui.style.display = 'block';
+            camera.lookAt(goatModel.position);
+
+            console.log('Модель козла завантажена успішно.');
+        },
+        // on progress
+        (xhr) => { progressStatus.textContent = `Модель: ${50 + Math.round(xhr.loaded / xhr.total * 50)}%`; },
+        // on error
+        (error) => {
+            console.error('Помилка завантаження моделі козла:', error);
+            progressStatus.textContent = 'ПОМИЛКА! Перевірте консоль та наявність файлів.';
+        }
+    );
+
+    // --- 4. Створення Світу ---
+
+    // Земля (Площина з текстурою або простим кольором)
+    const groundGeometry = new THREE.PlaneGeometry(30, 30);
+    const groundMaterial = new THREE.MeshLambertMaterial({ map: worldTexture });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    // --- 5. Освітлення ---
+    const ambientLight = new THREE.AmbientLight(0x404040, 2); // Більш яскраве навколишнє світло
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 10, 5).normalize();
+    scene.add(directionalLight);
+
+    // --- 6. Камера та Контроль ---
+    camera.position.set(5, 5, 5);
+    camera.lookAt(0, 0, 0);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0.5, 0);
+    controls.update();
+
+    // --- 7. Логіка Ігрових Дій ---
 
     function updateChaos(amount) {
         chaos += amount;
@@ -103,46 +162,67 @@
 
     // Дія: Стрибок
     function jumpGoat() {
+        if (!goatModel) return;
         if (!isJumping) {
             isJumping = true;
-            jumpVelocity = 0.5; // Початкова швидкість стрибка
+            jumpVelocity = 0.8;
             updateChaos(10);
+            // Невеликий поворот для динаміки
+            goatModel.rotation.z = Math.PI / 12;
         }
     }
 
-    // Обробка натискання клавіші Space
+    // Дія: Буцнути
+    function ramGoat() {
+        if (!goatModel) return;
+        updateChaos(25);
+        // Швидка анімація "буцання" (поворот)
+        const initialRotation = goatModel.rotation.y;
+        const ramAngle = Math.PI / 8; // 22.5 градусів
+        
+        goatModel.rotation.y += ramAngle;
+        setTimeout(() => {
+            goatModel.rotation.y = initialRotation;
+        }, 150);
+    }
+
+    // Обробка клавіш
     document.addEventListener('keydown', (event) => {
         if (event.code === 'Space') {
             jumpGoat();
         }
+        if (event.code === 'KeyR') { // R для Ram
+            ramGoat();
+        }
     });
 
-    // --- 6. Анімаційний Цикл (Рендеринг) ---
+    // --- 8. Анімаційний Цикл (Рендеринг) ---
 
     function animate() {
         requestAnimationFrame(animate);
 
-        // Логіка Стрибка (Фізика)
-        if (isJumping) {
-            // Застосовуємо гравітацію
-            jumpVelocity += gravity;
-            goat.position.y += jumpVelocity;
+        if (goatModel) {
+            // Логіка Стрибка (Фізика)
+            if (isJumping) {
+                jumpVelocity += gravity;
+                goatModel.position.y += jumpVelocity;
 
-            // Перевіряємо приземлення (земля знаходиться на y=0)
-            if (goat.position.y <= 0.5) {
-                goat.position.y = 0.5; // Фіксуємо на рівні землі
-                isJumping = false;
-                jumpVelocity = 0;
+                if (goatModel.position.y <= 0.5) {
+                    goatModel.position.y = 0.5;
+                    isJumping = false;
+                    jumpVelocity = 0;
+                    goatModel.rotation.z = 0; // Повертаємо назад
+                }
             }
         }
 
-        controls.update(); // Оновлюємо контролери камери
+        controls.update();
         renderer.render(scene, camera);
     }
 
     animate();
 
-    // --- 7. Адаптивність (Resize) ---
+    // --- 9. Адаптивність (Resize) ---
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
