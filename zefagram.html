@@ -20,13 +20,16 @@ button:hover{background:#0066cc;}
 .message strong{color:#0084ff;}
 .from-me{background:#cfe9ff;float:right;}
 .from-others{background:#e9ecef;float:left;}
+#audioMsg{width:100%;margin-top:5px;}
 #input-area{display:flex;width:100%;border-top:1px solid #ddd;padding:10px;background:rgba(255,255,255,0.95);}
 #messageInput{flex:1;border-radius:20px;padding:10px 15px;border:1px solid #ccc;font-size:16px;}
 #sendBtn{width:50px;margin-left:10px;border-radius:50%;font-size:20px;}
 #voiceMsgBtn{margin-left:5px;font-size:20px;border-radius:50%;}
 #formatBtn{margin-right:5px;}
+.formatMenu{display:none;flex-direction:column;background:#eee;padding:5px;border-radius:8px;position:absolute;bottom:60px;left:10px;z-index:10;}
+.formatMenu button{margin:2px;}
 .emojiPicker{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;justify-content:center;}
-.emojiPicker img{width:30px;height:30px;cursor:pointer;}
+.emojiPicker img{width:40px;height:40px;cursor:pointer;}
 .menuBtn{padding:10px 15px;width:90%;margin:5px;text-align:center;border-radius:12px;background:#0084ff;color:white;}
 .menuBtn:hover{background:#0066cc;}
 #menuGreetingWrapper{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;}
@@ -64,6 +67,14 @@ button:hover{background:#0066cc;}
 <div id='messages'></div>
 <div id='input-area'>
 <button id='formatBtn'>…</button>
+<div class='formatMenu' id='formatMenu'>
+<button data-format='B'>B</button>
+<button data-format='I'>I</button>
+<button data-format='U'>U</button>
+<button data-format='S'>S</button>
+<button data-format='MONO'>MONO</button>
+<button data-format='Minecraft'>Minecraft</button>
+</div>
 <input type='text' id='messageInput' placeholder='ПІШИ!!!'>
 <button id='sendBtn'>→</button>
 <button id='voiceMsgBtn'>🎙️</button>
@@ -115,6 +126,8 @@ const messagesDiv=document.getElementById('messages')
 const chatTitle=document.getElementById('chatTitle')
 const messageInput=document.getElementById('messageInput')
 const menuGreeting=document.getElementById('menuGreeting')
+const formatMenu=document.getElementById('formatMenu')
+const formatBtn=document.getElementById('formatBtn')
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
@@ -127,7 +140,8 @@ function renderMessage(msg){
 const d=document.createElement('div')
 d.className='message '+(msg.user===currentUser?'from-me':'from-others')
 let text=msg.text
-text=text.replace(/\[zefasticker(\d)\]/g,(m,n)=>`<img src='zefasticker${n}.png' style='width:50px;height:50px'>`)
+if(msg.type==='sticker') text=`<img src='${msg.url}' style='width:50px;height:50px'>`
+if(msg.type==='audio') text=`<audio controls src='${msg.url}'></audio>`
 text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')
 text=text.replace(/\*(.*?)\*/g,'<i>$1</i>')
 text=text.replace(/__(.*?)__/g,'<u>$1</u>')
@@ -143,7 +157,7 @@ function showChat(chat,partner=null){currentChat=chat;messagesDiv.innerHTML='';a
 
 function logout(){localStorage.removeItem('currentUser');currentUser=null;authScreen.style.display='flex';menuScreen.style.display='none';chatScreen.style.display='none';voiceScreen.style.display='none'}
 
-async function sendMessage(){const t=messageInput.value.trim();if(!t||!currentUser)return;const time=formatTime(new Date());push(ref(db,'messages/'+currentChat),{user:currentUser,text:t,time});messageInput.value=''}
+async function sendMessage(){const t=messageInput.value.trim();if(!t||!currentUser)return;const time=formatTime(new Date());push(ref(db,'messages/'+currentChat),{user:currentUser,text:t,time,type:'text'});messageInput.value=''}
 
 document.addEventListener('DOMContentLoaded',async()=>{
 if(currentUser){showMenu(true)}else{authScreen.style.display='flex'}
@@ -156,23 +170,37 @@ document.getElementById('publicVoiceBtn').onclick=()=>{showChat('Спільни�
 document.getElementById('privateChatsBtn').onclick=()=>{alert('Список приватних чатів поки що пустий')}
 document.getElementById('createPrivateBtn').onclick=()=>{const user=prompt('Введи юзернамє того, з ким хочеш чат');if(user) showChat('Приватний чат з '+user,user)}
 document.getElementById('backChat').onclick=()=>{showMenu(true)}
+document.getElementById('sendBtn').onclick=sendMessage
+messageInput.addEventListener('keypress',e=>{if(e.key==='Enter') sendMessage()})
+document.getElementById('formatBtn').onclick=()=>{formatMenu.style.display=formatMenu.style.display==='flex'?'none':'flex'}
+formatMenu.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+let val=messageInput.value;let selStart=messageInput.selectionStart;let selEnd=messageInput.selectionEnd;let selected=val.substring(selStart,selEnd);let code=b.dataset.format==='B'?`**${selected}**`:
+b.dataset.format==='I'?`*${selected}*`:
+b.dataset.format==='U'?`__${selected}__`:
+b.dataset.format==='S'?`~~${selected}~~`:
+b.dataset.format==='MONO'?``+selected+``:
+b.dataset.format==='Minecraft'?`%%${selected}%%`:'';
+messageInput.value=val.substring(0,selStart)+code+val.substring(selEnd);
+messageInput.focus()
+})
+document.getElementById('emojiPicker').querySelectorAll('img').forEach(img=>{
+img.onclick=()=>{const url=img.src;push(ref(db,'messages/'+currentChat),{user:currentUser,url,type:'sticker',time:formatTime(new Date())})}
+})
 document.getElementById('voiceMsgBtn').onclick=async()=>{
-if(!navigator.mediaDevices) return alert('Не підтримується мікрофон')
-const localStream=await navigator.mediaDevices.getUserMedia({audio:true})
-const mediaRecorder=new MediaRecorder(localStream)
+if(!navigator.mediaDevices)return alert('Мікрофон не підтримується')
+const stream=await navigator.mediaDevices.getUserMedia({audio:true})
+const recorder=new MediaRecorder(stream)
 let chunks=[]
-mediaRecorder.ondataavailable=e=>chunks.push(e.data)
-mediaRecorder.onstop=async()=>{
+recorder.ondataavailable=e=>chunks.push(e.data)
+recorder.onstop=()=>{
 const blob=new Blob(chunks,{type:'audio/webm'})
-const reader=new FileReader()
-reader.onloadend=()=>{const base64=reader.result;push(ref(db,'messages/'+currentChat),{user:currentUser,text:'[audio]',audio:base64,time:formatTime(new Date())})}
-reader.readAsDataURL(blob)
+const url=URL.createObjectURL(blob)
+push(ref(db,'messages/'+currentChat),{user:currentUser,url,type:'audio',time:formatTime(new Date())})
 chunks=[]
 }
-mediaRecorder.start()
-setTimeout(()=>mediaRecorder.stop(),5000)
+recorder.start()
+setTimeout(()=>recorder.stop(),5000)
 }
-document.getElementById('emojiPicker').querySelectorAll('img').forEach(img=>{img.onclick=()=>{messageInput.value+='[zefasticker'+img.src.split('zefasticker')[1].split('.png')[0]+']'}})
 })
 </script>
 </body>
