@@ -1,247 +1,193 @@
 <!DOCTYPE html>
 <html lang='uk'>
 <head>
-  <meta charset='UTF-8'>
-  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-  <title>Зєфаграм</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 0;
-      background: url('zefagrambackground.png') no-repeat center center fixed;
-      background-size: cover;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    #auth, #chat {
-      background: rgba(255, 255, 255, 0.9);
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      margin: auto;
-      width: 90%;
-      max-width: 500px;
-    }
-    input, button {
-      padding: 10px;
-      margin: 5px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 16px;
-    }
-    button {
-      background-color: #0084ff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0066cc;
-    }
-    #messages {
-      flex: 1;
-      max-height: 60vh;
-      overflow-y: auto;
-      border-radius: 10px;
-      padding: 10px;
-      background-color: white;
-      margin-bottom: 0;
-    }
-    .message {
-      display: inline-block;
-      clear: both;
-      margin: 6px 0;
-      padding: 10px;
-      border-radius: 15px;
-      max-width: 70%;
-      word-wrap: break-word;
-    }
-    .message strong {
-      color: #0084ff;
-    }
-    .from-me {
-      background-color: #cfe9ff;
-      float: right;
-    }
-    .from-others {
-      background-color: #e9ecef;
-      float: left;
-    }
-    #input-area {
-      display: flex;
-      border-top: 1px solid #ddd;
-      padding: 10px;
-      background: rgba(255,255,255,0.95);
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-    }
-    #messageInput {
-      flex: 1;
-      border-radius: 20px;
-      padding: 10px 15px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    #sendBtn {
-      width: 50px;
-      margin-left: 10px;
-      border-radius: 50%;
-      background-color: #0084ff;
-      font-size: 20px;
-    }
-    #topbar {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 10px;
-      position: relative;
-    }
-    .back, .logout {
-      position: absolute;
-      top: 0;
-      padding: 8px 16px;
-      border-radius: 20px;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .back {
-      left: 10px;
-      background-color: #555;
-    }
-    .back:hover {
-      background-color: #333;
-    }
-    .logout {
-      right: 10px;
-      background-color: #f44336;
-    }
-    .logout:hover {
-      background-color: #c0392b;
-    }
-  </style>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>Зєфаграм</title>
+<style>
+@font-face{font-family:'Minecraft';src:url('minecraft-mojangles.otf') format('opentype');}
+body{margin:0;font-family:Arial,sans-serif;background:url('zefagrambackground.png') center/cover no-repeat;display:flex;flex-direction:column;height:100vh;}
+#auth,#menu,#chat,#voiceChat{display:none;flex-direction:column;align-items:center;width:100%;max-width:600px;margin:auto;background:rgba(255,255,255,0.95);border-radius:12px;padding:15px;box-shadow:0 2px 6px rgba(0,0,0,0.2);}
+h2{text-align:center;margin:10px 0;}
+input,button{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;font-size:16px;}
+button{cursor:pointer;background:#0084ff;color:white;border:none;}
+button:hover{background:#0066cc;}
+.topbar{width:100%;display:flex;justify-content:center;align-items:center;position:relative;margin-bottom:10px;}
+.back,.logout,.callBtn{position:absolute;top:0;padding:8px 16px;border-radius:20px;color:white;border:none;cursor:pointer;}
+.back{left:10px;background:#555;}
+.back:hover{background:#333;}
+.logout{right:10px;background:#f44336;}
+.logout:hover{background:#c0392b;}
+.callBtn{right:50px;background:#4caf50;}
+.callBtn:hover{background:#388e3c;}
+#messages{flex:1;width:100%;overflow-y:auto;background:white;border-radius:10px;padding:10px;margin-bottom:0;}
+.message{display:inline-block;clear:both;margin:6px 0;padding:10px;border-radius:15px;max-width:70%;word-wrap:break-word;font-family:'Minecraft',Arial;}
+.message strong{color:#0084ff;}
+.from-me{background:#cfe9ff;float:right;}
+.from-others{background:#e9ecef;float:left;}
+#input-area{display:flex;width:100%;border-top:1px solid #ddd;padding:10px;background:rgba(255,255,255,0.95);}
+#messageInput{flex:1;border-radius:20px;padding:10px 15px;border:1px solid #ccc;font-size:16px;}
+#sendBtn{width:50px;margin-left:10px;border-radius:50%;font-size:20px;}
+#formatBtn{margin-right:5px;}
+.emojiPicker{display:flex;gap:5px;margin-top:5px;}
+.emojiPicker img{width:30px;height:30px;cursor:pointer;}
+.menuBtn{padding:10px 15px;width:90%;margin:5px;text-align:center;border-radius:12px;background:#0084ff;color:white;}
+.menuBtn:hover{background:#0066cc;}
+@media(max-width:500px){#auth,#menu,#chat,#voiceChat{width:95%;padding:10px;}#input-area{padding:5px;}#messageInput{font-size:14px;padding:8px;}}
+</style>
 </head>
 <body>
-  <div id='auth'>
-    <h2>Зєфаграм</h2>
-    <input type='text' id='username' placeholder='Введіть свій юзєрнамє'>
-    <input type='password' id='password' placeholder='Введіть пароль'>
-    <button id='registerBtn'>Зарегаться</button>
-    <button id='loginBtn'>Войти</button>
-    <button class='back' onclick='location.href="index.html"'>⬅ Назад</button>
-  </div>
+<div id='auth'>
+<h2>Зєфаграм</h2>
+<input type='text' id='username' placeholder='Введіть юзєрнамє'>
+<input type='password' id='password' placeholder='Пароль'>
+<button id='registerBtn'>Зарегаться</button>
+<button id='loginBtn'>Войти</button>
+<button class='back' onclick='location.href="index.html"'>⬅ Назад</button>
+</div>
 
-  <div id='chat' style='display:none; flex-direction:column; height:100vh;'>
-    <div id='topbar'>
-      <button class='back' onclick='location.href="index.html"'>⬅ Назад</button>
-      <h2 id='welcome'></h2>
-      <button class='logout' id='logoutBtn'>Вийті</button>
-    </div>
-    <div id='messages'></div>
-    <div id='input-area'>
-      <input type='text' id='messageInput' placeholder='ПІШИ!!!'>
-      <button id='sendBtn'>→</button>
-    </div>
-  </div>
+<div id='menu'>
+<h2>Меню чатів</h2>
+<button class='menuBtn' id='publicChatBtn'>Спільний чат</button>
+<button class='menuBtn' id='publicVoiceBtn'>Спільний голосовий чат</button>
+<button class='menuBtn' id='privateChatsBtn'>Приватні чати</button>
+<button class='menuBtn' id='createPrivateBtn'>Створити приватний чат</button>
+<button class='back' onclick='showMenu(false)'>⬅ Назад</button>
+<button class='logout' id='menuLogoutBtn'>Вийті</button>
+</div>
 
-  <script type='module'>
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js'
-    import { getDatabase, ref, set, push, get, child, onChildAdded } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
+<div id='chat'>
+<div class='topbar'>
+<button class='back' onclick='showMenu(true)'>⬅</button>
+<h2 id='chatTitle'></h2>
+<button class='callBtn' id='callBtn'>📞</button>
+<button class='logout' id='chatLogoutBtn'>Вийті</button>
+</div>
+<div id='messages'></div>
+<div id='input-area'>
+<button id='formatBtn'>…</button>
+<input type='text' id='messageInput' placeholder='ПІШИ!!!'>
+<button id='sendBtn'>→</button>
+<button id='voiceMsgBtn'>🎙️</button>
+</div>
+<div class='emojiPicker' id='emojiPicker'>
+<img src='zefasticker1.png'>
+<img src='zefasticker2.png'>
+<img src='zefasticker3.png'>
+<img src='zefasticker4.png'>
+<img src='zefasticker5.png'>
+</div>
+</div>
 
-    const firebaseConfig = {
-      apiKey: 'AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA',
-      authDomain: 'zefagram.firebaseapp.com',
-      databaseURL: 'https://zefagram-default-rtdb.europe-west1.firebasedatabase.app',
-      projectId: 'zefagram',
-      storageBucket: 'zefagram.firebasestorage.app',
-      messagingSenderId: '664999563847',
-      appId: '1:664999563847:web:3051100a05bdb41dc59762',
-      measurementId: 'G-CFS89PSQNK'
-    }
+<div id='voiceChat'>
+<div class='topbar'>
+<button class='back' onclick='showMenu(true)'>⬅</button>
+<h2 id='voiceTitle'></h2>
+<button class='logout' id='voiceLogoutBtn'>Вийті</button>
+</div>
+<button id='micToggleBtn'>🎙️ Увімкнути/Вимкнути мікрофон</button>
+</div>
 
-    const app = initializeApp(firebaseConfig)
-    const db = getDatabase(app)
-    let currentUser = localStorage.getItem('currentUser')
+<script type='module'>
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js'
+import { getDatabase, ref, set, push, get, child, onChildAdded } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
 
-    const authDiv = document.getElementById('auth')
-    const chatDiv = document.getElementById('chat')
-    const usernameInput = document.getElementById('username')
-    const passwordInput = document.getElementById('password')
-    const messageInput = document.getElementById('messageInput')
-    const messagesDiv = document.getElementById('messages')
-    const welcome = document.getElementById('welcome')
-    const registerBtn = document.getElementById('registerBtn')
-    const loginBtn = document.getElementById('loginBtn')
-    const sendBtn = document.getElementById('sendBtn')
-    const logoutBtn = document.getElementById('logoutBtn')
+const firebaseConfig = {
+apiKey:'AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA',
+authDomain:'zefagram.firebaseapp.com',
+databaseURL:'https://zefagram-default-rtdb.europe-west1.firebasedatabase.app',
+projectId:'zefagram',
+storageBucket:'zefagram.firebasestorage.app',
+messagingSenderId:'664999563847',
+appId:'1:664999563847:web:3051100a05bdb41dc59762',
+measurementId:'G-CFS89PSQNK'
+}
 
-    async function register() {
-      const username = usernameInput.value.trim()
-      const password = passwordInput.value.trim()
-      if (!username || !password) return alert('Введи юзєрнамє і пароль!')
-      const snapshot = await get(child(ref(db), 'users/' + username))
-      if (snapshot.exists()) return alert('Такий юзер вже є!')
-      await set(ref(db, 'users/' + username), { password })
-      alert('Ти зарегався!')
-    }
+const app = initializeApp(firebaseConfig)
+const db = getDatabase(app)
+let currentUser = localStorage.getItem('currentUser')
+let currentChat='public'
+let localStream=null, peerConnections={}
 
-    async function login() {
-      const username = usernameInput.value.trim()
-      const password = passwordInput.value.trim()
-      if (!username || !password) return alert('Введи юзєрнамє і пароль!')
-      const snapshot = await get(child(ref(db), 'users/' + username))
-      if (!snapshot.exists() || snapshot.val().password !== password) return alert('Неправильний юзєр або пароль!')
-      currentUser = username
-      localStorage.setItem('currentUser', username)
-      authDiv.style.display = 'none'
-      chatDiv.style.display = 'flex'
-      welcome.textContent = username
-    }
+const authDiv=document.getElementById('auth')
+const menuDiv=document.getElementById('menu')
+const chatDiv=document.getElementById('chat')
+const voiceDiv=document.getElementById('voiceChat')
+const usernameInput=document.getElementById('username')
+const passwordInput=document.getElementById('password')
+const messagesDiv=document.getElementById('messages')
+const chatTitle=document.getElementById('chatTitle')
+const messageInput=document.getElementById('messageInput')
+const sendBtn=document.getElementById('sendBtn')
+const registerBtn=document.getElementById('registerBtn')
+const loginBtn=document.getElementById('loginBtn')
+const callBtn=document.getElementById('callBtn')
+const micToggleBtn=document.getElementById('micToggleBtn')
+const voiceMsgBtn=document.getElementById('voiceMsgBtn')
 
-    function sendMessage() {
-      const text = messageInput.value.trim()
-      if (!text || !currentUser) return
-      const time = new Date().toLocaleTimeString()
-      push(ref(db, 'messages'), { user: currentUser, text, time })
-      messageInput.value = ''
-    }
+function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
-    function addMessage(data) {
-      const msg = data.val()
-      const msgDiv = document.createElement('div')
-      msgDiv.className = 'message ' + (msg.user === currentUser ? 'from-me' : 'from-others')
-      msgDiv.innerHTML = '<strong>' + msg.user + '</strong>: ' + msg.text + ' <small>(' + msg.time + ')</small>'
-      messagesDiv.appendChild(msgDiv)
-      messagesDiv.scrollTop = messagesDiv.scrollHeight
-    }
+async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзер вже є');await set(ref(db,'users/'+u),{password:p});alert('Ти зарегався!')}
+async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return alert('Неправильний юзєр або пароль');currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
 
-    onChildAdded(ref(db, 'messages'), addMessage)
+function showMenu(show){authDiv.style.display='none';menuDiv.style.display=show?'flex':'none';chatDiv.style.display='none';voiceDiv.style.display='none'}
+function showChat(chat,peer=false){currentChat=chat;chatTitle.textContent=chat;messagesDiv.innerHTML='';authDiv.style.display='none';menuDiv.style.display='none';chatDiv.style.display='flex';voiceDiv.style.display='none'}
+function showVoice(chat){voiceDiv.style.display='flex';voiceTitle.textContent=chat;authDiv.style.display='none';menuDiv.style.display='none';chatDiv.style.display='none'}
 
-    function logout() {
-      localStorage.removeItem('currentUser')
-      currentUser = null
-      chatDiv.style.display = 'none'
-      authDiv.style.display = 'block'
-    }
+function logout(){localStorage.removeItem('currentUser');currentUser=null;authDiv.style.display='flex';menuDiv.style.display='none';chatDiv.style.display='none';voiceDiv.style.display='none'}
 
-    registerBtn.onclick = register
-    loginBtn.onclick = login
-    sendBtn.onclick = sendMessage
-    logoutBtn.onclick = logout
+async function sendMessage(){const t=messageInput.value.trim();if(!t||!currentUser)return;const time=formatTime(new Date());push(ref(db,'messages/'+currentChat),{user:currentUser,text:t,time});messageInput.value=''}
+function addMessage(data){const m=data.val();const d=document.createElement('div');d.className='message '+(m.user===currentUser?'from-me':'from-others');d.innerHTML='<strong>'+m.user+'</strong>: '+m.text+' <small>('+m.time+')</small>';messagesDiv.appendChild(d);messagesDiv.scrollTop=messagesDiv.scrollHeight}
+onChildAdded(ref(db,'messages/public'),addMessage)
 
-    usernameInput.addEventListener('keypress', e => { if (e.key === 'Enter') login() })
-    messageInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage() })
+registerBtn.onclick=register
+loginBtn.onclick=login
+sendBtn.onclick=sendMessage
 
-    if (currentUser) {
-      authDiv.style.display = 'none'
-      chatDiv.style.display = 'flex'
-      welcome.textContent = currentUser
-    }
-  </script>
+<script type='module'>
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js'
+import { getDatabase, ref, set, push, get, child, onChildAdded, remove } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
+
+const firebaseConfig = {
+apiKey:'AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA',
+authDomain:'zefagram.firebaseapp.com',
+databaseURL:'https://zefagram-default-rtdb.europe-west1.firebasedatabase.app',
+projectId:'zefagram',
+storageBucket:'zefagram.firebasestorage.app',
+messagingSenderId:'664999563847',
+appId:'1:664999563847:web:3051100a05bdb41dc59762',
+measurementId:'G-CFS89PSQNK'
+}
+
+const app = initializeApp(firebaseConfig)
+const db = getDatabase(app)
+
+let localStream=null
+let peers={}
+let isMicOn=false
+
+async function startLocalStream(){localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false})}
+
+async function joinPublicVoice(){showVoice('Спільний голосовий чат');await startLocalStream();const voiceRef=ref(db,'voice/public');onChildAdded(voiceRef,data=>{const msg=data.val();if(msg.type==='offer'){createAnswer(msg.from,msg.offer)}});}
+
+async function createPrivateCall(target){showVoice('Приватний голосовий чат');await startLocalStream();const callRef=ref(db,'voice/private/'+currentUser+'_'+target);const pc=new RTCPeerConnection()
+pc.ontrack=e=>{const aud=document.createElement('audio');aud.srcObject=e.streams[0];aud.autoplay=true;document.body.appendChild(aud)}
+localStream.getTracks().forEach(t=>pc.addTrack(t,localStream))
+const offer=await pc.createOffer();await pc.setLocalDescription(offer);set(callRef,{from:currentUser,offer:offer.sdp})}
+
+async function createAnswer(from,offerSDP){const pc=new RTCPeerConnection()
+pc.ontrack=e=>{const aud=document.createElement('audio');aud.srcObject=e.streams[0];aud.autoplay=true;document.body.appendChild(aud)}
+localStream.getTracks().forEach(t=>pc.addTrack(t,localStream))
+await pc.setRemoteDescription({type:'offer',sdp:offerSDP})
+const answer=await pc.createAnswer();await pc.setLocalDescription(answer)
+set(ref(db,'voice/private/'+from+'_'+currentUser+'/answer'),{answer:answer.sdp})}
+
+micToggleBtn.onclick=()=>{if(!localStream)return;isMicOn=!isMicOn;localStream.getAudioTracks()[0].enabled=isMicOn}
+
+voiceMsgBtn.onclick=async()=>{if(!localStream)return;const rec=new MediaRecorder(localStream);let data=[];rec.ondataavailable=e=>data.push(e.data);rec.onstop=async()=>{const blob=new Blob(data,{type:'audio/webm'});const reader=new FileReader();reader.onload=()=>{push(ref(db,'messages/'+currentChat),{user:currentUser,text:'[🎙️ голосове повідомлення]',audio:reader.result,time:formatTime(new Date())})};reader.readAsDataURL(blob)};rec.start();setTimeout(()=>rec.stop(),5000)}
+
+</script>
+
+</script>
 </body>
 </html>
