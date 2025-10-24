@@ -7,7 +7,7 @@
 <style>
 @font-face{font-family:'Minecraft';src:url('minecraft-mojangles.otf') format('opentype');}
 body{margin:0;font-family:Arial,sans-serif;background:url('zefagrambackground.png') center/cover no-repeat;display:flex;flex-direction:column;height:100vh;}
-div.screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:600px;margin:auto;background:rgba(255,255,255,0.95);border-radius:12px;padding:15px;box-shadow:0 2px 6px rgba(0,0,0,0.2);height:95vh;}
+.screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:600px;margin:auto;background:rgba(255,255,255,0.95);border-radius:12px;padding:15px;box-shadow:0 2px 6px rgba(0,0,0,0.2);height:95vh;}
 h2{text-align:center;margin:10px 0;}
 input,button{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;font-size:16px;}
 button{cursor:pointer;background:#0084ff;color:white;border:none;}
@@ -38,31 +38,31 @@ button:hover{background:#0066cc;}
 </head>
 <body>
 
-<div id='auth' class='screen'>
+<div id='authScreen' class='screen'>
 <h2>Зєфаграм</h2>
 <input type='text' id='username' placeholder='Введіть юзєрнамє'>
 <input type='password' id='password' placeholder='Пароль'>
 <button id='registerBtn'>Зарегаться</button>
 <button id='loginBtn'>Войти</button>
-<button class='back' onclick='location.href="index.html"'>⬅ Назад</button>
+<button id='backAuth' class='back' onclick='location.href="index.html"'>⬅ Назад</button>
 </div>
 
-<div id='menu' class='screen'>
+<div id='menuScreen' class='screen'>
 <h2>Меню чатів</h2>
 <button class='menuBtn' id='publicChatBtn'>Спільний чат</button>
 <button class='menuBtn' id='publicVoiceBtn'>Спільний голосовий чат</button>
 <button class='menuBtn' id='privateChatsBtn'>Приватні чати</button>
 <button class='menuBtn' id='createPrivateBtn'>Створити приватний чат</button>
-<button class='back' onclick='showMenu(false)'>⬅ Назад</button>
-<button class='logout' id='menuLogoutBtn'>Вийті</button>
+<button id='backMenu' class='back'>⬅ Назад</button>
+<button id='logoutMenu' class='logout'>Вийті</button>
 </div>
 
-<div id='chat' class='screen'>
+<div id='chatScreen' class='screen'>
 <div class='topbar'>
-<button class='back' onclick='showMenu(true)'>⬅</button>
+<button id='backChat' class='back'>⬅</button>
 <h2 id='chatTitle'></h2>
-<button class='callBtn' id='callBtn'>📞</button>
-<button class='logout' id='chatLogoutBtn'>Вийті</button>
+<button id='callBtn' class='callBtn'>📞</button>
+<button id='logoutChat' class='logout'>Вийті</button>
 </div>
 <div id='messages'></div>
 <div id='input-area'>
@@ -80,11 +80,11 @@ button:hover{background:#0066cc;}
 </div>
 </div>
 
-<div id='voiceChat' class='screen'>
+<div id='voiceScreen' class='screen'>
 <div class='topbar'>
-<button class='back' onclick='showMenu(true)'>⬅</button>
+<button id='backVoice' class='back'>⬅</button>
 <h2 id='voiceTitle'></h2>
-<button class='logout' id='voiceLogoutBtn'>Вийті</button>
+<button id='logoutVoice' class='logout'>Вийті</button>
 </div>
 <button id='micToggleBtn'>🎙️ Увімкнути/Вимкнути мікрофон</button>
 </div>
@@ -108,51 +108,49 @@ const app = initializeApp(firebaseConfig)
 const db = getDatabase(app)
 let currentUser = localStorage.getItem('currentUser') || null
 let currentChat='public'
-let localStream=null, peerConnections={}
+let localStream=null
 
-const authDiv=document.getElementById('auth')
-const menuDiv=document.getElementById('menu')
-const chatDiv=document.getElementById('chat')
-const voiceDiv=document.getElementById('voiceChat')
+const authScreen=document.getElementById('authScreen')
+const menuScreen=document.getElementById('menuScreen')
+const chatScreen=document.getElementById('chatScreen')
+const voiceScreen=document.getElementById('voiceScreen')
 const usernameInput=document.getElementById('username')
 const passwordInput=document.getElementById('password')
 const messagesDiv=document.getElementById('messages')
 const chatTitle=document.getElementById('chatTitle')
 const messageInput=document.getElementById('messageInput')
-const sendBtn=document.getElementById('sendBtn')
-const registerBtn=document.getElementById('registerBtn')
-const loginBtn=document.getElementById('loginBtn')
-const callBtn=document.getElementById('callBtn')
-const micToggleBtn=document.getElementById('micToggleBtn')
-const voiceMsgBtn=document.getElementById('voiceMsgBtn')
-const emojiPicker=document.getElementById('emojiPicker')
-const voiceTitle=document.getElementById('voiceTitle')
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
 async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзер вже є');await set(ref(db,'users/'+u),{password:p});alert('Ти зарегався!')}
 async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return alert('Неправильний юзер або пароль');currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
 
-function showMenu(show){authDiv.style.display='none';menuDiv.style.display=show?'flex':'none';chatDiv.style.display='none';voiceDiv.style.display='none'}
-function showChat(chat){currentChat=chat;chatTitle.textContent=chat;messagesDiv.innerHTML='';authDiv.style.display='none';menuDiv.style.display='none';chatDiv.style.display='flex';voiceDiv.style.display='none'}
-function showVoice(chat){voiceDiv.style.display='flex';voiceTitle.textContent=chat;authDiv.style.display='none';menuDiv.style.display='none';chatDiv.style.display='none'}
-function logout(){localStorage.removeItem('currentUser');currentUser=null;authDiv.style.display='flex';menuDiv.style.display='none';chatDiv.style.display='none';voiceDiv.style.display='none'}
+function showMenu(show){authScreen.style.display='none';menuScreen.style.display=show?'flex':'none';chatScreen.style.display='none';voiceScreen.style.display='none'}
+function showChat(chat){currentChat=chat;chatTitle.textContent=chat;messagesDiv.innerHTML='';authScreen.style.display='none';menuScreen.style.display='none';chatScreen.style.display='flex';voiceScreen.style.display='none'}
+function showVoice(chat){voiceScreen.style.display='flex';document.getElementById('voiceTitle').textContent=chat;authScreen.style.display='none';menuScreen.style.display='none';chatScreen.style.display='none'}
+function logout(){localStorage.removeItem('currentUser');currentUser=null;authScreen.style.display='flex';menuScreen.style.display='none';chatScreen.style.display='none';voiceScreen.style.display='none'}
 
 async function sendMessage(){const t=messageInput.value.trim();if(!t||!currentUser)return;const time=formatTime(new Date());push(ref(db,'messages/'+currentChat),{user:currentUser,text:t,time});messageInput.value=''}
 function addMessage(data){const m=data.val();const d=document.createElement('div');d.className='message '+(m.user===currentUser?'from-me':'from-others');d.innerHTML='<strong>'+m.user+'</strong>: '+m.text+' <small>('+m.time+')</small>';messagesDiv.appendChild(d);messagesDiv.scrollTop=messagesDiv.scrollHeight}
 
+document.addEventListener('DOMContentLoaded',()=>{
+if(currentUser){showMenu(true)}else{authScreen.style.display='flex'}
+
+document.getElementById('registerBtn').onclick=register
+document.getElementById('loginBtn').onclick=login
+document.getElementById('backAuth').onclick=()=>{location.href='index.html'}
+document.getElementById('backMenu').onclick=()=>{showMenu(false)}
+document.getElementById('logoutMenu').onclick=logout
+document.getElementById('backChat').onclick=()=>{showMenu(true)}
+document.getElementById('logoutChat').onclick=logout
+document.getElementById('backVoice').onclick=()=>{showMenu(true)}
+document.getElementById('logoutVoice').onclick=logout
+document.getElementById('sendBtn').onclick=sendMessage
+
 onChildAdded(ref(db,'messages/public'),addMessage)
 
-registerBtn.onclick=register
-loginBtn.onclick=login
-sendBtn.onclick=sendMessage
-document.addEventListener('DOMContentLoaded',()=>{if(currentUser){showMenu(true)}else{authDiv.style.display='flex'}})
-
-emojiPicker.querySelectorAll('img').forEach(img=>{img.onclick=()=>{messageInput.value+='['+img.src.split('/').pop()+']'}})
-
-async function startLocalStream(){localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false})}
-micToggleBtn.onclick=()=>{if(!localStream)return;localStream.getAudioTracks()[0].enabled=!localStream.getAudioTracks()[0].enabled}
-voiceMsgBtn.onclick=async()=>{if(!localStream)return;const rec=new MediaRecorder(localStream);let data=[];rec.ondataavailable=e=>data.push(e.data);rec.onstop=async()=>{const blob=new Blob(data,{type:'audio/webm'});const reader=new FileReader();reader.onload=()=>{push(ref(db,'messages/'+currentChat),{user:currentUser,text:'[🎙️ голосове повідомлення]',audio:reader.result,time:formatTime(new Date())})};reader.readAsDataURL(blob)};rec.start();setTimeout(()=>rec.stop(),5000)}
+document.getElementById('emojiPicker').querySelectorAll('img').forEach(img=>{img.onclick=()=>{messageInput.value+='['+img.src.split('/').pop()+']'}})
+})
 </script>
 
 </body>
