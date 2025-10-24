@@ -29,6 +29,8 @@ button:hover{background:#0066cc;}
 .emojiPicker img{width:30px;height:30px;cursor:pointer;}
 .menuBtn{padding:10px 15px;width:90%;margin:5px;text-align:center;border-radius:12px;background:#0084ff;color:white;}
 .menuBtn:hover{background:#0066cc;}
+#menuGreetingWrapper{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;}
+#menuGreeting{margin-bottom:10px;}
 @media(max-width:500px){.screen{width:95%;padding:10px;}#input-area{padding:5px;}#messageInput{font-size:14px;padding:8px;}}
 </style>
 </head>
@@ -44,12 +46,14 @@ button:hover{background:#0066cc;}
 </div>
 
 <div id='menuScreen' class='screen'>
+<div id='menuGreetingWrapper'>
 <h2 id='menuGreeting'></h2>
+<button id='backMenu' class='back'>⬅ Назад</button>
+</div>
 <button class='menuBtn' id='publicChatBtn'>Спільний чат</button>
 <button class='menuBtn' id='publicVoiceBtn'>Спільний голосовий чат</button>
 <button class='menuBtn' id='privateChatsBtn'>Приватні чати</button>
 <button class='menuBtn' id='createPrivateBtn'>Створити приватний чат</button>
-<button id='backMenu' class='back'>⬅ Назад</button>
 </div>
 
 <div id='chatScreen' class='screen'>
@@ -100,8 +104,6 @@ const app = initializeApp(firebaseConfig)
 const db = getDatabase(app)
 let currentUser = localStorage.getItem('currentUser') || null
 let currentChat='public'
-let peerConnection=null
-let localStream=null
 
 const authScreen=document.getElementById('authScreen')
 const menuScreen=document.getElementById('menuScreen')
@@ -124,11 +126,12 @@ function showMenu(show){authScreen.style.display='none';menuScreen.style.display
 function renderMessage(msg){
 const d=document.createElement('div')
 d.className='message '+(msg.user===currentUser?'from-me':'from-others')
-let text=msg.text.replace(/\[zefasticker(\d)\]/g,"<img src='zefasticker$1.png' style='width:50px;height:50px'>")
-text=text.replace(/\*\*(.*?)\*\*/g,"<b>$1</b>")
-text=text.replace(/\*(.*?)\*/g,"<i>$1</i>")
-text=text.replace(/__(.*?)__/g,"<u>$1</u>")
-text=text.replace(/~~(.*?)~~/g,"<s>$1</s>")
+let text=msg.text
+text=text.replace(/\[zefasticker(\d)\]/g,(m,n)=>`<img src='zefasticker${n}.png' style='width:50px;height:50px'>`)
+text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')
+text=text.replace(/\*(.*?)\*/g,'<i>$1</i>')
+text=text.replace(/__(.*?)__/g,'<u>$1</u>')
+text=text.replace(/~~(.*?)~~/g,'<s>$1</s>')
 text=text.replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>")
 text=text.replace(/%%(.*?)%%/g,"<span style='font-family:Minecraft'>$1</span>")
 d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`
@@ -155,7 +158,7 @@ document.getElementById('createPrivateBtn').onclick=()=>{const user=prompt('Вв
 document.getElementById('backChat').onclick=()=>{showMenu(true)}
 document.getElementById('voiceMsgBtn').onclick=async()=>{
 if(!navigator.mediaDevices) return alert('Не підтримується мікрофон')
-localStream=await navigator.mediaDevices.getUserMedia({audio:true})
+const localStream=await navigator.mediaDevices.getUserMedia({audio:true})
 const mediaRecorder=new MediaRecorder(localStream)
 let chunks=[]
 mediaRecorder.ondataavailable=e=>chunks.push(e.data)
