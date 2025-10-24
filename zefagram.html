@@ -13,7 +13,7 @@ input,button{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;fon
 button{cursor:pointer;background:#0084ff;color:white;border:none;}
 button:hover{background:#0066cc;}
 .topbar{width:100%;display:flex;justify-content:center;align-items:center;position:relative;margin-bottom:10px;}
-.back{position:relative;padding:8px 16px;border-radius:20px;color:white;border:none;cursor:pointer;background:#555;}
+.back{padding:8px 16px;border-radius:20px;color:white;border:none;cursor:pointer;background:#555;}
 .back:hover{background:#333;}
 #messages{flex:1;width:100%;overflow-y:auto;background:rgba(255,255,255,0.8);border-radius:10px;padding:10px;margin-bottom:0;}
 .message{display:inline-block;clear:both;margin:6px 0;padding:10px;border-radius:15px;max-width:70%;word-wrap:break-word;font-family:'Minecraft',Arial;}
@@ -35,7 +35,8 @@ button:hover{background:#0066cc;}
 .menuBtn:hover{background:#0066cc;}
 #menuGreetingWrapper{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;}
 #menuGreeting{margin-bottom:10px;}
-.menuActions{display:flex;gap:10px;margin-top:10px;}
+.menuActions{display:flex;gap:10px;margin-top:10px;justify-content:center;}
+.callBtn{margin-left:10px;padding:5px 10px;background:green;color:white;border-radius:6px;}
 @media(max-width:500px){.screen{width:95%;padding:10px;}#input-area{padding:5px;}#messageInput{font-size:14px;padding:8px;}}
 </style>
 </head>
@@ -89,6 +90,9 @@ button:hover{background:#0066cc;}
 <img src='zefasticker4.png'>
 <img src='zefasticker5.png'>
 </div>
+<div class='menuActions'>
+<button id='backChat' class='back'>⬅ Назад</button>
+</div>
 </div>
 
 <div id='voiceScreen' class='screen'>
@@ -119,7 +123,7 @@ const app = initializeApp(firebaseConfig)
 const db = getDatabase(app)
 let currentUser = localStorage.getItem('currentUser') || null
 let currentChat='public'
-let peerConnections={},localStream=null
+let peerConnections={},localStream=null,callRefs={}
 
 const authScreen=document.getElementById('authScreen')
 const menuScreen=document.getElementById('menuScreen')
