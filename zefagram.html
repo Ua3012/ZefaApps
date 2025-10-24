@@ -20,7 +20,7 @@ button:hover{background:#0066cc;}
 .logout:hover{background:#c0392b;}
 .callBtn{right:50px;background:#4caf50;}
 .callBtn:hover{background:#388e3c;}
-#messages{flex:1;width:100%;overflow-y:auto;background:white;border-radius:10px;padding:10px;margin-bottom:0;}
+#messages{flex:1;width:100%;overflow-y:auto;background:rgba(255,255,255,0.8);border-radius:10px;padding:10px;margin-bottom:0;}
 .message{display:inline-block;clear:both;margin:6px 0;padding:10px;border-radius:15px;max-width:70%;word-wrap:break-word;font-family:'Minecraft',Arial;}
 .message strong{color:#0084ff;}
 .from-me{background:#cfe9ff;float:right;}
@@ -29,7 +29,7 @@ button:hover{background:#0066cc;}
 #messageInput{flex:1;border-radius:20px;padding:10px 15px;border:1px solid #ccc;font-size:16px;}
 #sendBtn{width:50px;margin-left:10px;border-radius:50%;font-size:20px;}
 #formatBtn{margin-right:5px;}
-.emojiPicker{display:flex;gap:5px;margin-top:5px;}
+.emojiPicker{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;justify-content:center;}
 .emojiPicker img{width:30px;height:30px;cursor:pointer;}
 .menuBtn{padding:10px 15px;width:90%;margin:5px;text-align:center;border-radius:12px;background:#0084ff;color:white;}
 .menuBtn:hover{background:#0066cc;}
@@ -124,6 +124,8 @@ const loginBtn=document.getElementById('loginBtn')
 const callBtn=document.getElementById('callBtn')
 const micToggleBtn=document.getElementById('micToggleBtn')
 const voiceMsgBtn=document.getElementById('voiceMsgBtn')
+const emojiPicker=document.getElementById('emojiPicker')
+const voiceTitle=document.getElementById('voiceTitle')
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
@@ -131,63 +133,29 @@ async function register(){const u=usernameInput.value.trim();const p=passwordInp
 async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return alert('Неправильний юзєр або пароль');currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
 
 function showMenu(show){authDiv.style.display='none';menuDiv.style.display=show?'flex':'none';chatDiv.style.display='none';voiceDiv.style.display='none'}
-function showChat(chat,peer=false){currentChat=chat;chatTitle.textContent=chat;messagesDiv.innerHTML='';authDiv.style.display='none';menuDiv.style.display='none';chatDiv.style.display='flex';voiceDiv.style.display='none'}
+function showChat(chat){currentChat=chat;chatTitle.textContent=chat;messagesDiv.innerHTML='';authDiv.style.display='none';menuDiv.style.display='none';chatDiv.style.display='flex';voiceDiv.style.display='none'}
 function showVoice(chat){voiceDiv.style.display='flex';voiceTitle.textContent=chat;authDiv.style.display='none';menuDiv.style.display='none';chatDiv.style.display='none'}
 
 function logout(){localStorage.removeItem('currentUser');currentUser=null;authDiv.style.display='flex';menuDiv.style.display='none';chatDiv.style.display='none';voiceDiv.style.display='none'}
 
 async function sendMessage(){const t=messageInput.value.trim();if(!t||!currentUser)return;const time=formatTime(new Date());push(ref(db,'messages/'+currentChat),{user:currentUser,text:t,time});messageInput.value=''}
 function addMessage(data){const m=data.val();const d=document.createElement('div');d.className='message '+(m.user===currentUser?'from-me':'from-others');d.innerHTML='<strong>'+m.user+'</strong>: '+m.text+' <small>('+m.time+')</small>';messagesDiv.appendChild(d);messagesDiv.scrollTop=messagesDiv.scrollHeight}
+
 onChildAdded(ref(db,'messages/public'),addMessage)
 
 registerBtn.onclick=register
 loginBtn.onclick=login
 sendBtn.onclick=sendMessage
 
-<script type='module'>
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js'
-import { getDatabase, ref, set, push, get, child, onChildAdded, remove } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
-
-const firebaseConfig = {
-apiKey:'AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA',
-authDomain:'zefagram.firebaseapp.com',
-databaseURL:'https://zefagram-default-rtdb.europe-west1.firebasedatabase.app',
-projectId:'zefagram',
-storageBucket:'zefagram.firebasestorage.app',
-messagingSenderId:'664999563847',
-appId:'1:664999563847:web:3051100a05bdb41dc59762',
-measurementId:'G-CFS89PSQNK'
-}
-
-const app = initializeApp(firebaseConfig)
-const db = getDatabase(app)
-
-let localStream=null
-let peers={}
-let isMicOn=false
+emojiPicker.querySelectorAll('img').forEach(img=>{img.onclick=()=>{messageInput.value+='['+img.src.split('/').pop()+']'}})
 
 async function startLocalStream(){localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false})}
 
-async function joinPublicVoice(){showVoice('Спільний голосовий чат');await startLocalStream();const voiceRef=ref(db,'voice/public');onChildAdded(voiceRef,data=>{const msg=data.val();if(msg.type==='offer'){createAnswer(msg.from,msg.offer)}});}
-
-async function createPrivateCall(target){showVoice('Приватний голосовий чат');await startLocalStream();const callRef=ref(db,'voice/private/'+currentUser+'_'+target);const pc=new RTCPeerConnection()
-pc.ontrack=e=>{const aud=document.createElement('audio');aud.srcObject=e.streams[0];aud.autoplay=true;document.body.appendChild(aud)}
-localStream.getTracks().forEach(t=>pc.addTrack(t,localStream))
-const offer=await pc.createOffer();await pc.setLocalDescription(offer);set(callRef,{from:currentUser,offer:offer.sdp})}
-
-async function createAnswer(from,offerSDP){const pc=new RTCPeerConnection()
-pc.ontrack=e=>{const aud=document.createElement('audio');aud.srcObject=e.streams[0];aud.autoplay=true;document.body.appendChild(aud)}
-localStream.getTracks().forEach(t=>pc.addTrack(t,localStream))
-await pc.setRemoteDescription({type:'offer',sdp:offerSDP})
-const answer=await pc.createAnswer();await pc.setLocalDescription(answer)
-set(ref(db,'voice/private/'+from+'_'+currentUser+'/answer'),{answer:answer.sdp})}
-
-micToggleBtn.onclick=()=>{if(!localStream)return;isMicOn=!isMicOn;localStream.getAudioTracks()[0].enabled=isMicOn}
+micToggleBtn.onclick=()=>{if(!localStream)return;localStream.getAudioTracks()[0].enabled=!localStream.getAudioTracks()[0].enabled}
 
 voiceMsgBtn.onclick=async()=>{if(!localStream)return;const rec=new MediaRecorder(localStream);let data=[];rec.ondataavailable=e=>data.push(e.data);rec.onstop=async()=>{const blob=new Blob(data,{type:'audio/webm'});const reader=new FileReader();reader.onload=()=>{push(ref(db,'messages/'+currentChat),{user:currentUser,text:'[🎙️ голосове повідомлення]',audio:reader.result,time:formatTime(new Date())})};reader.readAsDataURL(blob)};rec.start();setTimeout(()=>rec.stop(),5000)}
 
-</script>
-
+if(currentUser){showMenu(true)}
 </script>
 </body>
 </html>
