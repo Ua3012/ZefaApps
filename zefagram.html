@@ -13,13 +13,8 @@ input,button{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;fon
 button{cursor:pointer;background:#0084ff;color:white;border:none;}
 button:hover{background:#0066cc;}
 .topbar{width:100%;display:flex;justify-content:center;align-items:center;position:relative;margin-bottom:10px;}
-.back,.logout,.callBtn{position:absolute;top:0;padding:8px 16px;border-radius:20px;color:white;border:none;cursor:pointer;}
-.back{left:10px;background:#555;}
+.back{position:absolute;left:10px;padding:8px 16px;border-radius:20px;color:white;border:none;cursor:pointer;background:#555;}
 .back:hover{background:#333;}
-.logout{right:10px;background:#f44336;}
-.logout:hover{background:#c0392b;}
-.callBtn{right:50px;background:#4caf50;}
-.callBtn:hover{background:#388e3c;}
 #messages{flex:1;width:100%;overflow-y:auto;background:rgba(255,255,255,0.8);border-radius:10px;padding:10px;margin-bottom:0;}
 .message{display:inline-block;clear:both;margin:6px 0;padding:10px;border-radius:15px;max-width:70%;word-wrap:break-word;font-family:'Minecraft',Arial;}
 .message strong{color:#0084ff;}
@@ -28,6 +23,7 @@ button:hover{background:#0066cc;}
 #input-area{display:flex;width:100%;border-top:1px solid #ddd;padding:10px;background:rgba(255,255,255,0.95);}
 #messageInput{flex:1;border-radius:20px;padding:10px 15px;border:1px solid #ccc;font-size:16px;}
 #sendBtn{width:50px;margin-left:10px;border-radius:50%;font-size:20px;}
+#voiceMsgBtn{margin-left:5px;font-size:20px;border-radius:50%;}
 #formatBtn{margin-right:5px;}
 .emojiPicker{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;justify-content:center;}
 .emojiPicker img{width:30px;height:30px;cursor:pointer;}
@@ -48,21 +44,18 @@ button:hover{background:#0066cc;}
 </div>
 
 <div id='menuScreen' class='screen'>
-<h2>Меню чатів</h2>
+<h2 id='menuGreeting'></h2>
 <button class='menuBtn' id='publicChatBtn'>Спільний чат</button>
 <button class='menuBtn' id='publicVoiceBtn'>Спільний голосовий чат</button>
 <button class='menuBtn' id='privateChatsBtn'>Приватні чати</button>
 <button class='menuBtn' id='createPrivateBtn'>Створити приватний чат</button>
 <button id='backMenu' class='back'>⬅ Назад</button>
-<button id='logoutMenu' class='logout'>Вийті</button>
 </div>
 
 <div id='chatScreen' class='screen'>
 <div class='topbar'>
 <button id='backChat' class='back'>⬅</button>
 <h2 id='chatTitle'></h2>
-<button id='callBtn' class='callBtn'>📞</button>
-<button id='logoutChat' class='logout'>Вийті</button>
 </div>
 <div id='messages'></div>
 <div id='input-area'>
@@ -84,14 +77,13 @@ button:hover{background:#0066cc;}
 <div class='topbar'>
 <button id='backVoice' class='back'>⬅</button>
 <h2 id='voiceTitle'></h2>
-<button id='logoutVoice' class='logout'>Вийті</button>
 </div>
 <button id='micToggleBtn'>🎙️ Увімкнути/Вимкнути мікрофон</button>
 </div>
 
 <script type='module'>
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js'
-import { getDatabase, ref, set, push, get, child, onChildAdded } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
+import { getDatabase, ref, set, push, get, child, onValue } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
 
 const firebaseConfig = {
 apiKey:'AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA',
@@ -108,6 +100,7 @@ const app = initializeApp(firebaseConfig)
 const db = getDatabase(app)
 let currentUser = localStorage.getItem('currentUser') || null
 let currentChat='public'
+let peerConnection=null
 let localStream=null
 
 const authScreen=document.getElementById('authScreen')
@@ -119,46 +112,65 @@ const passwordInput=document.getElementById('password')
 const messagesDiv=document.getElementById('messages')
 const chatTitle=document.getElementById('chatTitle')
 const messageInput=document.getElementById('messageInput')
+const menuGreeting=document.getElementById('menuGreeting')
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
 async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзер вже є');await set(ref(db,'users/'+u),{password:p});alert('Ти зарегався!')}
 async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return alert('Неправильний юзер або пароль');currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
 
-function showMenu(show){authScreen.style.display='none';menuScreen.style.display=show?'flex':'none';chatScreen.style.display='none';voiceScreen.style.display='none'}
-function showChat(chat){currentChat=chat;chatTitle.textContent=chat;messagesDiv.innerHTML='';authScreen.style.display='none';menuScreen.style.display='none';chatScreen.style.display='flex';voiceScreen.style.display='none'}
-function showVoice(chat){voiceScreen.style.display='flex';document.getElementById('voiceTitle').textContent=chat;authScreen.style.display='none';menuScreen.style.display='none';chatScreen.style.display='none'}
+function showMenu(show){authScreen.style.display='none';menuScreen.style.display=show?'flex':'none';chatScreen.style.display='none';voiceScreen.style.display='none';if(show) menuGreeting.textContent=`Прівєт, дура ${currentUser}!`}
+
+function renderMessage(msg){
+const d=document.createElement('div')
+d.className='message '+(msg.user===currentUser?'from-me':'from-others')
+let text=msg.text.replace(/\[zefasticker(\d)\]/g,"<img src='zefasticker$1.png' style='width:50px;height:50px'>")
+text=text.replace(/\*\*(.*?)\*\*/g,"<b>$1</b>")
+text=text.replace(/\*(.*?)\*/g,"<i>$1</i>")
+text=text.replace(/__(.*?)__/g,"<u>$1</u>")
+text=text.replace(/~~(.*?)~~/g,"<s>$1</s>")
+text=text.replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>")
+text=text.replace(/%%(.*?)%%/g,"<span style='font-family:Minecraft'>$1</span>")
+d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`
+messagesDiv.appendChild(d)
+messagesDiv.scrollTop=messagesDiv.scrollHeight
+}
+
+function showChat(chat,partner=null){currentChat=chat;messagesDiv.innerHTML='';authScreen.style.display='none';menuScreen.style.display='none';chatScreen.style.display='flex';voiceScreen.style.display='none';chatTitle.textContent=partner||chat;const chatRef=ref(db,'messages/'+chat);onValue(chatRef,snapshot=>{messagesDiv.innerHTML='';snapshot.forEach(c=>renderMessage(c.val()))})}
+
 function logout(){localStorage.removeItem('currentUser');currentUser=null;authScreen.style.display='flex';menuScreen.style.display='none';chatScreen.style.display='none';voiceScreen.style.display='none'}
 
 async function sendMessage(){const t=messageInput.value.trim();if(!t||!currentUser)return;const time=formatTime(new Date());push(ref(db,'messages/'+currentChat),{user:currentUser,text:t,time});messageInput.value=''}
-function addMessage(data){const m=data.val();const d=document.createElement('div');d.className='message '+(m.user===currentUser?'from-me':'from-others');d.innerHTML='<strong>'+m.user+'</strong>: '+m.text+' <small>('+m.time+')</small>';messagesDiv.appendChild(d);messagesDiv.scrollTop=messagesDiv.scrollHeight}
 
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
 if(currentUser){showMenu(true)}else{authScreen.style.display='flex'}
-
 document.getElementById('registerBtn').onclick=register
 document.getElementById('loginBtn').onclick=login
 document.getElementById('backAuth').onclick=()=>{location.href='index.html'}
 document.getElementById('backMenu').onclick=()=>{showMenu(false)}
-document.getElementById('logoutMenu').onclick=logout
-document.getElementById('backChat').onclick=()=>{showMenu(true)}
-document.getElementById('logoutChat').onclick=logout
-document.getElementById('backVoice').onclick=()=>{showMenu(true)}
-document.getElementById('logoutVoice').onclick=logout
-document.getElementById('sendBtn').onclick=sendMessage
-
-document.getElementById('publicChatBtn').onclick=()=>{showChat('public')}
-document.getElementById('publicVoiceBtn').onclick=()=>{showVoice('public-voice')}
+document.getElementById('publicChatBtn').onclick=()=>{showChat('Спільний чат')}
+document.getElementById('publicVoiceBtn').onclick=()=>{showChat('Спільний голосовий чат')}
 document.getElementById('privateChatsBtn').onclick=()=>{alert('Список приватних чатів поки що пустий')}
-document.getElementById('createPrivateBtn').onclick=()=>{
-  const user=prompt('Введи юзернамє того, з ким хочеш чат')
-  if(user) showChat('private_'+user)
+document.getElementById('createPrivateBtn').onclick=()=>{const user=prompt('Введи юзернамє того, з ким хочеш чат');if(user) showChat('Приватний чат з '+user,user)}
+document.getElementById('backChat').onclick=()=>{showMenu(true)}
+document.getElementById('voiceMsgBtn').onclick=async()=>{
+if(!navigator.mediaDevices) return alert('Не підтримується мікрофон')
+localStream=await navigator.mediaDevices.getUserMedia({audio:true})
+const mediaRecorder=new MediaRecorder(localStream)
+let chunks=[]
+mediaRecorder.ondataavailable=e=>chunks.push(e.data)
+mediaRecorder.onstop=async()=>{
+const blob=new Blob(chunks,{type:'audio/webm'})
+const reader=new FileReader()
+reader.onloadend=()=>{const base64=reader.result;push(ref(db,'messages/'+currentChat),{user:currentUser,text:'[audio]',audio:base64,time:formatTime(new Date())})}
+reader.readAsDataURL(blob)
+chunks=[]
 }
-
-onChildAdded(ref(db,'messages/public'),addMessage)
-document.getElementById('emojiPicker').querySelectorAll('img').forEach(img=>{img.onclick=()=>{messageInput.value+='['+img.src.split('/').pop()+']'}})
+mediaRecorder.start()
+setTimeout(()=>mediaRecorder.stop(),5000)
+}
+document.getElementById('emojiPicker').querySelectorAll('img').forEach(img=>{img.onclick=()=>{messageInput.value+='[zefasticker'+img.src.split('zefasticker')[1].split('.png')[0]+']'}})
 })
 </script>
-
 </body>
 </html>
