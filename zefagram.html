@@ -1,262 +1,264 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang='uk'>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <title>Зєфаграм</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 0 auto;
+      background: url('zefagrambackground.png') center/cover no-repeat;
+      margin: 0;
       height: 100vh;
       display: flex;
-      flex-direction: column;
-      background-color: #f0f2f5;
+      justify-content: center;
+      align-items: center;
     }
-
     #auth, #chat {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      margin: auto;
-      padding: 20px;
       width: 100%;
       max-width: 600px;
+      height: 90vh;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-
     h2 {
       text-align: center;
-      margin-bottom: 15px;
+      margin: 10px 0;
     }
-
     input, button {
       padding: 10px;
-      margin: 5px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
     }
-
     button {
       background-color: #0084ff;
       color: white;
       border: none;
       cursor: pointer;
     }
-
     button:hover {
       background-color: #0066cc;
     }
-
-    #messages {
-      flex: 1;
-      max-height: calc(100vh - 200px);
-      overflow-y: auto;
-      border: 1px solid #ddd;
-      padding: 10px;
-      border-radius: 4px;
-      background-color: #fafafa;
-      margin-bottom: 60px;
-    }
-
-    .message {
-      margin: 10px 0;
-      padding: 10px;
-      background-color: #e9ecef;
-      border-radius: 10px;
-      word-wrap: break-word;
-    }
-
-    .message strong {
-      color: #0084ff;
-    }
-
     .top-bar {
       display: flex;
       justify-content: center;
       align-items: center;
-      position: sticky;
-      top: 0;
-      background-color: white;
-      padding: 10px 0;
+      gap: 10px;
+      background-color: #f7f7f7;
+      padding: 10px;
       border-bottom: 1px solid #ddd;
-      border-radius: 8px 8px 0 0;
     }
-
-    .back {
+    .back, .logout {
       background-color: #555;
-      border: none;
       padding: 8px 14px;
       border-radius: 20px;
       font-size: 16px;
       color: white;
-      cursor: pointer;
     }
-
-    .back:hover {
-      background-color: #333;
+    .logout {
+      background-color: #ff4d4d;
     }
-
+    .logout:hover {
+      background-color: #cc0000;
+    }
+    #messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .message {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 15px;
+      word-wrap: break-word;
+      position: relative;
+      display: inline-block;
+    }
+    .message small {
+      display: block;
+      font-size: 11px;
+      color: #666;
+      text-align: right;
+      margin-top: 3px;
+    }
+    .message.other {
+      background-color: #e9ecef;
+      align-self: flex-start;
+      border-bottom-left-radius: 0;
+    }
+    .message.self {
+      background-color: #0084ff;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 0;
+    }
     .input-area {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
       display: flex;
       width: 100%;
-      max-width: 600px;
       background: white;
       padding: 10px;
-      box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+      border-top: 1px solid #ddd;
     }
-
     #messageInput {
       flex: 1;
       border: 1px solid #ccc;
-      border-radius: 20px;
+      border-radius: 25px;
       padding: 10px 15px;
       outline: none;
+      font-size: 16px;
     }
-
     #sendBtn {
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      margin-left: 10px;
       background-color: #0084ff;
+      font-size: 20px;
       color: white;
       border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 20px;
-      margin-left: 8px;
       cursor: pointer;
     }
-
     #sendBtn:hover {
       background-color: #0066cc;
     }
-
-    #logoutBtn {
-      display: block;
-      margin: 15px auto;
-      background-color: #ff4d4d;
+    .auth-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
     }
-
-    #logoutBtn:hover {
-      background-color: #cc0000;
+    .auth-box input {
+      margin: 5px 0;
+      width: 80%;
+    }
+    .auth-box button {
+      margin: 5px 0;
+      width: 50%;
     }
   </style>
 </head>
 <body>
-  <div id="auth">
+  <div id='auth'>
+    <div class='top-bar'>
+      <button class='back' onclick='location.href="index.html"'>⬅ Назад</button>
+      <button class='logout' id='goChatBtn' style='display:none;'>Вийті</button>
+    </div>
     <h2>Зєфаграм</h2>
-    <input type="text" id="username" placeholder="Введіть імя користувача">
-    <button id="loginBtn">Увійти</button>
-    <div class="top-bar">
-      <button class="back" onclick="location.href='index.html'">⬅ Назад</button>
+    <div class='auth-box'>
+      <input type='email' id='email' placeholder='Електронна пошта'>
+      <input type='password' id='password' placeholder='Пароль'>
+      <button id='registerBtn'>Зареєструватися</button>
+      <button id='loginBtn'>Увійти</button>
     </div>
   </div>
 
-  <div id="chat" style="display:none; flex:1; flex-direction:column;">
-    <div class="top-bar">
-      <button class="back" onclick="location.href='index.html'">⬅ Назад</button>
+  <div id='chat' style='display:none;'>
+    <div class='top-bar'>
+      <button class='back' onclick='location.href="index.html"'>⬅ Назад</button>
+      <button class='logout' id='logoutBtn'>Вийті</button>
     </div>
-    <h2 id="welcome"></h2>
-    <div id="messages"></div>
-
-    <div class="input-area">
-      <input type="text" id="messageInput" placeholder="ПІШИ!!!">
-      <button id="sendBtn">→</button>
+    <h2 id='welcome'></h2>
+    <div id='messages'></div>
+    <div class='input-area'>
+      <input type='text' id='messageInput' placeholder='ПІШИ!!!'>
+      <button id='sendBtn'>→</button>
     </div>
-
-    <button id="logoutBtn">Вийти</button>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+  <script type='module'>
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js'
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js'
+    import { getDatabase, ref, push, onChildAdded } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
 
     const firebaseConfig = {
-      apiKey: "AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA",
-      authDomain: "zefagram.firebaseapp.com",
-      databaseURL: "https://zefagram-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "zefagram",
-      storageBucket: "zefagram.firebasestorage.app",
-      messagingSenderId: "664999563847",
-      appId: "1:664999563847:web:3051100a05bdb41dc59762",
-      measurementId: "G-CFS89PSQNK"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    let currentUser = localStorage.getItem('currentUser');
-
-    const authDiv = document.getElementById('auth');
-    const chatDiv = document.getElementById('chat');
-    const usernameInput = document.getElementById('username');
-    const messageInput = document.getElementById('messageInput');
-    const messagesDiv = document.getElementById('messages');
-    const welcome = document.getElementById('welcome');
-    const loginBtn = document.getElementById('loginBtn');
-    const sendBtn = document.getElementById('sendBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-
-    function register() {
-      const username = usernameInput.value.trim();
-      if (!username) return alert("Введіть ім'я користувача!");
-      currentUser = username;
-      localStorage.setItem('currentUser', username);
-      authDiv.style.display = 'none';
-      chatDiv.style.display = 'flex';
-      welcome.textContent = `Привіт, ${username}!`;
+      apiKey: 'AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA',
+      authDomain: 'zefagram.firebaseapp.com',
+      databaseURL: 'https://zefagram-default-rtdb.europe-west1.firebasedatabase.app',
+      projectId: 'zefagram',
+      storageBucket: 'zefagram.firebasestorage.app',
+      messagingSenderId: '664999563847',
+      appId: '1:664999563847:web:3051100a05bdb41dc59762',
+      measurementId: 'G-CFS89PSQNK'
     }
+
+    const app = initializeApp(firebaseConfig)
+    const auth = getAuth(app)
+    const db = getDatabase(app)
+
+    const authDiv = document.getElementById('auth')
+    const chatDiv = document.getElementById('chat')
+    const registerBtn = document.getElementById('registerBtn')
+    const loginBtn = document.getElementById('loginBtn')
+    const logoutBtn = document.getElementById('logoutBtn')
+    const emailInput = document.getElementById('email')
+    const passInput = document.getElementById('password')
+    const messageInput = document.getElementById('messageInput')
+    const sendBtn = document.getElementById('sendBtn')
+    const messagesDiv = document.getElementById('messages')
+    const welcome = document.getElementById('welcome')
+
+    registerBtn.onclick = async () => {
+      const email = emailInput.value.trim()
+      const password = passInput.value.trim()
+      if (!email || !password) return alert('Введіть пошту і пароль')
+      try {
+        await createUserWithEmailAndPassword(auth, email, password)
+        alert('Акаунт створено!')
+      } catch (e) {
+        alert(e.message)
+      }
+    }
+
+    loginBtn.onclick = async () => {
+      const email = emailInput.value.trim()
+      const password = passInput.value.trim()
+      try {
+        await signInWithEmailAndPassword(auth, email, password)
+      } catch (e) {
+        alert('Помилка: ' + e.message)
+      }
+    }
+
+    logoutBtn.onclick = () => signOut(auth)
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        authDiv.style.display = 'none'
+        chatDiv.style.display = 'flex'
+        welcome.textContent = `Привіт, ${user.email}!`
+      } else {
+        chatDiv.style.display = 'none'
+        authDiv.style.display = 'flex'
+      }
+    })
 
     function sendMessage() {
-      const text = messageInput.value.trim();
-      if (!text || !currentUser) return;
-      const time = new Date().toLocaleTimeString();
-      push(ref(db, 'messages'), { user: currentUser, text, time });
-      messageInput.value = '';
+      const text = messageInput.value.trim()
+      if (!text || !auth.currentUser) return
+      const time = new Date().toLocaleTimeString()
+      push(ref(db, 'messages'), { user: auth.currentUser.email, text, time })
+      messageInput.value = ''
     }
 
-    function addMessage(data) {
-      const msg = data.val();
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'message';
-      msgDiv.innerHTML = `<strong>${msg.user}</strong>: ${msg.text} <small>(${msg.time})</small>`;
-      messagesDiv.appendChild(msgDiv);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
+    sendBtn.onclick = sendMessage
+    messageInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage() })
 
-    onChildAdded(ref(db, 'messages'), addMessage);
-
-    function logout() {
-      localStorage.removeItem('currentUser');
-      currentUser = null;
-      chatDiv.style.display = 'none';
-      authDiv.style.display = 'block';
-    }
-
-    loginBtn.onclick = register;
-    sendBtn.onclick = sendMessage;
-    logoutBtn.onclick = logout;
-
-    usernameInput.addEventListener('keypress', e => { if (e.key === 'Enter') register(); });
-    messageInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
-
-    if (currentUser) {
-      authDiv.style.display = 'none';
-      chatDiv.style.display = 'flex';
-      welcome.textContent = `Прівєт, дура ${currentUser}!`;
-    }
-  </script>
-
-  <script>
-    document.addEventListener('keydown', e=>{
-      if(e.key==='F11'){
-        e.preventDefault();
-        document.documentElement.requestFullscreen();
-      }
+    onChildAdded(ref(db, 'messages'), data => {
+      const msg = data.val()
+      const msgDiv = document.createElement('div')
+      msgDiv.className = 'message ' + (msg.user === auth.currentUser?.email ? 'self' : 'other')
+      msgDiv.innerHTML = `<strong>${msg.user}</strong><br>${msg.text}<small>${msg.time}</small>`
+      messagesDiv.appendChild(msgDiv)
+      messagesDiv.scrollTop = messagesDiv.scrollHeight
     })
   </script>
 </body>
