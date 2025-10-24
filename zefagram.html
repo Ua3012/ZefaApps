@@ -147,8 +147,15 @@ document.getElementById('backVoice').onclick=()=>{showMenu(true)}
 document.getElementById('logoutVoice').onclick=logout
 document.getElementById('sendBtn').onclick=sendMessage
 
-onChildAdded(ref(db,'messages/public'),addMessage)
+document.getElementById('publicChatBtn').onclick=()=>{showChat('public')}
+document.getElementById('publicVoiceBtn').onclick=()=>{showVoice('public-voice')}
+document.getElementById('privateChatsBtn').onclick=()=>{alert('Список приватних чатів поки що пустий')}
+document.getElementById('createPrivateBtn').onclick=()=>{
+  const user=prompt('Введи юзернамє того, з ким хочеш чат')
+  if(user) showChat('private_'+user)
+}
 
+onChildAdded(ref(db,'messages/public'),addMessage)
 document.getElementById('emojiPicker').querySelectorAll('img').forEach(img=>{img.onclick=()=>{messageInput.value+='['+img.src.split('/').pop()+']'}})
 })
 </script>
