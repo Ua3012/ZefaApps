@@ -13,7 +13,7 @@ input,button{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;fon
 button{cursor:pointer;background:#0084ff;color:white;border:none;}
 button:hover{background:#0066cc;}
 .topbar{width:100%;display:flex;justify-content:center;align-items:center;position:relative;margin-bottom:10px;}
-.back{position:absolute;left:10px;padding:8px 16px;border-radius:20px;color:white;border:none;cursor:pointer;background:#555;}
+.back{position:relative;padding:8px 16px;border-radius:20px;color:white;border:none;cursor:pointer;background:#555;}
 .back:hover{background:#333;}
 #messages{flex:1;width:100%;overflow-y:auto;background:rgba(255,255,255,0.8);border-radius:10px;padding:10px;margin-bottom:0;}
 .message{display:inline-block;clear:both;margin:6px 0;padding:10px;border-radius:15px;max-width:70%;word-wrap:break-word;font-family:'Minecraft',Arial;}
@@ -24,7 +24,8 @@ button:hover{background:#0066cc;}
 #input-area{display:flex;width:100%;border-top:1px solid #ddd;padding:10px;background:rgba(255,255,255,0.95);}
 #messageInput{flex:1;border-radius:20px;padding:10px 15px;border:1px solid #ccc;font-size:16px;}
 #sendBtn{width:50px;margin-left:10px;border-radius:50%;font-size:20px;}
-#voiceMsgBtn{margin-left:5px;font-size:20px;border-radius:50%;}
+#voiceMsgBtn{margin-left:5px;font-size:20px;border-radius:50%;background:#0084ff;}
+#voiceMsgBtn.active{background:green;}
 #formatBtn{margin-right:5px;}
 .formatMenu{display:none;flex-direction:column;background:#eee;padding:5px;border-radius:8px;position:absolute;bottom:60px;left:10px;z-index:10;}
 .formatMenu button{margin:2px;}
@@ -34,6 +35,7 @@ button:hover{background:#0066cc;}
 .menuBtn:hover{background:#0066cc;}
 #menuGreetingWrapper{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;}
 #menuGreeting{margin-bottom:10px;}
+.menuActions{display:flex;gap:10px;margin-top:10px;}
 @media(max-width:500px){.screen{width:95%;padding:10px;}#input-area{padding:5px;}#messageInput{font-size:14px;padding:8px;}}
 </style>
 </head>
@@ -51,17 +53,19 @@ button:hover{background:#0066cc;}
 <div id='menuScreen' class='screen'>
 <div id='menuGreetingWrapper'>
 <h2 id='menuGreeting'></h2>
-<button id='backMenu' class='back'>⬅ Назад</button>
 </div>
 <button class='menuBtn' id='publicChatBtn'>Спільний чат</button>
 <button class='menuBtn' id='publicVoiceBtn'>Спільний голосовий чат</button>
 <button class='menuBtn' id='privateChatsBtn'>Приватні чати</button>
 <button class='menuBtn' id='createPrivateBtn'>Створити приватний чат</button>
+<div class='menuActions'>
+<button id='backMenu' class='back'>⬅ Назад</button>
+<button id='logoutMenu' class='back'>Вийті</button>
+</div>
 </div>
 
 <div id='chatScreen' class='screen'>
 <div class='topbar'>
-<button id='backChat' class='back'>⬅</button>
 <h2 id='chatTitle'></h2>
 </div>
 <div id='messages'></div>
@@ -73,7 +77,6 @@ button:hover{background:#0066cc;}
 <button data-format='U'>U</button>
 <button data-format='S'>S</button>
 <button data-format='MONO'>MONO</button>
-<button data-format='Minecraft'>Minecraft</button>
 </div>
 <input type='text' id='messageInput' placeholder='ПІШИ!!!'>
 <button id='sendBtn'>→</button>
@@ -90,10 +93,11 @@ button:hover{background:#0066cc;}
 
 <div id='voiceScreen' class='screen'>
 <div class='topbar'>
-<button id='backVoice' class='back'>⬅</button>
-<h2 id='voiceTitle'></h2>
+<h2 id='voiceTitle'>Спільний голосовий чат</h2>
 </div>
-<button id='micToggleBtn'>🎙️ Увімкнути/Вимкнути мікрофон</button>
+<button id='micToggleBtn' style='font-size:40px;padding:30px;border-radius:50%;'>🎙️ Увімкнути/Вимкнути</button>
+<div id='voiceUsers'></div>
+<button id='backVoice' class='back'>⬅ Назад</button>
 </div>
 
 <script type='module'>
@@ -115,6 +119,7 @@ const app = initializeApp(firebaseConfig)
 const db = getDatabase(app)
 let currentUser = localStorage.getItem('currentUser') || null
 let currentChat='public'
+let peerConnections={},localStream=null
 
 const authScreen=document.getElementById('authScreen')
 const menuScreen=document.getElementById('menuScreen')
@@ -128,6 +133,8 @@ const messageInput=document.getElementById('messageInput')
 const menuGreeting=document.getElementById('menuGreeting')
 const formatMenu=document.getElementById('formatMenu')
 const formatBtn=document.getElementById('formatBtn')
+const voiceBtn=document.getElementById('micToggleBtn')
+const voiceUsersDiv=document.getElementById('voiceUsers')
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
@@ -147,7 +154,6 @@ text=text.replace(/\*(.*?)\*/g,'<i>$1</i>')
 text=text.replace(/__(.*?)__/g,'<u>$1</u>')
 text=text.replace(/~~(.*?)~~/g,'<s>$1</s>')
 text=text.replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>")
-text=text.replace(/%%(.*?)%%/g,"<span style='font-family:Minecraft'>$1</span>")
 d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`
 messagesDiv.appendChild(d)
 messagesDiv.scrollTop=messagesDiv.scrollHeight
@@ -159,49 +165,42 @@ function logout(){localStorage.removeItem('currentUser');currentUser=null;authSc
 
 async function sendMessage(){const t=messageInput.value.trim();if(!t||!currentUser)return;const time=formatTime(new Date());push(ref(db,'messages/'+currentChat),{user:currentUser,text:t,time,type:'text'});messageInput.value=''}
 
-document.addEventListener('DOMContentLoaded',async()=>{
-if(currentUser){showMenu(true)}else{authScreen.style.display='flex'}
+async function sendSticker(url){push(ref(db,'messages/'+currentChat),{user:currentUser,url,type:'sticker',time:formatTime(new Date())})}
+
+async function sendAudio(blob){const url=URL.createObjectURL(blob);push(ref(db,'messages/'+currentChat),{user:currentUser,url,type:'audio',time:formatTime(new Date())})}
+
+formatBtn.onclick=()=>formatMenu.style.display=formatMenu.style.display==='flex'?'none':'flex'
+formatMenu.querySelectorAll('button').forEach(b=>b.onclick=e=>{const f=e.target.dataset.format;messageInput.value=`${f}(${messageInput.value})`})
+document.querySelectorAll('#emojiPicker img').forEach(i=>i.onclick=e=>sendSticker(e.target.src))
+
 document.getElementById('registerBtn').onclick=register
 document.getElementById('loginBtn').onclick=login
-document.getElementById('backAuth').onclick=()=>{location.href='index.html'}
-document.getElementById('backMenu').onclick=()=>{showMenu(false)}
-document.getElementById('publicChatBtn').onclick=()=>{showChat('Спільний чат')}
-document.getElementById('publicVoiceBtn').onclick=()=>{showChat('Спільний голосовий чат')}
-document.getElementById('privateChatsBtn').onclick=()=>{alert('Список приватних чатів поки що пустий')}
-document.getElementById('createPrivateBtn').onclick=()=>{const user=prompt('Введи юзернамє того, з ким хочеш чат');if(user) showChat('Приватний чат з '+user,user)}
-document.getElementById('backChat').onclick=()=>{showMenu(true)}
+document.getElementById('backMenu').onclick=()=>showMenu(true)
+document.getElementById('logoutMenu').onclick=logout
+document.getElementById('publicChatBtn').onclick=()=>showChat('Спільний чат')
 document.getElementById('sendBtn').onclick=sendMessage
-messageInput.addEventListener('keypress',e=>{if(e.key==='Enter') sendMessage()})
-document.getElementById('formatBtn').onclick=()=>{formatMenu.style.display=formatMenu.style.display==='flex'?'none':'flex'}
-formatMenu.querySelectorAll('button').forEach(b=>b.onclick=()=>{
-let val=messageInput.value;let selStart=messageInput.selectionStart;let selEnd=messageInput.selectionEnd;let selected=val.substring(selStart,selEnd);let code=b.dataset.format==='B'?`**${selected}**`:
-b.dataset.format==='I'?`*${selected}*`:
-b.dataset.format==='U'?`__${selected}__`:
-b.dataset.format==='S'?`~~${selected}~~`:
-b.dataset.format==='MONO'?``+selected+``:
-b.dataset.format==='Minecraft'?`%%${selected}%%`:'';
-messageInput.value=val.substring(0,selStart)+code+val.substring(selEnd);
-messageInput.focus()
-})
-document.getElementById('emojiPicker').querySelectorAll('img').forEach(img=>{
-img.onclick=()=>{const url=img.src;push(ref(db,'messages/'+currentChat),{user:currentUser,url,type:'sticker',time:formatTime(new Date())})}
-})
+
+let mediaRecorder
 document.getElementById('voiceMsgBtn').onclick=async()=>{
-if(!navigator.mediaDevices)return alert('Мікрофон не підтримується')
+if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();return}
 const stream=await navigator.mediaDevices.getUserMedia({audio:true})
-const recorder=new MediaRecorder(stream)
+mediaRecorder=new MediaRecorder(stream)
 let chunks=[]
-recorder.ondataavailable=e=>chunks.push(e.data)
-recorder.onstop=()=>{
-const blob=new Blob(chunks,{type:'audio/webm'})
-const url=URL.createObjectURL(blob)
-push(ref(db,'messages/'+currentChat),{user:currentUser,url,type:'audio',time:formatTime(new Date())})
-chunks=[]
+mediaRecorder.ondataavailable=e=>chunks.push(e.data)
+mediaRecorder.onstop=e=>sendAudio(new Blob(chunks,{type:'audio/webm'}))
+mediaRecorder.start()
 }
-recorder.start()
-setTimeout(()=>recorder.stop(),5000)
+
+document.getElementById('publicVoiceBtn').onclick=async()=>{
+chatScreen.style.display='none';menuScreen.style.display='none';voiceScreen.style.display='flex';voiceUsersDiv.innerHTML=''
+localStream=await navigator.mediaDevices.getUserMedia({audio:true})
+const pc=new RTCPeerConnection()
+localStream.getTracks().forEach(t=>pc.addTrack(t,localStream))
+peerConnections['public']=pc
+voiceBtn.onclick=()=>{localStream.getAudioTracks()[0].enabled=!localStream.getAudioTracks()[0].enabled;voiceBtn.classList.toggle('active')}
 }
-})
+
+window.onload=()=>{if(currentUser)showMenu(true);else authScreen.style.display='flex'}
 </script>
 </body>
 </html>
