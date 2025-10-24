@@ -9,54 +9,140 @@
       font-family: Arial, sans-serif;
       max-width: 600px;
       margin: 0 auto;
-      padding: 20px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
       background-color: #f0f2f5;
     }
+
     #auth, #chat {
       background: white;
-      padding: 20px;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      margin: auto;
+      padding: 20px;
+      width: 100%;
+      max-width: 600px;
     }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
     input, button {
       padding: 10px;
       margin: 5px;
       border: 1px solid #ddd;
       border-radius: 4px;
+      font-size: 15px;
     }
+
     button {
       background-color: #0084ff;
       color: white;
       border: none;
       cursor: pointer;
     }
+
     button:hover {
       background-color: #0066cc;
     }
+
     #messages {
-      max-height: 400px;
+      flex: 1;
+      max-height: calc(100vh - 200px);
       overflow-y: auto;
       border: 1px solid #ddd;
       padding: 10px;
       border-radius: 4px;
-      margin-bottom: 10px;
+      background-color: #fafafa;
+      margin-bottom: 60px;
     }
+
     .message {
       margin: 10px 0;
       padding: 10px;
       background-color: #e9ecef;
-      border-radius: 4px;
+      border-radius: 10px;
+      word-wrap: break-word;
     }
+
     .message strong {
       color: #0084ff;
     }
+
+    .top-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background-color: white;
+      padding: 10px 0;
+      border-bottom: 1px solid #ddd;
+      border-radius: 8px 8px 0 0;
+    }
+
     .back {
       background-color: #555;
-      margin-top: 10px;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 16px;
+      color: white;
+      cursor: pointer;
     }
+
     .back:hover {
       background-color: #333;
+    }
+
+    .input-area {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      width: 100%;
+      max-width: 600px;
+      background: white;
+      padding: 10px;
+      box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+    }
+
+    #messageInput {
+      flex: 1;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      padding: 10px 15px;
+      outline: none;
+    }
+
+    #sendBtn {
+      background-color: #0084ff;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      margin-left: 8px;
+      cursor: pointer;
+    }
+
+    #sendBtn:hover {
+      background-color: #0066cc;
+    }
+
+    #logoutBtn {
+      display: block;
+      margin: 15px auto;
+      background-color: #ff4d4d;
+    }
+
+    #logoutBtn:hover {
+      background-color: #cc0000;
     }
   </style>
 </head>
@@ -65,16 +151,24 @@
     <h2>Зєфаграм</h2>
     <input type="text" id="username" placeholder="Введіть імя користувача">
     <button id="loginBtn">Увійти</button>
-    <button class="back" onclick="location.href='index.html'">⬅ Назад</button>
+    <div class="top-bar">
+      <button class="back" onclick="location.href='index.html'">⬅ Назад</button>
+    </div>
   </div>
 
-  <div id="chat" style="display:none;">
+  <div id="chat" style="display:none; flex:1; flex-direction:column;">
+    <div class="top-bar">
+      <button class="back" onclick="location.href='index.html'">⬅ Назад</button>
+    </div>
     <h2 id="welcome"></h2>
     <div id="messages"></div>
-    <input type="text" id="messageInput" placeholder="ПІШИ!!!">
-    <button id="sendBtn">Атправіть</button>
+
+    <div class="input-area">
+      <input type="text" id="messageInput" placeholder="ПІШИ!!!">
+      <button id="sendBtn">→</button>
+    </div>
+
     <button id="logoutBtn">Вийти</button>
-    <button class="back" onclick="location.href='index.html'">⬅ Назад</button>
   </div>
 
   <script type="module">
@@ -113,7 +207,7 @@
       currentUser = username;
       localStorage.setItem('currentUser', username);
       authDiv.style.display = 'none';
-      chatDiv.style.display = 'block';
+      chatDiv.style.display = 'flex';
       welcome.textContent = `Привіт, ${username}!`;
     }
 
@@ -152,12 +246,18 @@
 
     if (currentUser) {
       authDiv.style.display = 'none';
-      chatDiv.style.display = 'block';
+      chatDiv.style.display = 'flex';
       welcome.textContent = `Прівєт, дура ${currentUser}!`;
     }
   </script>
+
   <script>
-    document.addEventListener('keydown', e=>{if(e.key==='F11'){e.preventDefault();document.documentElement.requestFullscreen();}})
+    document.addEventListener('keydown', e=>{
+      if(e.key==='F11'){
+        e.preventDefault();
+        document.documentElement.requestFullscreen();
+      }
+    })
   </script>
 </body>
 </html>
