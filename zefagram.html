@@ -20,6 +20,9 @@ button:hover{background:#0066cc;}
 .message strong{color:#0084ff;}
 .from-me{background:#cfe9ff;float:right;}
 .from-others{background:#e9ecef;float:left;}
+.ephemeral.from-me{background:#ff9999;}
+.ephemeral.from-others{background:#ccffcc;}
+
 #audioMsg{width:100%;margin-top:5px;}
 #input-area{display:flex;width:100%;border-top:1px solid #ddd;padding:10px;background:rgba(255,255,255,0.95);}
 #messageInput{flex:1;border-radius:20px;padding:10px 15px;border:1px solid #ccc;font-size:16px;}
@@ -34,6 +37,7 @@ button:hover{background:#0066cc;}
 #menuGreeting{margin-bottom:10px;}
 .menuActions{display:flex;gap:10px;margin-top:10px;justify-content:center;}
 .callBtn{margin-left:10px;padding:5px 10px;background:green;color:white;border-radius:6px;}
+.callBtn.active{background:red;}
 .privateChatLink{display: block; width: 90%; padding: 10px; margin: 5px; text-align: center; border-radius: 6px; background: #e0e0e0; color: #333; cursor: pointer; border: 1px solid #ccc;}
 .privateChatLink:hover{background: #d0d0d0;}
 @media(max-width:500px){.screen{width:95%;padding:10px;}#input-area{padding:5px;}#messageInput{font-size:14px;padding:8px;}}
@@ -114,8 +118,9 @@ const app=initializeApp(firebaseConfig)
 const db=getDatabase(app)
 let currentUser=localStorage.getItem('currentUser')||null
 let currentChat='public'
-let peerConnections={},localStream=null,callRefs={}
 let currentPartner = null
+let mediaRecorder = null
+let mediaStream = null
 
 const authScreen=document.getElementById('authScreen')
 const menuScreen=document.getElementById('menuScreen')
@@ -128,60 +133,67 @@ const messagesDiv=document.getElementById('messages')
 const chatTitle=document.getElementById('chatTitle')
 const messageInput=document.getElementById('messageInput')
 const menuGreeting=document.getElementById('menuGreeting')
-const voiceBtn=document.getElementById('micToggleBtn')
 const voiceUsersDiv=document.getElementById('voiceUsers')
 const privateChatsList=document.getElementById('privateChatsList')
 const callBtn = document.getElementById('callBtn')
 const callStatus = document.getElementById('callStatus')
 
-const iceServers = [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    
-    // АКТИВНА КОНФІГУРАЦІЯ EXPRESSTURN
-    { 
-        urls: 'turn:relay1.expressturn.com:3480', 
-        username: '000000002076857117', 
-        credential: 'Ceu6hPUu/dqCdBpXzRhOTdpH5Z0='
-    }
-]
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
-async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзер вже є');await set(ref(db,'users/'+u),{password:p, chats: {}});alert('Ти зарегався!')}
-async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return alert('Неправильний юзер або пароль');currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
+async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return console.log('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return console.log('Такий юзер вже є');await set(ref(db,'users/'+u),{password:p, chats: {}});console.log('Ти зарегався!')}
+async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return console.log('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return console.log('Неправильний юзер або пароль');currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
 
 function showMenu(show){authScreen.style.display='none';menuScreen.style.display=show?'flex':'none';chatScreen.style.display='none';voiceScreen.style.display='none';privateChatsScreen.style.display='none';if(show)menuGreeting.textContent=`Прівєт, дура ${currentUser}!`}
 
 function getChatPath(){return currentChat === 'Общій чат' ? 'messages/public' : 'messages/' + currentChat}
 
+function deleteMessageFromDB(messageKey) {
+    if (!messageKey) return;
+    const chatPath = getChatPath();
+    remove(ref(db, chatPath + '/' + messageKey));
+}
+
 function renderMessage(msgSnapshot){
     const msg = msgSnapshot.val();
     const messageKey = msgSnapshot.key;
     const d=document.createElement('div');
+    d.id = 'msg-'+messageKey;
     d.className='message '+(msg.user===currentUser?'from-me':'from-others');
+    
     let text=msg.text;
-    if(msg.type==='sticker')text=`<img src='${msg.url}' style='width:50px;height:50px'>`;
-    if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;
+    let isEphemeral = msg.type === 'ephemeral_audio';
+
+    if(isEphemeral) {
+        d.classList.add('ephemeral');
+        text=`<audio controls autoplay src='${msg.url}'></audio>`;
+        callStatus.textContent = msg.user === currentUser ? 'Надіслано.' : 'Прийнято!';
+        
+        setTimeout(() => {
+            deleteMessageFromDB(messageKey);
+        }, 7000); 
+
+    } else if(msg.type==='sticker') {
+        text=`<img src='${msg.url}' style='width:50px;height:50px'>`;
+    } else if(msg.type==='audio') {
+        text=`<audio controls src='${msg.url}'></audio>`;
+    }
+    
     text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,`<span style='font-family:monospace'>$1</span>`);
     d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;
     
-    if (msg.user === currentUser) {
-        d.ondblclick = () => deleteMessage(messageKey, msg.type);
+    if (msg.user === currentUser && !isEphemeral) {
+        d.ondblclick = () => {
+            if (confirm('Впевнені, що хочете видалити це повідомлення?')) {
+                deleteMessageFromDB(messageKey);
+            }
+        };
     }
     
     messagesDiv.appendChild(d);
     messagesDiv.scrollTop=messagesDiv.scrollHeight
 }
 
-async function deleteMessage(messageKey, type) {
-    if (!currentUser) return;
-    if (confirm('Впевнені, що хочете видалити це повідомлення?')) {
-        const chatPath = getChatPath();
-        await remove(ref(db, chatPath + '/' + messageKey));
-    }
-}
 
 function showChat(chat, partner=null){
     currentChat=chat;
@@ -197,9 +209,6 @@ function showChat(chat, partner=null){
     callBtn.textContent = '📞 Дзвінок';
     callStatus.textContent = '';
     
-    if (peerConnections[currentChat]) endCall(currentChat)
-    if (partner) listenForCalls(chat, partner);
-
     const chatRef=ref(db, getChatPath());
     onValue(chatRef,snapshot=>{messagesDiv.innerHTML='';snapshot.forEach(c=>renderMessage(c))});
 }
@@ -218,7 +227,7 @@ async function sendSticker(url){
     push(ref(db, getChatPath()),{user:currentUser,url,type:'sticker',time:formatTime(new Date())})
 }
 
-async function sendAudio(blob){
+async function sendAudio(blob, type) {
     const chatPath = getChatPath();
     
     const CLOUDINARY_CLOUD_NAME = 'doylfteu4'; 
@@ -243,14 +252,18 @@ async function sendAudio(blob){
             url = data.secure_url;
         } else {
             console.error('Cloudinary Response:', data);
-            throw new Error('Помилка завантаження Cloudinary: '+(data.error?data.error.message:'Невідома помилка'));
+            console.log('Помилка завантаження Cloudinary: '+(data.error?data.error.message:'Невідома помилка'));
+            return;
         }
     } catch(e) {
-        alert('Помилка при завантаженні аудіо. Перевірте Cloudinary: '+e.message);
+        console.log('Помилка при завантаженні аудіо: '+e.message);
         return;
     }
 
-    push(ref(db, chatPath),{user:currentUser,url,type:'audio',time:formatTime(new Date())});
+    push(ref(db, chatPath),{user:currentUser,url,type:type,time:formatTime(new Date())});
+    if (type === 'ephemeral_audio') {
+        callStatus.textContent = 'Аудіоповідомлення надіслано!';
+    }
 }
 
 async function showPrivateChats() {
@@ -278,10 +291,10 @@ async function showPrivateChats() {
 
 async function createPrivateChat() {
     const partner = prompt('Введіть юзєрнейм співрозмовника:');
-    if (!partner || partner === currentUser) return alert('Неправильний юзєрнейм.');
+    if (!partner || partner === currentUser) return console.log('Неправильний юзєрнейм.');
     
     const partnerSnap = await get(child(ref(db), 'users/'+partner));
-    if (!partnerSnap.exists()) return alert('Такий юзєр не зареєстрований.');
+    if (!partnerSnap.exists()) return console.log('Такий юзєр не зареєстрований.');
     
     const chatUsers = [currentUser, partner].sort();
     const chatID = 'private_'+chatUsers[0]+'_'+chatUsers[1];
@@ -291,7 +304,7 @@ async function createPrivateChat() {
     updates['/users/'+partner+'/chats/'+chatID] = { partner: currentUser };
 
     await update(ref(db), updates);
-    alert('Створено чат з '+partner+'!');
+    console.log('Створено чат з '+partner+'!');
     showChat(chatID, partner);
 }
 
@@ -318,182 +331,84 @@ document.getElementById('privateChatsBtn').onclick=showPrivateChats
 document.getElementById('createPrivateBtn').onclick=createPrivateChat
 document.getElementById('backPrivateChats').onclick=()=>showMenu(true)
 
-let mediaRecorder
-
 document.getElementById('voiceMsgBtn').onclick=async()=>{
-    if(!currentUser) return alert('Увійдіть, щоб надіслати повідомлення!')
+    if(!currentUser) return console.log('Увійдіть, щоб надіслати повідомлення!');
 
-    const voiceBtnElement = document.getElementById('voiceMsgBtn')
+    const voiceBtnElement = document.getElementById('voiceMsgBtn');
 
     if(mediaRecorder && mediaRecorder.state === 'recording'){
-        mediaRecorder.stop()
-        voiceBtnElement.classList.remove('active')
-        return
+        mediaRecorder.stop();
+        voiceBtnElement.classList.remove('active');
+        return;
     }
 
     try {
-        if (!mediaStream) {
-            mediaStream = await navigator.mediaDevices.getUserMedia({audio:true})
-        }
+        mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
+        mediaRecorder = new MediaRecorder(mediaStream);
+        voiceBtnElement.classList.add('active');
         
-        mediaRecorder = new MediaRecorder(mediaStream)
-        voiceBtnElement.classList.add('active')
-        
-        let chunks=[]
-        mediaRecorder.ondataavailable=e=>chunks.push(e.data)
+        let chunks=[];
+        mediaRecorder.ondataavailable=e=>chunks.push(e.data);
         
         mediaRecorder.onstop=e=>{
-            mediaStream.getTracks().forEach(track => track.stop())
-            mediaStream = null 
-            sendAudio(new Blob(chunks,{type:'audio/webm'}))
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null; 
+            sendAudio(new Blob(chunks,{type:'audio/webm'}), 'audio');
         }
         
-        mediaRecorder.start()
+        mediaRecorder.start();
     } catch(e) {
-        alert('Помилка доступу до мікрофона: '+e.message)
+        console.log('Помилка доступу до мікрофона: '+e.message);
     }
 }
 
-async function createPeerConnection(chatID, partner, isCaller) {
-    if (peerConnections[chatID]) return peerConnections[chatID]
+callBtn.onclick=async()=>{
+    if(!currentUser || !currentPartner) return;
     
-    callStatus.textContent = isCaller ? 'Дзвоню...' : 'Вхідний дзвінок!'
-    
-    const pc = new RTCPeerConnection({ iceServers: iceServers })
+    if(mediaRecorder && mediaRecorder.state === 'recording'){
+        mediaRecorder.stop();
+        callBtn.classList.remove('active');
+        callBtn.textContent = '📞 Дзвінок';
+        return;
+    }
 
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream))
-
-    pc.ontrack = (event) => {
-        if (event.track.kind === 'audio') {
-            const remoteAudio = document.createElement('audio')
-            remoteAudio.autoplay = true
-            remoteAudio.srcObject = event.streams[0]
-            voiceUsersDiv.appendChild(remoteAudio)
-            callStatus.textContent = 'З\'єднано!'
+    try {
+        callStatus.textContent = 'Запис... Говоріть!';
+        mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
+        mediaRecorder = new MediaRecorder(mediaStream);
+        callBtn.classList.add('active');
+        callBtn.textContent = '🔴 Завершити';
+        
+        let chunks=[];
+        mediaRecorder.ondataavailable=e=>chunks.push(e.data);
+        
+        mediaRecorder.onstop=e=>{
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null; 
+            callBtn.classList.remove('active');
+            callBtn.textContent = 'Надсилання...';
+            sendAudio(new Blob(chunks,{type:'audio/webm'}), 'ephemeral_audio');
         }
-    }
-    
-    pc.onicecandidate = (event) => {
-        if (event.candidate) {
-            set(push(ref(db, 'calls/'+chatID+'/candidates/'+currentUser)), event.candidate.toJSON())
-        }
-    }
+        
+        mediaRecorder.start();
+        
+        setTimeout(() => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+        }, 20000); 
 
-    pc.oniceconnectionstatechange = () => {
-        if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'closed') {
-            endCall(chatID);
-        }
-    };
-
-    peerConnections[chatID] = pc
-    return pc
-}
-
-async function startCall(chatID, partner) {
-    if (peerConnections[chatID]) return endCall(chatID);
-
-    const pc = await createPeerConnection(chatID, partner, true)
-    
-    const offer = await pc.createOffer()
-    await pc.setLocalDescription(offer)
-    
-    await set(ref(db, 'calls/'+chatID+'/offer'), {
-        sender: currentUser,
-        sessionDescription: pc.localDescription.toJSON()
-    })
-
-    callBtn.textContent = 'Завершити дзвінок'
-}
-
-async function handleOffer(chatID, offer) {
-    if (offer.sender === currentUser) return
-
-    if (!confirm('Вхідний дзвінок від '+offer.sender+'. Прийняти?')) {
-        callStatus.textContent = 'Відхилено.'
-        await remove(ref(db, 'calls/'+chatID))
-        return 
-    }
-
-    const pc = await createPeerConnection(chatID, offer.sender, false)
-    await pc.setRemoteDescription(new RTCSessionDescription(offer.sessionDescription))
-
-    const answer = await pc.createAnswer()
-    await pc.setLocalDescription(answer)
-    
-    await set(ref(db, 'calls/'+chatID+'/answer'), {
-        sender: currentUser,
-        sessionDescription: pc.localDescription.toJSON()
-    })
-
-    callBtn.textContent = 'Завершити дзвінок'
-}
-
-async function handleAnswer(pc, answer) {
-    if (!pc.currentRemoteDescription) {
-        await pc.setRemoteDescription(new RTCSessionDescription(answer.sessionDescription))
-    }
-}
-
-function endCall(chatID) {
-    if (peerConnections[chatID]) {
-        peerConnections[chatID].close()
-        delete peerConnections[chatID]
-    }
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop())
-        localStream = null
-    }
-    voiceUsersDiv.innerHTML = ''
-    callBtn.textContent = '📞 Дзвінок'
-    callStatus.textContent = 'Завершено.'
-    
-    remove(ref(db, 'calls/'+chatID))
-}
-
-function listenForCalls(chatID, partner) {
-    const callRef = ref(db, 'calls/'+chatID)
-
-    onValue(callRef, async (snapshot) => {
-        const data = snapshot.val()
-
-        if (!data) return endCall(chatID)
-
-        const pc = peerConnections[chatID] || null
-
-        if (data.offer && data.offer.sender !== currentUser && !pc) {
-            await handleOffer(chatID, data.offer)
-        }
-
-        if (data.answer && data.answer.sender !== currentUser && pc && pc.localDescription.type === 'offer') {
-             await handleAnswer(pc, data.answer)
-        }
-
-        if (pc && data.candidates) {
-            onValue(ref(db, 'calls/'+chatID+'/candidates/'+partner), (candidateSnap) => {
-                candidateSnap.forEach((candidate) => {
-                    if (candidate.val() && candidate.key) {
-                        pc.addIceCandidate(new RTCIceCandidate(candidate.val())).catch(e => console.error('Error adding ICE candidate:', e))
-                        remove(ref(db, 'calls/'+chatID+'/candidates/'+partner+'/'+candidate.key))
-                    }
-                })
-            })
-        }
-    })
-}
-
-callBtn.onclick=()=>{
-    if (peerConnections[currentChat]) {
-        endCall(currentChat)
-    } else {
-        startCall(currentChat, currentPartner)
+    } catch(e) {
+        console.log('Помилка доступу до мікрофона: '+e.message);
+        callBtn.classList.remove('active');
+        callBtn.textContent = '📞 Дзвінок';
     }
 }
 
 document.getElementById('publicVoiceBtn').onclick=async()=>{
-    alert('Публічний голосовий чат вимагає додаткового складного бекенду. Використовуйте приватні дзвінки.')
+    console.log('Общій голосовий чат реалізований як звичайний общій чат.');
+    showChat('Общій чат');
 }
-
 
 window.onload=()=>{if(currentUser)showMenu(true);else authScreen.style.display='flex'}
 </script>
