@@ -47,7 +47,7 @@ button:hover{background:#0066cc;}
 <input type='text' id='username' placeholder='Введіть юзєрнамє'>
 <input type='password' id='password' placeholder='Пароль'>
 <button id='registerBtn'>Зарегаться</button>
-<button id='loginBtn'>Войти</button>
+<button id='loginBtn'>Ввійті</button>
 <button id='backAuth' class='back'>⬅ Назад</button>
 </div>
 
@@ -55,13 +55,13 @@ button:hover{background:#0066cc;}
 <div id='menuGreetingWrapper'>
 <h2 id='menuGreeting'></h2>
 </div>
-<button class='menuBtn' id='publicChatBtn'>Спільний чат</button>
-<button class='menuBtn' id='publicVoiceBtn'>Спільний голосовий чат</button>
-<button class='menuBtn' id='privateChatsBtn'>Приватні чати</button>
-<button class='menuBtn' id='createPrivateBtn'>Створити приватний чат</button>
+<button class='menuBtn' id='publicChatBtn'>Общій чат</button>
+<button class='menuBtn' id='publicVoiceBtn'>Общій голосовий чат</button>
+<button class='menuBtn' id='privateChatsBtn'>Пріватні чати</button>
+<button class='menuBtn' id='createPrivateBtn'>Створити пріватний чат</button>
 <div class='menuActions'>
 <button id='logoutMenu' class='back'>Вийті</button>
-<button id='backMenu' class='back'>⬅ Назад до Zefa Apps</button>
+<button id='backMenu' class='back'>⬅ Назад к ЗєфаАппс</button>
 </div>
 </div>
 
@@ -98,7 +98,7 @@ button:hover{background:#0066cc;}
 
 <div id='voiceScreen' class='screen'>
 <div class='topbar'>
-<h2 id='voiceTitle'>Спільний голосовий чат</h2>
+<h2 id='voiceTitle'>Общій галасовий чат</h2>
 </div>
 <button id='micToggleBtn' style='font-size:40px;padding:30px;border-radius:50%;'>🎙️</button>
 <div id='voiceUsers'></div>
@@ -163,7 +163,7 @@ document.getElementById('logoutMenu').onclick=logout
 document.getElementById('backChat').onclick=()=>showMenu(true)
 document.getElementById('backVoice').onclick=()=>showMenu(true)
 document.getElementById('backAuth').onclick=()=>window.location.href='https://ua3012.github.io/ZefaApps/index.html'
-document.getElementById('publicChatBtn').onclick=()=>showChat('Спільний чат')
+document.getElementById('publicChatBtn').onclick=()=>showChat('Общій чат')
 document.getElementById('sendBtn').onclick=sendMessage
 
 let mediaRecorder
