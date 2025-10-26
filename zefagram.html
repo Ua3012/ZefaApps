@@ -107,12 +107,10 @@ button:hover{background:#0066cc;}
 <script type='module'>
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js'
 import { getDatabase, ref, set, push, get, child, onValue, update, remove } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-storage.js'
 
 const firebaseConfig={apiKey:'AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA',authDomain:'zefagram.firebaseapp.com',databaseURL:'https://zefagram-default-rtdb.europe-west1.firebasedatabase.app',projectId:'zefagram',storageBucket:'zefagram.firebasestorage.app',messagingSenderId:'664999563847',appId:'1:664999563847:web:3051100a05bdb41dc59762',measurementId:'G-CFS89PSQNK'}
 const app=initializeApp(firebaseConfig)
 const db=getDatabase(app)
-const storage=getStorage(app)
 let currentUser=localStorage.getItem('currentUser')||null
 let currentChat='public'
 let peerConnections={},localStream=null,callRefs={}
@@ -131,6 +129,12 @@ const menuGreeting=document.getElementById('menuGreeting')
 const voiceBtn=document.getElementById('micToggleBtn')
 const voiceUsersDiv=document.getElementById('voiceUsers')
 const privateChatsList=document.getElementById('privateChatsList')
+
+const iceServers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+]
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
@@ -165,10 +169,6 @@ async function deleteMessage(messageKey, type) {
     if (confirm('Впевнені, що хочете видалити це повідомлення?')) {
         const chatPath = getChatPath();
         await remove(ref(db, chatPath + '/' + messageKey));
-        
-        if (type === 'audio') {
-            
-        }
     }
 }
 
@@ -181,7 +181,7 @@ function showChat(chat, partner=null){
     voiceScreen.style.display='none';
     privateChatsScreen.style.display='none';
     chatTitle.textContent=partner || chat;
-    document.getElementById('callBtn').style.display = (chat.startsWith('private_') ? 'inline-block' : 'none');
+    document.getElementById('callBtn').style.display = (chat.startsWith('private_')?'inline-block':'none');
     
     const chatRef=ref(db, getChatPath());
     onValue(chatRef,snapshot=>{messagesDiv.innerHTML='';snapshot.forEach(c=>renderMessage(c))});
@@ -203,12 +203,36 @@ async function sendSticker(url){
 
 async function sendAudio(blob){
     const chatPath = getChatPath();
-    const fileName = 'audio/'+Date.now()+'_'+currentUser+'.webm';
-    const fileRef=sRef(storage, fileName);
     
-    await uploadBytes(fileRef,blob);
-    const url=await getDownloadURL(fileRef);
+    const CLOUDINARY_CLOUD_NAME = 'doylfteu4'; 
+    const CLOUDINARY_UPLOAD_PRESET = 'zefagram_audio'; 
+
+    const formData = new FormData();
+    formData.append('file', blob, 'audio.webm');
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
     
+    let url = '';
+
+    try {
+        const response = await fetch(
+            'https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD_NAME+'/upload',
+            {
+                method: 'POST',
+                body: formData
+            }
+        );
+        const data = await response.json();
+        if (data.secure_url) {
+            url = data.secure_url;
+        } else {
+            console.error('Cloudinary Response:', data);
+            throw new Error('Помилка завантаження Cloudinary: '+(data.error?data.error.message:'Невідома помилка'));
+        }
+    } catch(e) {
+        alert('Помилка при завантаженні аудіо. Перевірте Cloudinary: '+e.message);
+        return;
+    }
+
     push(ref(db, chatPath),{user:currentUser,url,type:'audio',time:formatTime(new Date())});
 }
 
@@ -216,7 +240,7 @@ async function showPrivateChats() {
     if (!currentUser) return;
     showScreen('privateChatsScreen');
     
-    const userChatsRef = ref(db, 'users/' + currentUser + '/chats');
+    const userChatsRef = ref(db, 'users/'+currentUser+'/chats');
     onValue(userChatsRef, (snapshot) => {
         privateChatsList.innerHTML = '';
         if (snapshot.exists()) {
@@ -225,7 +249,7 @@ async function showPrivateChats() {
                 const partner = chats[chatID].partner;
                 const d = document.createElement('button');
                 d.className = 'privateChatLink';
-                d.textContent = `Чат з: ${partner}`;
+                d.textContent = 'Чат з: '+partner;
                 d.onclick = () => showChat(chatID, partner);
                 privateChatsList.appendChild(d);
             }
@@ -239,18 +263,18 @@ async function createPrivateChat() {
     const partner = prompt('Введіть юзєрнейм співрозмовника:');
     if (!partner || partner === currentUser) return alert('Неправильний юзєрнейм.');
     
-    const partnerSnap = await get(child(ref(db), 'users/' + partner));
+    const partnerSnap = await get(child(ref(db), 'users/'+partner));
     if (!partnerSnap.exists()) return alert('Такий юзєр не зареєстрований.');
     
     const chatUsers = [currentUser, partner].sort();
-    const chatID = 'private_' + chatUsers[0] + '_' + chatUsers[1];
+    const chatID = 'private_'+chatUsers[0]+'_'+chatUsers[1];
     
     const updates = {};
-    updates['/users/' + currentUser + '/chats/' + chatID] = { partner: partner };
-    updates['/users/' + partner + '/chats/' + chatID] = { partner: currentUser };
+    updates['/users/'+currentUser+'/chats/'+chatID] = { partner: partner };
+    updates['/users/'+partner+'/chats/'+chatID] = { partner: currentUser };
 
     await update(ref(db), updates);
-    alert(`Створено чат з ${partner}!`);
+    alert('Створено чат з '+partner+'!');
     showChat(chatID, partner);
 }
 
@@ -273,55 +297,60 @@ document.getElementById('backAuth').onclick=()=>window.location.href='https://ua
 document.getElementById('publicChatBtn').onclick=()=>showChat('Общій чат')
 document.getElementById('sendBtn').onclick=sendMessage
 
-document.getElementById('privateChatsBtn').onclick=showPrivateChats;
-document.getElementById('createPrivateBtn').onclick=createPrivateChat;
-document.getElementById('backPrivateChats').onclick=()=>showMenu(true);
+document.getElementById('privateChatsBtn').onclick=showPrivateChats
+document.getElementById('createPrivateBtn').onclick=createPrivateChat
+document.getElementById('backPrivateChats').onclick=()=>showMenu(true)
 
 
 let mediaRecorder
-let mediaStream = null;
+let mediaStream = null
 
 document.getElementById('voiceMsgBtn').onclick=async()=>{
-    if(!currentUser) return alert('Увійдіть, щоб надіслати повідомлення!');
+    if(!currentUser) return alert('Увійдіть, щоб надіслати повідомлення!')
 
-    const voiceBtnElement = document.getElementById('voiceMsgBtn');
+    const voiceBtnElement = document.getElementById('voiceMsgBtn')
 
     if(mediaRecorder && mediaRecorder.state === 'recording'){
-        mediaRecorder.stop();
-        voiceBtnElement.classList.remove('active');
+        mediaRecorder.stop()
+        voiceBtnElement.classList.remove('active')
         return
     }
 
     try {
         if (!mediaStream) {
-            mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
+            mediaStream = await navigator.mediaDevices.getUserMedia({audio:true})
         }
         
-        mediaRecorder = new MediaRecorder(mediaStream);
-        voiceBtnElement.classList.add('active');
+        mediaRecorder = new MediaRecorder(mediaStream)
+        voiceBtnElement.classList.add('active')
         
         let chunks=[]
         mediaRecorder.ondataavailable=e=>chunks.push(e.data)
         
         mediaRecorder.onstop=e=>{
-            mediaStream.getTracks().forEach(track => track.stop());
-            mediaStream = null; 
-            sendAudio(new Blob(chunks,{type:'audio/webm'}));
+            mediaStream.getTracks().forEach(track => track.stop())
+            mediaStream = null 
+            sendAudio(new Blob(chunks,{type:'audio/webm'}))
         }
         
-        mediaRecorder.start();
+        mediaRecorder.start()
     } catch(e) {
-        alert('Помилка доступу до мікрофона: ' + e.message)
+        alert('Помилка доступу до мікрофона: '+e.message)
     }
 }
 
 document.getElementById('publicVoiceBtn').onclick=async()=>{
-chatScreen.style.display='none';menuScreen.style.display='none';voiceScreen.style.display='flex';voiceUsersDiv.innerHTML=''
-localStream=await navigator.mediaDevices.getUserMedia({audio:true})
-const pc=new RTCPeerConnection()
-localStream.getTracks().forEach(t=>pc.addTrack(t,localStream))
-peerConnections['public']=pc
-voiceBtn.onclick=()=>{localStream.getAudioTracks()[0].enabled=!localStream.getAudioTracks()[0].enabled;voiceBtn.classList.toggle('active')}
+    if(!currentUser) return alert('Увійдіть, щоб почати голосовий чат!')
+    
+    const pc=new RTCPeerConnection({ iceServers: iceServers })
+
+    chatScreen.style.display='none';menuScreen.style.display='none';voiceScreen.style.display='flex';voiceUsersDiv.innerHTML=''
+    localStream=await navigator.mediaDevices.getUserMedia({audio:true})
+    
+    localStream.getTracks().forEach(t=>pc.addTrack(t,localStream))
+    peerConnections['public']=pc
+    
+    voiceBtn.onclick=()=>{localStream.getAudioTracks()[0].enabled=!localStream.getAudioTracks()[0].enabled;voiceBtn.classList.toggle('active')}
 }
 
 window.onload=()=>{if(currentUser)showMenu(true);else authScreen.style.display='flex'}
