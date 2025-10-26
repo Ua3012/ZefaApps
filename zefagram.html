@@ -285,6 +285,7 @@ async function sendAudio(blob, type, chatPath) {
         voiceStatus.textContent = 'Надсилаю...';
     } else {
          callStatus.textContent = 'Аудіо надіслано.';
+         setTimeout(() => {callStatus.textContent = '';}, 3000);
     }
     isSending = false;
 }
@@ -385,7 +386,8 @@ async function startRecording(type, restart = false) {
     const isPublicVoice = isContinuous && currentChat === 'public_voice';
     const btn = isPublicVoice ? micToggleBtn : voiceMsgBtn;
     const statusEl = isPublicVoice ? voiceStatus : callStatus;
-    const maxDuration = 15000;
+    
+    const maxDuration = isPublicVoice ? 15000 : 0; 
 
     if (!currentUser) return;
     
@@ -414,7 +416,12 @@ async function startRecording(type, restart = false) {
         recordedChunks = [];
         
         btn.classList.add('active');
-        statusEl.textContent = isContinuous ? 'Запис...' : 'Запис... Макс 15 с.';
+        
+        if (isPublicVoice) {
+            statusEl.textContent = 'Запис...'; 
+        } else {
+            statusEl.textContent = '';
+        }
         
         mediaRecorder.ondataavailable=e=>recordedChunks.push(e.data);
         
@@ -426,10 +433,8 @@ async function startRecording(type, restart = false) {
         
         mediaRecorder.start();
         
-        if (isContinuous) {
+        if (maxDuration > 0) {
             isRecordingTimeout = setTimeout(handleContinuousSend, maxDuration);
-        } else {
-            isRecordingTimeout = setTimeout(() => {if (mediaRecorder && mediaRecorder.state === 'recording') {stopRecording(true);}}, maxDuration);
         }
 
     } catch(e) {
