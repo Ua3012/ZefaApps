@@ -6,101 +6,37 @@
 <title>Зєфаграм</title>
 <style>
 @font-face{font-family:'Minecraft';src:url('minecraft-mojangles.otf') format('opentype');}
-body{
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: url('zefagrambackground.png') center/cover no-repeat;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh; 
-    align-items: center; 
-    justify-content: center;
-}
-.screen{
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 600px;
-    margin: 20px auto;
-    background: rgba(255,255,255,0.95);
-    border-radius: 12px;
-    padding: 15px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    min-height: 80vh; 
-    flex-grow: 1; 
-    box-sizing: border-box;
-}
+body{margin:0;font-family:Arial,sans-serif;background:url('zefagrambackground.png') center/cover no-repeat;display:flex;flex-direction:column;height:100vh;}
+.screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:600px;margin:auto;background:rgba(255,255,255,0.95);border-radius:12px;padding:15px;box-shadow:0 2px 6px rgba(0,0,0,0.2);height:95vh;}
 h2{text-align:center;margin:10px 0;}
-input,button{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;font-size:16px;box-sizing: border-box;}
+input,button{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;font-size:16px;}
 button{cursor:pointer;background:#0084ff;color:white;border:none;}
 button:hover{background:#0066cc;}
-.topbar{width:100%;display:flex;justify-content:space-between;align-items:center;position:relative;margin-bottom:10px;}
+.topbar{width:100%;display:flex;justify-content:center;align-items:center;position:relative;margin-bottom:10px;}
 .back{padding:8px 16px;border-radius:20px;color:white;border:none;cursor:pointer;background:#555;}
 .back:hover{background:#333;}
-#messages{
-    flex: 1;
-    width: 100%;
-    overflow-y: auto;
-    background: rgba(255,255,255,0.8);
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 10px;
-}
+#messages{flex:1;width:100%;overflow-y:auto;background:rgba(255,255,255,0.8);border-radius:10px;padding:10px;margin-bottom:0;}
 .message{display:inline-block;clear:both;margin:6px 0;padding:10px;border-radius:15px;max-width:70%;word-wrap:break-word;font-family:'Minecraft',Arial;}
 .message strong{color:#0084ff;}
 .from-me{background:#cfe9ff;float:right;}
 .from-others{background:#e9ecef;float:left;}
 #audioMsg{width:100%;margin-top:5px;}
-#input-area{
-    display:flex;
-    width:100%;
-    border-top:1px solid #ddd;
-    padding:10px 0;
-    background:transparent;
-    align-items: center;
-}
+#input-area{display:flex;width:100%;border-top:1px solid #ddd;padding:10px;background:rgba(255,255,255,0.95);}
 #messageInput{flex:1;border-radius:20px;padding:10px 15px;border:1px solid #ccc;font-size:16px;}
-#sendBtn{width:50px;min-width:50px;margin-left:10px;border-radius:50%;font-size:20px;padding:0;}
-#voiceMsgBtn,#micToggleBtn{
-    width: 50px;
-    height: 50px;
-    margin-left:5px;
-    font-size:20px;
-    border-radius:50%;
-    background:#0084ff;
-    padding: 0;
-}
+#sendBtn{width:50px;margin-left:10px;border-radius:50%;font-size:20px;}
+#voiceMsgBtn,#micToggleBtn{margin-left:5px;font-size:20px;border-radius:50%;background:#0084ff;}
 #voiceMsgBtn.active,#micToggleBtn.active{background:green;}
-#formatBtn{margin-right:5px;width:50px;height:50px;padding:0;font-weight:bold;}
-.formatMenu{
-    display:none;
-    flex-direction:row;
-    background:#eee;
-    padding:5px;
-    border-radius:8px;
-    position:absolute;
-    bottom: 65px;
-    left: 10px;
-    z-index:10;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-}
-.formatMenu button{margin:2px;padding: 5px 10px;font-weight: bold;}
-.emojiPicker{
-    display:flex;
-    gap:5px;
-    margin-top:5px;
-    flex-wrap:wrap;
-    justify-content:center;
-    padding: 5px 0;
-}
+#formatBtn{margin-right:5px;}
+.formatMenu{display:none;flex-direction:column;background:#eee;padding:5px;border-radius:8px;position:absolute;bottom:60px;left:10px;z-index:10;}
+.formatMenu button{margin:2px;}
+.emojiPicker{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;justify-content:center;}
 .emojiPicker img{width:40px;height:40px;cursor:pointer;}
 .menuBtn{padding:10px 15px;width:90%;margin:5px;text-align:center;border-radius:12px;background:#0084ff;color:white;}
 .menuBtn:hover{background:#0066cc;}
-#menuGreetingWrapper{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;}
+#menuGreetingWrapper{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;}
 #menuGreeting{margin-bottom:10px;}
-.menuActions{width: 100%; display:flex;gap:10px;margin-top:auto;justify-content:space-around;padding-top: 10px; border-top: 1px solid #ddd;}
-.callBtn{padding:5px 10px;background:green;color:white;border-radius:6px;margin-left:10px;}
+.menuActions{display:flex;gap:10px;margin-top:10px;justify-content:center;}
+.callBtn{margin-left:10px;padding:5px 10px;background:green;color:white;border-radius:6px;}
 @media(max-width:500px){.screen{width:95%;padding:10px;}#input-area{padding:5px;}#messageInput{font-size:14px;padding:8px;}}
 </style>
 </head>
@@ -112,7 +48,7 @@ button:hover{background:#0066cc;}
 <input type='password' id='password' placeholder='Пароль'>
 <button id='registerBtn'>Зарегаться</button>
 <button id='loginBtn'>Войти</button>
-<button id='backAuth' class='back' style='margin-top: auto;'>⬅ Назад до Zefa Apps</button>
+<button id='backAuth' class='back'>⬅ Назад</button>
 </div>
 
 <div id='menuScreen' class='screen'>
@@ -131,21 +67,18 @@ button:hover{background:#0066cc;}
 
 <div id='chatScreen' class='screen'>
 <div class='topbar'>
-<button id='backChat' class='back'>⬅ Назад</button>
 <h2 id='chatTitle'></h2>
 <button class='callBtn' id='callBtn' style='display:none;'>📞 Дзвінок</button>
 </div>
 <div id='messages'></div>
 <div id='input-area'>
-<div style='position:relative;'>
-    <button id='formatBtn'>…</button>
-    <div class='formatMenu' id='formatMenu'>
-        <button data-format='**'>B</button>
-        <button data-format='*'>I</button>
-        <button data-format='__'>U</button>
-        <button data-format='~~'>S</button>
-        <button data-format='`'>MONO</button>
-    </div>
+<button id='formatBtn'>…</button>
+<div class='formatMenu' id='formatMenu'>
+<button data-format='B'>B</button>
+<button data-format='I'>I</button>
+<button data-format='U'>U</button>
+<button data-format='S'>S</button>
+<button data-format='MONO'>MONO</button>
 </div>
 <input type='text' id='messageInput' placeholder='ПІШИ!!!'>
 <button id='sendBtn'>→</button>
@@ -158,6 +91,9 @@ button:hover{background:#0066cc;}
 <img src='zefasticker4.png'>
 <img src='zefasticker5.png'>
 </div>
+<div class='menuActions'>
+<button id='backChat' class='back'>⬅ Назад</button>
+</div>
 </div>
 
 <div id='voiceScreen' class='screen'>
@@ -166,9 +102,7 @@ button:hover{background:#0066cc;}
 </div>
 <button id='micToggleBtn' style='font-size:40px;padding:30px;border-radius:50%;'>🎙️</button>
 <div id='voiceUsers'></div>
-<div class='menuActions'>
 <button id='backVoice' class='back'>⬅ Назад</button>
-</div>
 </div>
 
 <script type='module'>
@@ -196,109 +130,30 @@ const messageInput=document.getElementById('messageInput')
 const menuGreeting=document.getElementById('menuGreeting')
 const formatMenu=document.getElementById('formatMenu')
 const formatBtn=document.getElementById('formatBtn')
-const voiceMsgBtn=document.getElementById('voiceMsgBtn')
-const micToggleBtn=document.getElementById('micToggleBtn')
+const voiceBtn=document.getElementById('micToggleBtn')
 const voiceUsersDiv=document.getElementById('voiceUsers')
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
-async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзер вже є');await set(ref(db,'users/'+u),{password:p});alert('Ти зарегався!');login()}
+async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзер вже є');await set(ref(db,'users/'+u),{password:p});alert('Ти зарегався!')}
 async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return alert('Неправильний юзер або пароль');currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
 
-function showScreen(screenId) {
-    authScreen.style.display = 'none';
-    menuScreen.style.display = 'none';
-    chatScreen.style.display = 'none';
-    voiceScreen.style.display = 'none';
-    document.getElementById(screenId).style.display = 'flex';
-}
+function showMenu(show){authScreen.style.display='none';menuScreen.style.display=show?'flex':'none';chatScreen.style.display='none';voiceScreen.style.display='none';if(show)menuGreeting.textContent=`Прівєт, дура ${currentUser}!`}
 
-function showMenu(show){
-    if(show) {
-        showScreen('menuScreen');
-        menuGreeting.textContent=`Прівєт, дура ${currentUser}!`;
-    } else {
-        showScreen('authScreen');
-    }
-}
+function renderMessage(msg){const d=document.createElement('div');d.className='message '+(msg.user===currentUser?'from-me':'from-others');let text=msg.text;if(msg.type==='sticker')text=`<img src='${msg.url}' style='width:50px;height:50px'>`;if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>");d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;messagesDiv.appendChild(d);messagesDiv.scrollTop=messagesDiv.scrollHeight}
 
-function renderMessage(msg){
-    const d=document.createElement('div');
-    d.className='message '+(msg.user===currentUser?'from-me':'from-others');
-    let text=msg.text;
-    if(msg.type==='sticker')text=`<img src='${msg.url}' style='width:50px;height:50px'>`;
-    if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;
-    
-    text = text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>');
-    text = text.replace(/\*(.*?)\*/g,'<i>$1</i>');
-    text = text.replace(/__(.*?)__/g,'<u>$1</u>');
-    text = text.replace(/~~(.*?)~~/g,'<s>$1</s>');
-    text = text.replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>");
+function showChat(chat,partner=null){currentChat=chat;messagesDiv.innerHTML='';authScreen.style.display='none';menuScreen.style.display='none';chatScreen.style.display='flex';voiceScreen.style.display='none';chatTitle.textContent=partner||chat;document.getElementById('callBtn').style.display=chat==='Спільний чат'?'none':'inline-block';const chatRef=ref(db,'messages/'+chat);onValue(chatRef,snapshot=>{messagesDiv.innerHTML='';snapshot.forEach(c=>renderMessage(c.val()))})}
 
-    d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;
-    messagesDiv.appendChild(d);
-    messagesDiv.scrollTop=messagesDiv.scrollHeight;
-}
+function logout(){localStorage.removeItem('currentUser');currentUser=null;authScreen.style.display='flex';menuScreen.style.display='none';chatScreen.style.display='none';voiceScreen.style.display='none'}
 
-function showChat(chat,partner=null){
-    currentChat=chat;
-    messagesDiv.innerHTML='';
-    showScreen('chatScreen');
-    chatTitle.textContent=partner||chat;
-    document.getElementById('callBtn').style.display=chat==='Спільний чат'?'none':'inline-block';
-    
-    const chatRef=ref(db,'messages/'+chat);
-    onValue(chatRef,snapshot=>{
-        messagesDiv.innerHTML='';
-        snapshot.forEach(c=>renderMessage(c.val()))
-    });
-}
+async function sendMessage(){const t=messageInput.value.trim();if(!t||!currentUser)return;push(ref(db,'messages/'+currentChat),{user:currentUser,text:t,time:formatTime(new Date()),type:'text'});messageInput.value=''}
 
-function logout(){
-    localStorage.removeItem('currentUser');
-    currentUser=null;
-    showScreen('authScreen');
-}
+async function sendSticker(url){push(ref(db,'messages/'+currentChat),{user:currentUser,url,type:'sticker',time:formatTime(new Date())})}
 
-async function sendMessage(){
-    const t=messageInput.value.trim();
-    if(!t||!currentUser)return;
-    push(ref(db,'messages/'+currentChat),{user:currentUser,text:t,time:formatTime(new Date()),type:'text'});
-    messageInput.value='';
-}
-
-async function sendSticker(url){
-    push(ref(db,'messages/'+currentChat),{user:currentUser,url,type:'sticker',time:formatTime(new Date())});
-}
-
-async function sendAudio(blob){
-    const fileRef=sRef(storage,'audio/'+Date.now()+'.webm');
-    await uploadBytes(fileRef,blob);
-    const url=await getDownloadURL(fileRef);
-    push(ref(db,'messages/'+currentChat),{user:currentUser,url,type:'audio',time:formatTime(new Date())});
-}
-
-function applyFormat(format) {
-    const start = messageInput.selectionStart;
-    const end = messageInput.selectionEnd;
-    const text = messageInput.value;
-    
-    if (start !== end) {
-        messageInput.value = text.substring(0, start) + format + text.substring(start, end) + format + text.substring(end);
-        messageInput.selectionStart = start + format.length;
-        messageInput.selectionEnd = end + format.length;
-    } else {
-        messageInput.value = text.substring(0, start) + format + format + text.substring(end);
-        messageInput.selectionStart = messageInput.selectionEnd = start + format.length;
-    }
-    messageInput.focus();
-}
+async function sendAudio(blob){const fileRef=sRef(storage,'audio/'+Date.now()+'.webm');await uploadBytes(fileRef,blob);const url=await getDownloadURL(fileRef);push(ref(db,'messages/'+currentChat),{user:currentUser,url,type:'audio',time:formatTime(new Date())})}
 
 formatBtn.onclick=()=>formatMenu.style.display=formatMenu.style.display==='flex'?'none':'flex'
-formatMenu.querySelectorAll('button').forEach(b=>b.onclick=e=>{
-    applyFormat(e.target.dataset.format);
-    formatMenu.style.display = 'none';
-})
+formatMenu.querySelectorAll('button').forEach(b=>b.onclick=e=>{const f=e.target.dataset.format;messageInput.value=`${f}(${messageInput.value})`})
 document.querySelectorAll('#emojiPicker img').forEach(i=>i.onclick=e=>sendSticker(e.target.src))
 
 document.getElementById('registerBtn').onclick=register
@@ -312,54 +167,27 @@ document.getElementById('publicChatBtn').onclick=()=>showChat('Спільний 
 document.getElementById('sendBtn').onclick=sendMessage
 
 let mediaRecorder
-voiceMsgBtn.onclick=async()=>{
-    if(!currentUser) return alert('Треба увійти!')
-    if(mediaRecorder&&mediaRecorder.state==='recording'){
-        mediaRecorder.stop();
-        voiceMsgBtn.classList.remove('active');
-        return
-    }
-    try {
-        const stream=await navigator.mediaDevices.getUserMedia({audio:true})
-        mediaRecorder=new MediaRecorder(stream)
-        voiceMsgBtn.classList.add('active')
-        let chunks=[]
-        mediaRecorder.ondataavailable=e=>chunks.push(e.data)
-        mediaRecorder.onstop=e=>{
-            stream.getTracks().forEach(track => track.stop());
-            sendAudio(new Blob(chunks,{type:'audio/webm'}));
-            voiceMsgBtn.classList.remove('active');
-        }
-        mediaRecorder.start()
-    } catch(e) {
-        alert('Помилка доступу до мікрофона: ' + e.message)
-    }
+document.getElementById('voiceMsgBtn').onclick=async()=>{
+if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();voiceBtn.classList.remove('active');return}
+const stream=await navigator.mediaDevices.getUserMedia({audio:true})
+mediaRecorder=new MediaRecorder(stream)
+voiceBtn.classList.add('active')
+let chunks=[]
+mediaRecorder.ondataavailable=e=>chunks.push(e.data)
+mediaRecorder.onstop=e=>{sendAudio(new Blob(chunks,{type:'audio/webm'}));voiceBtn.classList.remove('active')}
+mediaRecorder.start()
 }
 
 document.getElementById('publicVoiceBtn').onclick=async()=>{
-    if(!currentUser) return alert('Треба увійти!')
-    showScreen('voiceScreen');
-    voiceUsersDiv.innerHTML='<p>Завантаження аудіо...</p>';
-    
-    try {
-        localStream=await navigator.mediaDevices.getUserMedia({audio:true})
-        
-        micToggleBtn.classList.add('active'); 
-        micToggleBtn.onclick=()=>{
-            const enabled = !localStream.getAudioTracks()[0].enabled;
-            localStream.getAudioTracks()[0].enabled = enabled;
-            micToggleBtn.classList.toggle('active', enabled);
-        }
-        voiceUsersDiv.innerHTML='<p>Ти в голосовому чаті. Натисни мікрофон, щоб вимкнути/увімкнути звук.</p>'
-    } catch(e) {
-        alert('Неможливо підключитися до мікрофона: ' + e.message)
-        showMenu(true);
-    }
+chatScreen.style.display='none';menuScreen.style.display='none';voiceScreen.style.display='flex';voiceUsersDiv.innerHTML=''
+localStream=await navigator.mediaDevices.getUserMedia({audio:true})
+const pc=new RTCPeerConnection()
+localStream.getTracks().forEach(t=>pc.addTrack(t,localStream))
+peerConnections['public']=pc
+voiceBtn.onclick=()=>{localStream.getAudioTracks()[0].enabled=!localStream.getAudioTracks()[0].enabled;voiceBtn.classList.toggle('active')}
 }
 
-window.onload=()=>{
-    if(currentUser)showMenu(true);else showScreen('authScreen');
-}
+window.onload=()=>{if(currentUser)showMenu(true);else authScreen.style.display='flex'}
 </script>
 </body>
 </html>
