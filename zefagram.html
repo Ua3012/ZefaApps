@@ -166,23 +166,36 @@ function deleteMessageFromDB(messageKey, chatID) {
     remove(ref(db, path + '/' + messageKey));
 }
 
-function handleIncomingCallAudio(msg, messageKey, chatID) {
+function handleIncomingAudio(msg, messageKey, chatID) {
     if (msg.user === currentUser) return;
     if (processedMessages.has(messageKey)) return;
     processedMessages.add(messageKey);
 
-    callStatus.textContent = 'Вхідна розмова від '+msg.user+'...';
+    const isContinuous = msg.type === 'ephemeral_audio';
+    
+    callStatus.textContent = isContinuous ? ('Вхідна розмова від '+msg.user+'...') : ('Вхідне аудіо від '+msg.user);
     const audio = new Audio(msg.url);
     audio.autoplay = true;
 
-    audio.onplaying = () => {callStatus.textContent = 'З\'єднано з '+msg.user;};
-    audio.onended = () => {callStatus.textContent = 'Розмова завершена.';processedMessages.delete(messageKey);};
-    audio.onerror = () => {callStatus.textContent = 'Помилка відтворення аудіо.';processedMessages.delete(messageKey);};
+    audio.onplaying = () => {callStatus.textContent = isContinuous ? ('З\'єднано з '+msg.user) : ('Прослуховування аудіо від '+msg.user);};
+    audio.onended = () => {
+        deleteMessageFromDB(messageKey, chatID);
+        callStatus.textContent = isContinuous ? 'Розмова завершена.' : 'Аудіо видалено.';
+        processedMessages.delete(messageKey);
+    };
+    audio.onerror = () => {
+        deleteMessageFromDB(messageKey, chatID);
+        callStatus.textContent = 'Помилка відтворення. Аудіо видалено.';
+        processedMessages.delete(messageKey);
+    };
 }
 
 function renderMessage(msgSnapshot){
     const msg = msgSnapshot.val();
     const messageKey = msgSnapshot.key;
+    const isPrivate = currentChat.startsWith('private_');
+
+    if (isPrivate && (msg.type === 'audio' || msg.type === 'ephemeral_audio')) return;
 
     const d=document.createElement('div');
     d.id = 'msg-'+messageKey;
@@ -223,8 +236,9 @@ function showChat(chat, partner=null){
         messagesDiv.innerHTML='';
         snapshot.forEach(c=>{
             renderMessage(c)
-            if(c.val().type === 'ephemeral_audio' && isPrivate) {
-                handleIncomingCallAudio(c.val(), c.key, chat)
+            const msg = c.val();
+            if(isPrivate && (msg.type === 'audio' || msg.type === 'ephemeral_audio')) {
+                handleIncomingAudio(msg, c.key, chat)
             }
         });
     });
