@@ -36,19 +36,14 @@ button:hover{background:#0066cc;}
 #menuGreetingWrapper{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;}
 #menuGreeting{margin-bottom:10px;}
 .menuActions{display:flex;gap:10px;margin-top:10px;justify-content:center;}
-.callBtn{margin-left:10px;padding:5px 10px;background:green;color:white;border-radius:6px;}
-.callBtn.active{background:red;}
-#endCallBtn, #sendCallAudioBtn {
+#startCallBtn{margin-left:10px;padding:5px 10px;background:green;color:white;border-radius:6px;}
+#startCallBtn.active{background:red;}
+#endCallBtn {
     margin-left: 10px;
     padding: 5px 10px;
     border-radius: 6px;
     color: white;
-}
-#endCallBtn {
     background: red;
-}
-#sendCallAudioBtn {
-    background: orange;
 }
 .privateChatLink{display: block; width: 90%; padding: 10px; margin: 5px; text-align: center; border-radius: 6px; background: #e0e0e0; color: #333; cursor: pointer; border: 1px solid #ccc;}
 .privateChatLink:hover{background: #d0d0d0;}
@@ -83,9 +78,8 @@ button:hover{background:#0066cc;}
 <div id='chatScreen' class='screen'>
 <div class='topbar'>
 <h2 id='chatTitle'></h2>
-<button class='callBtn' id='startCallBtn' style='display:none;'>📞 Дзвінок</button>
+<button id='startCallBtn' style='display:none;'>📞 Дзвінок</button>
 <button id='endCallBtn' style='display:none;'>❌ Завершити</button>
-<button id='sendCallAudioBtn' style='display:none;'>↗️ Надіслати</button>
 <div id='callStatus' style='color:red; margin-left:10px;'></div>
 </div>
 <div id='messages'></div>
@@ -138,6 +132,7 @@ let mediaRecorder = null
 let mediaStream = null
 let isRecordingTimeout = null
 let recordedChunks = []
+let isSending = false
 
 const authScreen=document.getElementById('authScreen')
 const menuScreen=document.getElementById('menuScreen')
@@ -154,19 +149,15 @@ const voiceUsersDiv=document.getElementById('voiceUsers')
 const privateChatsList=document.getElementById('privateChatsList')
 const startCallBtn = document.getElementById('startCallBtn')
 const endCallBtn = document.getElementById('endCallBtn')
-const sendCallAudioBtn = document.getElementById('sendCallAudioBtn')
 const callStatus = document.getElementById('callStatus')
 const micToggleBtn = document.getElementById('micToggleBtn')
 const voiceStatus = document.getElementById('voiceStatus')
 
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
-
 async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return;const s=await get(child(ref(db),'users/'+u));if(s.exists())return;await set(ref(db,'users/'+u),{password:p, chats: {}});}
 async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return;const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return;currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
-
 function showMenu(show){authScreen.style.display='none';menuScreen.style.display=show?'flex':'none';chatScreen.style.display='none';voiceScreen.style.display='none';privateChatsScreen.style.display='none';if(show)menuGreeting.textContent=`Прівєт, дура ${currentUser}!`}
-
 function getChatPath(){return currentChat === 'Общій чат' ? 'messages/public' : 'messages/' + currentChat}
 function getPrivateCallPath(){return 'messages/private_calls/'+currentChat}
 
@@ -177,57 +168,33 @@ function deleteMessageFromDB(messageKey, chatID) {
 
 function handleIncomingCallAudio(msg, messageKey, chatID) {
     if (msg.sender === currentUser) return;
-
     callStatus.textContent = 'Вхідний дзвінок від '+msg.sender+'...';
     const audio = new Audio(msg.url);
     audio.autoplay = true;
 
-    audio.onplaying = () => {
-        callStatus.textContent = 'З\'єднано з '+msg.sender;
-    };
-    
-    audio.onended = () => {
-        callStatus.textContent = 'Дзвінок завершено.';
-        setTimeout(() => deleteMessageFromDB(messageKey, chatID), 1000); 
-    };
-    audio.onerror = () => {
-        callStatus.textContent = 'Помилка відтворення аудіо.';
-        setTimeout(() => deleteMessageFromDB(messageKey, chatID), 1000);
-    };
+    audio.onplaying = () => {callStatus.textContent = 'З\'єднано з '+msg.sender;};
+    audio.onended = () => {callStatus.textContent = 'Дзвінок завершено.';setTimeout(() => deleteMessageFromDB(messageKey, chatID), 1000);};
+    audio.onerror = () => {callStatus.textContent = 'Помилка відтворення аудіо.';setTimeout(() => deleteMessageFromDB(messageKey, chatID), 1000);};
 }
-
 
 function renderMessage(msgSnapshot){
     const msg = msgSnapshot.val();
     const messageKey = msgSnapshot.key;
-    const isEphemeral = msg.type === 'ephemeral_audio';
+    if (msg.type === 'ephemeral_audio') return; 
 
-    if (isEphemeral) return; 
-
-    
     const d=document.createElement('div');
     d.id = 'msg-'+messageKey;
     d.className='message '+(msg.user===currentUser?'from-me':'from-others');
     
     let text=msg.text;
-    if(msg.type==='sticker') {
-        text=`<img src='${msg.url}' style='width:50px;height:50px'>`;
-    } else if(msg.type==='audio') {
-        text=`<audio controls src='${msg.url}'></audio>`;
-    } else {
-        text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,`<span style='font-family:monospace'>$1</span>`);
-    }
+    if(msg.type==='sticker') {text=`<img src='${msg.url}' style='width:50px;height:50px'>`;} 
+    else if(msg.type==='audio') {text=`<audio controls src='${msg.url}'></audio>`;} 
+    else {text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,`<span style='font-family:monospace'>$1</span>`);}
     
     d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;
     
-    if (msg.user === currentUser) {
-        d.ondblclick = () => {
-            if (confirm('Впевнені, що хочете видалити це повідомлення?')) {
-                deleteMessageFromDB(messageKey, currentChat);
-            }
-        };
+    if (msg.user === currentUser) {d.ondblclick = () => {if (confirm('Впевнені, що хочете видалити це повідомлення?')) {deleteMessageFromDB(messageKey, currentChat);}};
     }
-    
     messagesDiv.appendChild(d);
     messagesDiv.scrollTop=messagesDiv.scrollHeight
 }
@@ -243,7 +210,6 @@ function showChat(chat, partner=null){
     const isPrivate = chat.startsWith('private_');
     startCallBtn.style.display = isPrivate ? 'inline-block' : 'none';
     endCallBtn.style.display = 'none';
-    sendCallAudioBtn.style.display = 'none';
     startCallBtn.textContent = '📞 Дзвінок';
     callStatus.textContent = '';
     
@@ -273,27 +239,17 @@ function showVoiceChat() {
     });
     
     set(ref(db, 'presence/public_voice/'+currentUser), true);
-    window.onbeforeunload = () => {
-        remove(ref(db, 'presence/public_voice/'+currentUser));
-    };
+    window.onbeforeunload = () => {remove(ref(db, 'presence/public_voice/'+currentUser));};
 }
 
 
 function logout(){localStorage.removeItem('currentUser');currentUser=null;showScreen('authScreen')}
-
-async function sendMessage(){
-    const t=messageInput.value.trim();
-    if(!t||!currentUser)return;
-    
-    push(ref(db, getChatPath()),{user:currentUser,text:t,time:formatTime(new Date()),type:'text'});
-    messageInput.value='';
-}
-
-async function sendSticker(url){
-    push(ref(db, getChatPath()),{user:currentUser,url,type:'sticker',time:formatTime(new Date())})
-}
+async function sendMessage(){const t=messageInput.value.trim();if(!t||!currentUser)return;push(ref(db, getChatPath()),{user:currentUser,text:t,time:formatTime(new Date()),type:'text'});messageInput.value='';}
+async function sendSticker(url){push(ref(db, getChatPath()),{user:currentUser,url,type:'sticker',time:formatTime(new Date())})}
 
 async function sendAudio(blob, type, chatPath) {
+    if (isSending) return;
+    isSending = true;
     const CLOUDINARY_CLOUD_NAME = 'doylfteu4'; 
     const CLOUDINARY_UPLOAD_PRESET = 'zefagram_audio'; 
 
@@ -302,35 +258,23 @@ async function sendAudio(blob, type, chatPath) {
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
     
     let url = '';
-
     try {
-        const response = await fetch(
-            'https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD_NAME+'/upload',
-            { method: 'POST', body: formData }
-        );
+        const response = await fetch('https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD_NAME+'/upload', { method: 'POST', body: formData });
         const data = await response.json();
-        if (data.secure_url) {
-            url = data.secure_url;
-        } else {
-            console.error('Cloudinary Response:', data);
-            return;
-        }
+        if (data.secure_url) {url = data.secure_url;} else {console.error('Cloudinary Response:', data);isSending = false;return;}
     } catch(e) {
-        console.error('Помилка при завантаженні аудіо: '+e.message);
-        return;
+        console.error('Помилка при завантаженні аудіо: '+e.message);isSending = false;return;
     }
 
     if (type === 'ephemeral_audio') {
         const statusEl = chatPath.includes('public') ? voiceStatus : callStatus;
-        
         const targetChatID = chatPath.split('/').pop();
-        
         push(ref(db, chatPath),{sender:currentUser, receiver: (targetChatID.includes(currentPartner) ? currentPartner : 'public'), url, type:type, time:formatTime(new Date())});
-        statusEl.textContent = 'Надіслано розмову!';
-        
+        statusEl.textContent = 'Надсилаю...';
     } else {
         push(ref(db, chatPath),{user:currentUser,url,type:type,time:formatTime(new Date())});
     }
+    isSending = false;
 }
 
 async function showPrivateChats() {
@@ -381,16 +325,27 @@ function showScreen(screenId) {
     });
 }
 
+async function handlePrivateCallTimeout() {
+    if (mediaRecorder && mediaRecorder.state === 'recording' && recordedChunks.length > 0) {
+        const blob = new Blob(recordedChunks, {type:'audio/webm'});
+        recordedChunks = []; 
+        sendAudio(blob, 'ephemeral_audio', getPrivateCallPath());
+        
+        startRecording('ephemeral_audio', true); 
+    }
+}
+
 function stopRecording(send = false) {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
         clearTimeout(isRecordingTimeout);
+        mediaRecorder.stop();
+        mediaRecorder = null;
         
         if (mediaStream) {
             mediaStream.getTracks().forEach(track => track.stop());
             mediaStream = null;
         }
         
-        // Відправка, якщо натиснута кнопка "Надіслати" або таймаут для не-дзвінків
         if (send && recordedChunks.length > 0) {
             const blob = new Blob(recordedChunks, {type:'audio/webm'});
             const chatPath = currentChat === 'public_voice' ? 'messages/public' : (currentChat.startsWith('private_') ? getPrivateCallPath() : getChatPath());
@@ -402,20 +357,15 @@ function stopRecording(send = false) {
             }
         }
         
-        mediaRecorder.stop();
-        mediaRecorder = null;
         recordedChunks = [];
         
-        // Оновлення UI
         const isPrivateCall = currentChat.startsWith('private_');
         
         if (isPrivateCall) {
             startCallBtn.classList.remove('active');
-            startCallBtn.style.display = 'inline-block';
             startCallBtn.textContent = '📞 Дзвінок';
             endCallBtn.style.display = 'none';
-            sendCallAudioBtn.style.display = 'none';
-            callStatus.textContent = send ? 'Надсилання завершено.' : 'Дзвінок завершено.';
+            callStatus.textContent = 'Дзвінок завершено.';
         } else if (currentChat === 'public_voice') {
             micToggleBtn.classList.remove('active');
             micToggleBtn.textContent = '🎙️ Увімкнути мікрофон';
@@ -426,7 +376,7 @@ function stopRecording(send = false) {
     }
 }
 
-async function startRecording(type) {
+async function startRecording(type, restart = false) {
     const isCall = type === 'ephemeral_audio';
     const isPrivateCall = isCall && currentChat.startsWith('private_');
     const btn = isPrivateCall ? startCallBtn : (currentChat === 'public_voice' ? micToggleBtn : document.getElementById('voiceMsgBtn'));
@@ -435,22 +385,26 @@ async function startRecording(type) {
 
     if (!currentUser) return;
     
-    if(mediaRecorder && mediaRecorder.state === 'recording'){
-        if (isPrivateCall) {
-            clearTimeout(isRecordingTimeout);
-            statusEl.textContent = 'Запис зупинено. Натисніть "Надіслати"';
-            startCallBtn.textContent = '📞 Розмова';
-            startCallBtn.classList.remove('active');
-            sendCallAudioBtn.style.display = 'inline-block';
-            return;
-        } else {
-            stopRecording(true);
-            return;
-        }
+    // Якщо вже записуємо і це приватний дзвінок (ручна відправка)
+    if(mediaRecorder && mediaRecorder.state === 'recording' && isPrivateCall && !restart){
+        clearTimeout(isRecordingTimeout);
+        mediaRecorder.stop(); 
+        const blob = new Blob(recordedChunks, {type:'audio/webm'});
+        recordedChunks = []; 
+        sendAudio(blob, 'ephemeral_audio', getPrivateCallPath());
+        startRecording('ephemeral_audio', true); // Одразу починаємо новий
+        return;
+    }
+    // Якщо не дзвінок, то зупиняємо
+    if(mediaRecorder && mediaRecorder.state === 'recording' && !isPrivateCall){
+        stopRecording(true);
+        return;
     }
 
     try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
+        if (!restart) {
+            mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
+        }
         mediaRecorder = new MediaRecorder(mediaStream);
         recordedChunks = [];
         
@@ -460,46 +414,28 @@ async function startRecording(type) {
         
         if (isPrivateCall) {
             endCallBtn.style.display = 'inline-block';
-            startCallBtn.style.display = 'inline-block'; 
-            sendCallAudioBtn.style.display = 'none'; 
         }
         
-        mediaRecorder.ondataavailable=e=>{
-            recordedChunks.push(e.data);
-            
-            // Якщо довше 15 секунд (для дзвінка), відправляємо і починаємо новий запис
-            if (isPrivateCall && recordedChunks.length > 0 && mediaRecorder.state === 'recording') {
-                const totalDuration = recordedChunks.reduce((acc, chunk) => acc + chunk.size, 0) / 10000; 
-
-                if (totalDuration > 15) {
-                    const blob = new Blob(recordedChunks, {type:'audio/webm'});
-                    recordedChunks = []; 
-                    
-                    const chatPath = getPrivateCallPath();
-                    sendAudio(blob, 'ephemeral_audio', chatPath);
-                }
+        mediaRecorder.ondataavailable=e=>recordedChunks.push(e.data);
+        
+        mediaRecorder.onstop=e=>{
+            if (!isPrivateCall) { 
+                stopRecording(true);
             }
         };
         
         mediaRecorder.start();
         
-        if (!isPrivateCall) {
-            isRecordingTimeout = setTimeout(() => {
-                if (mediaRecorder && mediaRecorder.state === 'recording') {
-                    stopRecording(true);
-                }
-            }, maxDuration);
+        if (isPrivateCall) {
+            isRecordingTimeout = setTimeout(handlePrivateCallTimeout, maxDuration);
+        } else {
+            isRecordingTimeout = setTimeout(() => {if (mediaRecorder && mediaRecorder.state === 'recording') {stopRecording(true);}}, maxDuration);
         }
 
     } catch(e) {
         console.error('Помилка доступу до мікрофона: '+e.message);
-        btn.classList.remove('active');
-        btn.textContent = isPrivateCall ? '📞 Дзвінок' : (currentChat === 'public_voice' ? '🎙️ Увімкнути мікрофон' : '🎙️');
+        stopRecording(false);
         statusEl.textContent = 'Помилка мікрофона.';
-        if (isPrivateCall) {
-            endCallBtn.style.display = 'none';
-            sendCallAudioBtn.style.display = 'none';
-        }
     }
 }
 
@@ -509,12 +445,8 @@ document.getElementById('registerBtn').onclick=register
 document.getElementById('loginBtn').onclick=login
 document.getElementById('backMenu').onclick=()=>window.location.href='https://ua3012.github.io/ZefaApps/index.html'
 document.getElementById('logoutMenu').onclick=logout
-document.getElementById('backChat').onclick=()=>showMenu(true)
-document.getElementById('backVoice').onclick=()=> {
-    stopRecording(false);
-    remove(ref(db, 'presence/public_voice/'+currentUser));
-    showMenu(true);
-}
+document.getElementById('backChat').onclick=()=>stopRecording(false) || showMenu(true)
+document.getElementById('backVoice').onclick=()=> {stopRecording(false);remove(ref(db, 'presence/public_voice/'+currentUser));showMenu(true);}
 document.getElementById('backAuth').onclick=()=>window.location.href='https://ua3012.github.io/ZefaApps/index.html'
 document.getElementById('publicChatBtn').onclick=()=>showChat('Общій чат')
 document.getElementById('sendBtn').onclick=sendMessage
@@ -525,8 +457,7 @@ document.getElementById('backPrivateChats').onclick=()=>showMenu(true)
 
 document.getElementById('voiceMsgBtn').onclick=()=>startRecording('audio')
 startCallBtn.onclick=()=>startRecording('ephemeral_audio')
-endCallBtn.onclick=()=>stopRecording(false)
-sendCallAudioBtn.onclick=()=>stopRecording(true) 
+endCallBtn.onclick=()=>stopRecording(true)
 micToggleBtn.onclick=()=>startRecording('ephemeral_audio')
 document.getElementById('publicVoiceBtn').onclick=showVoiceChat
 
