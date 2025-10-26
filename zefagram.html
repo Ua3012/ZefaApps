@@ -27,8 +27,11 @@ button:hover{background:#0066cc;}
 #input-area{display:flex;width:100%;border-top:1px solid #ddd;padding:10px;background:rgba(255,255,255,0.95);}
 #messageInput{flex:1;border-radius:20px;padding:10px 15px;border:1px solid #ccc;font-size:16px;}
 #sendBtn{width:50px;margin-left:10px;border-radius:50%;font-size:20px;}
-#voiceMsgBtn,#micToggleBtn{margin-left:5px;font-size:20px;border-radius:50%;background:#0084ff;}
-#voiceMsgBtn.active,#micToggleBtn.active{background:red;}
+#voiceMsgBtn{margin-left:5px;font-size:20px;border-radius:50%;background:#0084ff;width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center;}
+#micToggleBtn{margin-left:5px;font-size:20px;border-radius:50%;background:#0084ff;}
+#voiceMsgBtn.active{background:#4CAF50;} 
+#micToggleBtn.active{background:red;}
+
 .emojiPicker{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;justify-content:center;}
 .emojiPicker img{width:40px;height:40px;cursor:pointer;}
 .menuBtn{padding:10px 15px;width:90%;margin:5px;text-align:center;border-radius:12px;background:#0084ff;color:white;}
@@ -140,6 +143,7 @@ const privateChatsList=document.getElementById('privateChatsList')
 const callStatus = document.getElementById('callStatus')
 const micToggleBtn = document.getElementById('micToggleBtn')
 const voiceStatus = document.getElementById('voiceStatus')
+const voiceMsgBtn = document.getElementById('voiceMsgBtn')
 
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
@@ -279,6 +283,8 @@ async function sendAudio(blob, type, chatPath) {
     
     if (isContinuous) {
         voiceStatus.textContent = 'Надсилаю...';
+    } else {
+         callStatus.textContent = 'Аудіо надіслано.';
     }
     isSending = false;
 }
@@ -368,7 +374,8 @@ function stopRecording(send = false) {
             micToggleBtn.textContent = '🎙️ Увімкнути мікрофон';
             voiceStatus.textContent = 'Натисніть для розмови';
         } else {
-            document.getElementById('voiceMsgBtn').classList.remove('active');
+            voiceMsgBtn.classList.remove('active');
+            callStatus.textContent = ''; 
         }
     }
 }
@@ -376,7 +383,7 @@ function stopRecording(send = false) {
 async function startRecording(type, restart = false) {
     const isContinuous = type === 'ephemeral_audio';
     const isPublicVoice = isContinuous && currentChat === 'public_voice';
-    const btn = isPublicVoice ? micToggleBtn : document.getElementById('voiceMsgBtn');
+    const btn = isPublicVoice ? micToggleBtn : voiceMsgBtn;
     const statusEl = isPublicVoice ? voiceStatus : callStatus;
     const maxDuration = 15000;
 
@@ -407,8 +414,7 @@ async function startRecording(type, restart = false) {
         recordedChunks = [];
         
         btn.classList.add('active');
-        btn.textContent = isContinuous ? '🔴 Говориш...' : '🔴 Запис';
-        statusEl.textContent = 'Запис...';
+        statusEl.textContent = isContinuous ? 'Запис...' : 'Запис... Макс 15 с.';
         
         mediaRecorder.ondataavailable=e=>recordedChunks.push(e.data);
         
@@ -449,7 +455,7 @@ document.getElementById('privateChatsBtn').onclick=showPrivateChats
 document.getElementById('createPrivateBtn').onclick=createPrivateChat
 document.getElementById('backPrivateChats').onclick=()=>showMenu(true)
 
-document.getElementById('voiceMsgBtn').onclick=()=>startRecording('audio')
+voiceMsgBtn.onclick=()=>startRecording('audio')
 micToggleBtn.onclick=()=>startRecording('ephemeral_audio')
 document.getElementById('publicVoiceBtn').onclick=showVoiceChat
 
