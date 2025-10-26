@@ -58,7 +58,7 @@ button:hover{background:#0066cc;}
 <button class='menuBtn' id='createPrivateBtn'>Створити пріватний чат</button>
 <div class='menuActions'>
 <button id='logoutMenu' class='back'>Вийті</button>
-<button id='backMenu' class='back'>⬅ Назад к ЗєфаАппс</button>
+<button id='backMenu' class='back'>⬅ Назад до меню</button>
 </div>
 </div>
 
@@ -117,8 +117,8 @@ const privateChatsList=document.getElementById('privateChatsList')
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
-async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзер вже є');await set(ref(db,'users/'+u),{password:p, chats: {}});alert('Ти зарегався!')}
-async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Введи юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return alert('Неправильний юзер або пароль');currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
+async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Ввєдиі юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзєр вже є');await set(ref(db,'users/'+u),{password:p, chats: {}});alert('Ти зарегався!')}
+async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Ввєді юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return alert('Неправильний юзєр ілі пароль');currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
 
 function showMenu(show){authScreen.style.display='none';menuScreen.style.display=show?'flex':'none';chatScreen.style.display='none';privateChatsScreen.style.display='none';if(show)menuGreeting.textContent=`Прівєт, дура ${currentUser}!`}
 
@@ -147,7 +147,7 @@ function renderMessage(msgSnapshot){
 
 async function deleteMessage(messageKey, type) {
     if (!currentUser) return;
-    if (confirm('Впевнені, що хочете видалити це повідомлення?')) {
+    if (confirm('Удаліть? Єслі ти ета зробиш, то ЗєфаБот все одно будіт правіть мірам!')) {
         const chatPath = getChatPath();
         await remove(ref(db, chatPath + '/' + messageKey));
     }
@@ -205,10 +205,10 @@ async function sendAudio(blob){
             url = data.secure_url;
         } else {
             console.error('Cloudinary Response:', data);
-            throw new Error('Помилка завантаження Cloudinary: ' + (data.error ? data.error.message : 'Невідома помилка'));
+            throw new Error('Ашибка, піши Ua3012dima30: ' + (data.error ? data.error.message : 'Шо?'));
         }
     } catch(e) {
-        alert('Помилка при завантаженні аудіо. Перевірте CLOUD_NAME та UPLOAD_PRESET: ' + e.message);
+        alert('Лох, ета значіт шо нужин норм інет: ' + e.message);
         return;
     }
 
@@ -228,22 +228,22 @@ async function showPrivateChats() {
                 const partner = chats[chatID].partner;
                 const d = document.createElement('button');
                 d.className = 'privateChatLink';
-                d.textContent = `Чат з: ${partner}`;
+                d.textContent = `Базар з: ${partner}`;
                 d.onclick = () => showChat(chatID, partner);
                 privateChatsList.appendChild(d);
             }
         } else {
-            privateChatsList.innerHTML = '<p style=\'text-align: center; margin-top: 20px;\'>Немає приватних чатів.</p>';
+            privateChatsList.innerHTML = '<p style=\'text-align: center; margin-top: 20px;\'>Пуста.</p>';
         }
     });
 }
 
 async function createPrivateChat() {
-    const partner = prompt('Введіть юзєрнейм співрозмовника:');
-    if (!partner || partner === currentUser) return alert('Неправильний юзєрнейм.');
+    const partner = prompt('Ввєдітє юзєрнамє співрозмовника:');
+    if (!partner || partner === currentUser) return alert('Неправильний юзєрнамє.');
     
     const partnerSnap = await get(child(ref(db), 'users/' + partner));
-    if (!partnerSnap.exists()) return alert('Такий юзєр не зареєстрований.');
+    if (!partnerSnap.exists()) return alert('Такова нема!.');
     
     const chatUsers = [currentUser, partner].sort();
     const chatID = 'private_' + chatUsers[0] + '_' + chatUsers[1];
@@ -253,7 +253,7 @@ async function createPrivateChat() {
     updates['/users/' + partner + '/chats/' + chatID] = { partner: currentUser };
 
     await update(ref(db), updates);
-    alert(`Створено чат з ${partner}!`);
+    alert(`Створено базар з ${partner}!`);
     showChat(chatID, partner);
 }
 
@@ -284,7 +284,7 @@ let mediaRecorder
 let mediaStream = null;
 
 document.getElementById('voiceMsgBtn').onclick=async()=>{
-    if(!currentUser) return alert('Увійдіть, щоб надіслати повідомлення!');
+    if(!currentUser) return alert('Ввайді, шоб базаріть!');
 
     const voiceBtnElement = document.getElementById('voiceMsgBtn');
 
@@ -315,7 +315,7 @@ document.getElementById('voiceMsgBtn').onclick=async()=>{
         
         mediaRecorder.start();
     } catch(e) {
-        alert('Помилка доступу до мікрофона: ' + e.message)
+        alert('Шо з міком: ' + e.message)
         voiceBtnElement.classList.remove('active');
     }
 }
