@@ -133,6 +133,7 @@ let mediaStream = null
 let isRecordingTimeout = null
 let recordedChunks = []
 let isSending = false
+let processedMessages = new Set()
 
 const authScreen=document.getElementById('authScreen')
 const menuScreen=document.getElementById('menuScreen')
@@ -168,13 +169,16 @@ function deleteMessageFromDB(messageKey, chatID) {
 
 function handleIncomingCallAudio(msg, messageKey, chatID) {
     if (msg.sender === currentUser) return;
+    if (processedMessages.has(messageKey)) return;
+    processedMessages.add(messageKey);
+
     callStatus.textContent = 'Вхідний дзвінок від '+msg.sender+'...';
     const audio = new Audio(msg.url);
     audio.autoplay = true;
 
     audio.onplaying = () => {callStatus.textContent = 'З\'єднано з '+msg.sender;};
-    audio.onended = () => {callStatus.textContent = 'Дзвінок завершено.';setTimeout(() => deleteMessageFromDB(messageKey, chatID), 1000);};
-    audio.onerror = () => {callStatus.textContent = 'Помилка відтворення аудіо.';setTimeout(() => deleteMessageFromDB(messageKey, chatID), 1000);};
+    audio.onended = () => {callStatus.textContent = 'Дзвінок завершено.';deleteMessageFromDB(messageKey, chatID);processedMessages.delete(messageKey);};
+    audio.onerror = () => {callStatus.textContent = 'Помилка відтворення аудіо.';deleteMessageFromDB(messageKey, chatID);processedMessages.delete(messageKey);};
 }
 
 function renderMessage(msgSnapshot){
@@ -206,6 +210,7 @@ function showChat(chat, partner=null){
     messagesDiv.innerHTML='';
     showScreen('chatScreen');
     chatTitle.textContent=partner || chat;
+    processedMessages.clear();
 
     const isPrivate = chat.startsWith('private_');
     startCallBtn.style.display = isPrivate ? 'inline-block' : 'none';
@@ -346,20 +351,15 @@ function stopRecording(send = false) {
             mediaStream = null;
         }
         
+        const isPrivateCall = currentChat.startsWith('private_');
+        
         if (send && recordedChunks.length > 0) {
             const blob = new Blob(recordedChunks, {type:'audio/webm'});
-            const chatPath = currentChat === 'public_voice' ? 'messages/public' : (currentChat.startsWith('private_') ? getPrivateCallPath() : getChatPath());
-            
-            if (currentChat.startsWith('private_')) {
-                sendAudio(blob, 'ephemeral_audio', chatPath);
-            } else {
-                sendAudio(blob, (currentChat === 'public_voice' ? 'ephemeral_audio' : 'audio'), chatPath);
-            }
+            const chatPath = isPrivateCall ? getPrivateCallPath() : (currentChat === 'public_voice' ? 'messages/public' : getChatPath());
+            sendAudio(blob, 'ephemeral_audio', chatPath);
         }
         
         recordedChunks = [];
-        
-        const isPrivateCall = currentChat.startsWith('private_');
         
         if (isPrivateCall) {
             startCallBtn.classList.remove('active');
@@ -379,37 +379,38 @@ function stopRecording(send = false) {
 async function startRecording(type, restart = false) {
     const isCall = type === 'ephemeral_audio';
     const isPrivateCall = isCall && currentChat.startsWith('private_');
-    const btn = isPrivateCall ? startCallBtn : (currentChat === 'public_voice' ? micToggleBtn : document.getElementById('voiceMsgBtn'));
-    const statusEl = isPrivateCall ? callStatus : (currentChat === 'public_voice' ? voiceStatus : callStatus);
+    const isPublicVoice = isCall && currentChat === 'public_voice';
+    const btn = isPrivateCall ? startCallBtn : (isPublicVoice ? micToggleBtn : document.getElementById('voiceMsgBtn'));
+    const statusEl = isPrivateCall ? callStatus : (isPublicVoice ? voiceStatus : callStatus);
     const maxDuration = 15000;
 
     if (!currentUser) return;
     
-    // Якщо вже записуємо і це приватний дзвінок (ручна відправка)
+    // Ручна відправка (приватний дзвінок)
     if(mediaRecorder && mediaRecorder.state === 'recording' && isPrivateCall && !restart){
         clearTimeout(isRecordingTimeout);
         mediaRecorder.stop(); 
         const blob = new Blob(recordedChunks, {type:'audio/webm'});
         recordedChunks = []; 
         sendAudio(blob, 'ephemeral_audio', getPrivateCallPath());
-        startRecording('ephemeral_audio', true); // Одразу починаємо новий
+        startRecording('ephemeral_audio', true); 
         return;
     }
-    // Якщо не дзвінок, то зупиняємо
+    // Звичайний запис (стоп)
     if(mediaRecorder && mediaRecorder.state === 'recording' && !isPrivateCall){
         stopRecording(true);
         return;
     }
 
     try {
-        if (!restart) {
+        if (!restart || !mediaStream) {
             mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
         }
         mediaRecorder = new MediaRecorder(mediaStream);
         recordedChunks = [];
         
         btn.classList.add('active');
-        btn.textContent = isPrivateCall ? '🔴 Розмова' : (currentChat === 'public_voice' ? '🔴 Говориш...' : '🔴 Запис');
+        btn.textContent = isPrivateCall ? '🔴 Розмова' : (isPublicVoice ? '🔴 Говориш...' : '🔴 Запис');
         statusEl.textContent = 'Запис...';
         
         if (isPrivateCall) {
@@ -420,7 +421,7 @@ async function startRecording(type, restart = false) {
         
         mediaRecorder.onstop=e=>{
             if (!isPrivateCall) { 
-                stopRecording(true);
+                stopRecording(false); 
             }
         };
         
