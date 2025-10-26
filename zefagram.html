@@ -138,6 +138,13 @@ const iceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
+    
+    // АКТИВНА КОНФІГУРАЦІЯ EXPRESSTURN
+    { 
+        urls: 'turn:relay1.expressturn.com:3480', 
+        username: '000000002076857117', 
+        credential: 'Ceu6hPUu/dqCdBpXzRhOTdpH5Z0='
+    }
 ]
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
@@ -157,7 +164,7 @@ function renderMessage(msgSnapshot){
     let text=msg.text;
     if(msg.type==='sticker')text=`<img src='${msg.url}' style='width:50px;height:50px'>`;
     if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;
-    text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>");
+    text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,`<span style='font-family:monospace'>$1</span>`);
     d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;
     
     if (msg.user === currentUser) {
@@ -311,7 +318,6 @@ document.getElementById('privateChatsBtn').onclick=showPrivateChats
 document.getElementById('createPrivateBtn').onclick=createPrivateChat
 document.getElementById('backPrivateChats').onclick=()=>showMenu(true)
 
-// *** ФУНКЦІОНАЛ ГОЛОСОВИХ ПОВІДОМЛЕНЬ (ЗАПИС) ***
 let mediaRecorder
 
 document.getElementById('voiceMsgBtn').onclick=async()=>{
@@ -347,9 +353,6 @@ document.getElementById('voiceMsgBtn').onclick=async()=>{
         alert('Помилка доступу до мікрофона: '+e.message)
     }
 }
-// *************************************************
-
-// *** ФУНКЦІОНАЛ ГОЛОСОВОГО ЧАТУ (WebRTC) ***
 
 async function createPeerConnection(chatID, partner, isCaller) {
     if (peerConnections[chatID]) return peerConnections[chatID]
