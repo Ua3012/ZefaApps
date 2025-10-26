@@ -36,15 +36,6 @@ button:hover{background:#0066cc;}
 #menuGreetingWrapper{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;}
 #menuGreeting{margin-bottom:10px;}
 .menuActions{display:flex;gap:10px;margin-top:10px;justify-content:center;}
-#startCallBtn{margin-left:10px;padding:5px 10px;background:green;color:white;border-radius:6px;}
-#startCallBtn.active{background:red;}
-#endCallBtn {
-    margin-left: 10px;
-    padding: 5px 10px;
-    border-radius: 6px;
-    color: white;
-    background: red;
-}
 .privateChatLink{display: block; width: 90%; padding: 10px; margin: 5px; text-align: center; border-radius: 6px; background: #e0e0e0; color: #333; cursor: pointer; border: 1px solid #ccc;}
 .privateChatLink:hover{background: #d0d0d0;}
 @media(max-width:500px){.screen{width:95%;padding:10px;}#input-area{padding:5px;}#messageInput{font-size:14px;padding:8px;}}
@@ -78,8 +69,6 @@ button:hover{background:#0066cc;}
 <div id='chatScreen' class='screen'>
 <div class='topbar'>
 <h2 id='chatTitle'></h2>
-<button id='startCallBtn' style='display:none;'>📞 Розмова</button>
-<button id='endCallBtn' style='display:none;'>❌ Завершити</button>
 <div id='callStatus' style='color:red; margin-left:10px;'></div>
 </div>
 <div id='messages'></div>
@@ -148,8 +137,6 @@ const messageInput=document.getElementById('messageInput')
 const menuGreeting=document.getElementById('menuGreeting')
 const voiceUsersDiv=document.getElementById('voiceUsers')
 const privateChatsList=document.getElementById('privateChatsList')
-const startCallBtn = document.getElementById('startCallBtn')
-const endCallBtn = document.getElementById('endCallBtn')
 const callStatus = document.getElementById('callStatus')
 const micToggleBtn = document.getElementById('micToggleBtn')
 const voiceStatus = document.getElementById('voiceStatus')
@@ -170,17 +157,15 @@ function handleIncomingAudio(msg, messageKey, chatID) {
     if (msg.user === currentUser) return;
     if (processedMessages.has(messageKey)) return;
     processedMessages.add(messageKey);
-
-    const isContinuous = msg.type === 'ephemeral_audio';
     
-    callStatus.textContent = isContinuous ? ('Вхідна розмова від '+msg.user+'...') : ('Вхідне аудіо від '+msg.user);
+    callStatus.textContent = 'Вхідне аудіо від '+msg.user;
     const audio = new Audio(msg.url);
     audio.autoplay = true;
 
-    audio.onplaying = () => {callStatus.textContent = isContinuous ? ('З\'єднано з '+msg.user) : ('Прослуховування аудіо від '+msg.user);};
+    audio.onplaying = () => {callStatus.textContent = 'Прослуховування аудіо від '+msg.user;};
     audio.onended = () => {
         deleteMessageFromDB(messageKey, chatID);
-        callStatus.textContent = isContinuous ? 'Розмова завершена.' : 'Аудіо видалено.';
+        callStatus.textContent = 'Аудіо видалено.';
         processedMessages.delete(messageKey);
     };
     audio.onerror = () => {
@@ -226,9 +211,6 @@ function showChat(chat, partner=null){
     processedMessages.clear();
 
     const isPrivate = chat.startsWith('private_');
-    startCallBtn.style.display = isPrivate ? 'inline-block' : 'none';
-    endCallBtn.style.display = 'none';
-    startCallBtn.textContent = '📞 Розмова';
     callStatus.textContent = '';
     
     const chatRef=ref(db, getChatPath());
@@ -286,7 +268,7 @@ async function sendAudio(blob, type, chatPath) {
         console.error('Помилка при завантаженні аудіо: '+e.message);isSending = false;return;}
 
     const finalChatPath = (chatPath === 'messages/public_voice') ? 'messages/public' : chatPath;
-    const isContinuous = (type === 'ephemeral_audio' && (currentChat.startsWith('private_') || currentChat === 'public_voice'));
+    const isContinuous = currentChat === 'public_voice';
 
     push(ref(db, finalChatPath),{
         user:currentUser,
@@ -296,8 +278,7 @@ async function sendAudio(blob, type, chatPath) {
     });
     
     if (isContinuous) {
-        const statusEl = finalChatPath.includes('public') ? voiceStatus : callStatus;
-        statusEl.textContent = 'Надсилаю...';
+        voiceStatus.textContent = 'Надсилаю...';
     }
     isSending = false;
 }
@@ -355,7 +336,7 @@ async function handleContinuousSend() {
         const blob = new Blob(recordedChunks, {type:'audio/webm'});
         recordedChunks = []; 
         
-        const chatPath = currentChat === 'public_voice' ? 'messages/public' : getChatPath();
+        const chatPath = 'messages/public';
         sendAudio(blob, 'ephemeral_audio', chatPath);
         
         startRecording('ephemeral_audio', true); 
@@ -373,21 +354,16 @@ function stopRecording(send = false) {
             mediaStream = null;
         }
         
-        const isContinuous = currentChat.startsWith('private_') || currentChat === 'public_voice';
+        const isPublicVoice = currentChat === 'public_voice';
 
-        if (send && recordedChunks.length > 0 && !isContinuous) { 
+        if (send && recordedChunks.length > 0 && !isPublicVoice) { 
             const blob = new Blob(recordedChunks, {type:'audio/webm'});
             sendAudio(blob, 'audio', getChatPath());
         }
         
         recordedChunks = [];
         
-        if (currentChat.startsWith('private_')) {
-            startCallBtn.classList.remove('active');
-            startCallBtn.textContent = '📞 Розмова';
-            endCallBtn.style.display = 'none';
-            callStatus.textContent = 'Розмова завершена.';
-        } else if (currentChat === 'public_voice') {
+        if (currentChat === 'public_voice') {
             micToggleBtn.classList.remove('active');
             micToggleBtn.textContent = '🎙️ Увімкнути мікрофон';
             voiceStatus.textContent = 'Натисніть для розмови';
@@ -399,10 +375,9 @@ function stopRecording(send = false) {
 
 async function startRecording(type, restart = false) {
     const isContinuous = type === 'ephemeral_audio';
-    const isPrivateCall = isContinuous && currentChat.startsWith('private_');
     const isPublicVoice = isContinuous && currentChat === 'public_voice';
-    const btn = isPrivateCall ? startCallBtn : (isPublicVoice ? micToggleBtn : document.getElementById('voiceMsgBtn'));
-    const statusEl = isPrivateCall ? callStatus : (isPublicVoice ? voiceStatus : callStatus);
+    const btn = isPublicVoice ? micToggleBtn : document.getElementById('voiceMsgBtn');
+    const statusEl = isPublicVoice ? voiceStatus : callStatus;
     const maxDuration = 15000;
 
     if (!currentUser) return;
@@ -413,7 +388,7 @@ async function startRecording(type, restart = false) {
             mediaRecorder.stop(); 
             const blob = new Blob(recordedChunks, {type:'audio/webm'});
             recordedChunks = []; 
-            const chatPath = isPublicVoice ? 'messages/public' : getChatPath();
+            const chatPath = 'messages/public';
             sendAudio(blob, 'ephemeral_audio', chatPath);
             
             startRecording('ephemeral_audio', true); 
@@ -434,10 +409,6 @@ async function startRecording(type, restart = false) {
         btn.classList.add('active');
         btn.textContent = isContinuous ? '🔴 Говориш...' : '🔴 Запис';
         statusEl.textContent = 'Запис...';
-        
-        if (isPrivateCall) {
-            endCallBtn.style.display = 'inline-block';
-        }
         
         mediaRecorder.ondataavailable=e=>recordedChunks.push(e.data);
         
@@ -479,8 +450,6 @@ document.getElementById('createPrivateBtn').onclick=createPrivateChat
 document.getElementById('backPrivateChats').onclick=()=>showMenu(true)
 
 document.getElementById('voiceMsgBtn').onclick=()=>startRecording('audio')
-startCallBtn.onclick=()=>startRecording('ephemeral_audio')
-endCallBtn.onclick=()=>stopRecording(false)
 micToggleBtn.onclick=()=>startRecording('ephemeral_audio')
 document.getElementById('publicVoiceBtn').onclick=showVoiceChat
 
