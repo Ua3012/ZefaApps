@@ -76,11 +76,11 @@ button:hover{background:#0066cc;}
 <div id='input-area'>
 <button id='formatBtn'>…</button>
 <div class='formatMenu' id='formatMenu'>
-<button data-format='B'>B</button>
-<button data-format='I'>I</button>
-<button data-format='U'>U</button>
-<button data-format='S'>S</button>
-<button data-format='MONO'>MONO</button>
+<button data-format='**'>B</button>
+<button data-format='*'>I</button>
+<button data-format='__'>U</button>
+<button data-format='~~'>S</button>
+<button data-format='`'>MONO</button>
 </div>
 <input type='text' id='messageInput' placeholder='ПІШИ!!!'>
 <button id='sendBtn'>→</button>
@@ -152,7 +152,9 @@ async function login(){const u=usernameInput.value.trim();const p=passwordInput.
 
 function showMenu(show){authScreen.style.display='none';menuScreen.style.display=show?'flex':'none';chatScreen.style.display='none';voiceScreen.style.display='none';privateChatsScreen.style.display='none';if(show)menuGreeting.textContent=`Прівєт, дура ${currentUser}!`}
 
-function renderMessage(msg){const d=document.createElement('div');d.className='message '+(msg.user===currentUser?'from-me':'from-others');let text=msg.text;if(msg.type==='sticker')text=`<img src='${msg.url}' style='width:50px;height:50px'>`;if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>");d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;messagesDiv.appendChild(d);messagesDiv.scrollTop=messagesDiv.scrollHeight}
+function renderMessage(msg){const d=document.createElement('div');d.className='message '+(msg.user===currentUser?'from-me':'from-others');let text=msg.text;if(msg.type==='sticker')text=`<img src='${msg.url}' style='width:50px;height:50px'>`;if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;
+text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>");
+d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;messagesDiv.appendChild(d);messagesDiv.scrollTop=messagesDiv.scrollHeight}
 
 function showChat(chat, partner=null){
     currentChat=chat;
@@ -218,7 +220,7 @@ async function showPrivateChats() {
                 privateChatsList.appendChild(d);
             }
         } else {
-            privateChatsList.innerHTML = '<p style="text-align: center; margin-top: 20px;">Немає приватних чатів.</p>';
+            privateChatsList.innerHTML = '<p style=\'text-align: center; margin-top: 20px;\'>Немає приватних чатів.</p>';
         }
     });
 }
@@ -249,8 +251,34 @@ function showScreen(screenId) {
     });
 }
 
+function applyFormat(format) {
+    const input = messageInput;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const text = input.value;
+    
+    let newText;
+    let newCursorPos;
+
+    if (start !== end) {
+        const selectedText = text.substring(start, end);
+        newText = text.substring(0, start) + format + selectedText + format + text.substring(end);
+        newCursorPos = end + 2 * format.length;
+    } else {
+        newText = text.substring(0, start) + format + format + text.substring(end);
+        newCursorPos = start + format.length;
+    }
+
+    input.value = newText;
+    input.focus();
+    input.setSelectionRange(newCursorPos, newCursorPos);
+}
+
 formatBtn.onclick=()=>formatMenu.style.display=formatMenu.style.display==='flex'?'none':'flex'
-formatMenu.querySelectorAll('button').forEach(b=>b.onclick=e=>{const f=e.target.dataset.format;messageInput.value=`${f}(${messageInput.value})`})
+formatMenu.querySelectorAll('button').forEach(b=>b.onclick=e=>{
+    applyFormat(e.target.dataset.format);
+    formatMenu.style.display = 'none';
+})
 document.querySelectorAll('#emojiPicker img').forEach(i=>i.onclick=e=>sendSticker(e.target.src))
 
 document.getElementById('registerBtn').onclick=register
