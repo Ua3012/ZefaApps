@@ -24,8 +24,8 @@ button:hover{background:#0066cc;}
 #input-area{display:flex;width:100%;border-top:1px solid #ddd;padding:10px;background:rgba(255,255,255,0.95);}
 #messageInput{flex:1;border-radius:20px;padding:10px 15px;border:1px solid #ccc;font-size:16px;}
 #sendBtn{width:50px;margin-left:10px;border-radius:50%;font-size:20px;}
-#voiceMsgBtn,#micToggleBtn{margin-left:5px;font-size:20px;border-radius:50%;background:#0084ff;width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center;}
-#voiceMsgBtn.active,#micToggleBtn.active{background:green;}
+#voiceMsgBtn{margin-left:5px;font-size:20px;border-radius:50%;background:#0084ff;width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center;}
+#voiceMsgBtn.active{background:green;}
 .emojiPicker{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;justify-content:center;}
 .emojiPicker img{width:40px;height:40px;cursor:pointer;}
 .menuBtn{padding:10px 15px;width:90%;margin:5px;text-align:center;border-radius:12px;background:#0084ff;color:white;}
@@ -33,7 +33,6 @@ button:hover{background:#0066cc;}
 #menuGreetingWrapper{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;}
 #menuGreeting{margin-bottom:10px;}
 .menuActions{display:flex;gap:10px;margin-top:10px;justify-content:center;}
-.callBtn{margin-left:10px;padding:5px 10px;background:green;color:white;border-radius:6px;}
 .privateChatLink{display: block; width: 90%; padding: 10px; margin: 5px; text-align: center; border-radius: 6px; background: #e0e0e0; color: #333; cursor: pointer; border: 1px solid #ccc;}
 .privateChatLink:hover{background: #d0d0d0;}
 @media(max-width:500px){.screen{width:95%;padding:10px;}#input-area{padding:5px;}#messageInput{font-size:14px;padding:8px;}}
@@ -66,7 +65,6 @@ button:hover{background:#0066cc;}
 <div id='chatScreen' class='screen'>
 <div class='topbar'>
 <h2 id='chatTitle'></h2>
-<button class='callBtn' id='callBtn' style='display:none;'>📞 Дзвінок</button>
 </div>
 <div id='messages'></div>
 <div id='input-area'>
@@ -129,12 +127,14 @@ function getChatPath(){return currentChat === 'Общій чат' ? 'messages/pu
 function renderMessage(msgSnapshot){
     const msg = msgSnapshot.val();
     const messageKey = msgSnapshot.key;
+    
     const d=document.createElement('div');
     d.className='message '+(msg.user===currentUser?'from-me':'from-others');
     let text=msg.text;
     if(msg.type==='sticker')text=`<img src='${msg.url}' style='width:50px;height:50px'>`;
-    if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;
-    text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>");
+    else if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;
+    else text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>");
+    
     d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;
     
     if (msg.user === currentUser) {
@@ -161,7 +161,6 @@ function showChat(chat, partner=null){
     chatScreen.style.display='flex';
     privateChatsScreen.style.display='none';
     chatTitle.textContent=partner || chat;
-    document.getElementById('callBtn').style.display = (chat.startsWith('private_') ? 'inline-block' : 'none');
     
     const chatRef=ref(db, getChatPath());
     onValue(chatRef,snapshot=>{messagesDiv.innerHTML='';snapshot.forEach(c=>renderMessage(c))});
@@ -320,8 +319,6 @@ document.getElementById('voiceMsgBtn').onclick=async()=>{
         voiceBtnElement.classList.remove('active');
     }
 }
-
-document.getElementById('callBtn').onclick=()=>alert('Функціонал дзвінків WebRTC було видалено з коду для спрощення, вибачте. 🤷‍♂️')
 
 window.onload=()=>{if(currentUser)showMenu(true);else authScreen.style.display='flex'}
 </script>
