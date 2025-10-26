@@ -68,6 +68,7 @@ button:hover{background:#0066cc;}
 <div class='topbar'>
 <h2 id='chatTitle'></h2>
 <button class='callBtn' id='callBtn' style='display:none;'>📞 Дзвінок</button>
+<div id='callStatus' style='color:red; margin-left:10px;'></div>
 </div>
 <div id='messages'></div>
 <div id='input-area'>
@@ -114,6 +115,7 @@ const db=getDatabase(app)
 let currentUser=localStorage.getItem('currentUser')||null
 let currentChat='public'
 let peerConnections={},localStream=null,callRefs={}
+let currentPartner = null
 
 const authScreen=document.getElementById('authScreen')
 const menuScreen=document.getElementById('menuScreen')
@@ -129,6 +131,8 @@ const menuGreeting=document.getElementById('menuGreeting')
 const voiceBtn=document.getElementById('micToggleBtn')
 const voiceUsersDiv=document.getElementById('voiceUsers')
 const privateChatsList=document.getElementById('privateChatsList')
+const callBtn = document.getElementById('callBtn')
+const callStatus = document.getElementById('callStatus')
 
 const iceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -174,6 +178,7 @@ async function deleteMessage(messageKey, type) {
 
 function showChat(chat, partner=null){
     currentChat=chat;
+    currentPartner=partner;
     messagesDiv.innerHTML='';
     authScreen.style.display='none';
     menuScreen.style.display='none';
@@ -181,13 +186,18 @@ function showChat(chat, partner=null){
     voiceScreen.style.display='none';
     privateChatsScreen.style.display='none';
     chatTitle.textContent=partner || chat;
-    document.getElementById('callBtn').style.display = (chat.startsWith('private_')?'inline-block':'none');
+    callBtn.style.display = (chat.startsWith('private_')?'inline-block':'none');
+    callBtn.textContent = '📞 Дзвінок';
+    callStatus.textContent = '';
     
+    if (peerConnections[currentChat]) endCall(currentChat)
+    if (partner) listenForCalls(chat, partner);
+
     const chatRef=ref(db, getChatPath());
     onValue(chatRef,snapshot=>{messagesDiv.innerHTML='';snapshot.forEach(c=>renderMessage(c))});
 }
 
-function logout(){localStorage.removeItem('currentUser');currentUser=null;authScreen.style.display='flex';menuScreen.style.display='none';chatScreen.style.display='none';voiceScreen.style.display='none';privateChatsScreen.style.display='none'}
+function logout(){localStorage.removeItem('currentUser');currentUser=null;showScreen('authScreen')}
 
 async function sendMessage(){
     const t=messageInput.value.trim();
@@ -301,9 +311,8 @@ document.getElementById('privateChatsBtn').onclick=showPrivateChats
 document.getElementById('createPrivateBtn').onclick=createPrivateChat
 document.getElementById('backPrivateChats').onclick=()=>showMenu(true)
 
-
+// *** ФУНКЦІОНАЛ ГОЛОСОВИХ ПОВІДОМЛЕНЬ (ЗАПИС) ***
 let mediaRecorder
-let mediaStream = null
 
 document.getElementById('voiceMsgBtn').onclick=async()=>{
     if(!currentUser) return alert('Увійдіть, щоб надіслати повідомлення!')
@@ -338,20 +347,150 @@ document.getElementById('voiceMsgBtn').onclick=async()=>{
         alert('Помилка доступу до мікрофона: '+e.message)
     }
 }
+// *************************************************
+
+// *** ФУНКЦІОНАЛ ГОЛОСОВОГО ЧАТУ (WebRTC) ***
+
+async function createPeerConnection(chatID, partner, isCaller) {
+    if (peerConnections[chatID]) return peerConnections[chatID]
+    
+    callStatus.textContent = isCaller ? 'Дзвоню...' : 'Вхідний дзвінок!'
+    
+    const pc = new RTCPeerConnection({ iceServers: iceServers })
+
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream))
+
+    pc.ontrack = (event) => {
+        if (event.track.kind === 'audio') {
+            const remoteAudio = document.createElement('audio')
+            remoteAudio.autoplay = true
+            remoteAudio.srcObject = event.streams[0]
+            voiceUsersDiv.appendChild(remoteAudio)
+            callStatus.textContent = 'З\'єднано!'
+        }
+    }
+    
+    pc.onicecandidate = (event) => {
+        if (event.candidate) {
+            set(push(ref(db, 'calls/'+chatID+'/candidates/'+currentUser)), event.candidate.toJSON())
+        }
+    }
+
+    pc.oniceconnectionstatechange = () => {
+        if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'closed') {
+            endCall(chatID);
+        }
+    };
+
+    peerConnections[chatID] = pc
+    return pc
+}
+
+async function startCall(chatID, partner) {
+    if (peerConnections[chatID]) return endCall(chatID);
+
+    const pc = await createPeerConnection(chatID, partner, true)
+    
+    const offer = await pc.createOffer()
+    await pc.setLocalDescription(offer)
+    
+    await set(ref(db, 'calls/'+chatID+'/offer'), {
+        sender: currentUser,
+        sessionDescription: pc.localDescription.toJSON()
+    })
+
+    callBtn.textContent = 'Завершити дзвінок'
+}
+
+async function handleOffer(chatID, offer) {
+    if (offer.sender === currentUser) return
+
+    if (!confirm('Вхідний дзвінок від '+offer.sender+'. Прийняти?')) {
+        callStatus.textContent = 'Відхилено.'
+        await remove(ref(db, 'calls/'+chatID))
+        return 
+    }
+
+    const pc = await createPeerConnection(chatID, offer.sender, false)
+    await pc.setRemoteDescription(new RTCSessionDescription(offer.sessionDescription))
+
+    const answer = await pc.createAnswer()
+    await pc.setLocalDescription(answer)
+    
+    await set(ref(db, 'calls/'+chatID+'/answer'), {
+        sender: currentUser,
+        sessionDescription: pc.localDescription.toJSON()
+    })
+
+    callBtn.textContent = 'Завершити дзвінок'
+}
+
+async function handleAnswer(pc, answer) {
+    if (!pc.currentRemoteDescription) {
+        await pc.setRemoteDescription(new RTCSessionDescription(answer.sessionDescription))
+    }
+}
+
+function endCall(chatID) {
+    if (peerConnections[chatID]) {
+        peerConnections[chatID].close()
+        delete peerConnections[chatID]
+    }
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop())
+        localStream = null
+    }
+    voiceUsersDiv.innerHTML = ''
+    callBtn.textContent = '📞 Дзвінок'
+    callStatus.textContent = 'Завершено.'
+    
+    remove(ref(db, 'calls/'+chatID))
+}
+
+function listenForCalls(chatID, partner) {
+    const callRef = ref(db, 'calls/'+chatID)
+
+    onValue(callRef, async (snapshot) => {
+        const data = snapshot.val()
+
+        if (!data) return endCall(chatID)
+
+        const pc = peerConnections[chatID] || null
+
+        if (data.offer && data.offer.sender !== currentUser && !pc) {
+            await handleOffer(chatID, data.offer)
+        }
+
+        if (data.answer && data.answer.sender !== currentUser && pc && pc.localDescription.type === 'offer') {
+             await handleAnswer(pc, data.answer)
+        }
+
+        if (pc && data.candidates) {
+            onValue(ref(db, 'calls/'+chatID+'/candidates/'+partner), (candidateSnap) => {
+                candidateSnap.forEach((candidate) => {
+                    if (candidate.val() && candidate.key) {
+                        pc.addIceCandidate(new RTCIceCandidate(candidate.val())).catch(e => console.error('Error adding ICE candidate:', e))
+                        remove(ref(db, 'calls/'+chatID+'/candidates/'+partner+'/'+candidate.key))
+                    }
+                })
+            })
+        }
+    })
+}
+
+callBtn.onclick=()=>{
+    if (peerConnections[currentChat]) {
+        endCall(currentChat)
+    } else {
+        startCall(currentChat, currentPartner)
+    }
+}
 
 document.getElementById('publicVoiceBtn').onclick=async()=>{
-    if(!currentUser) return alert('Увійдіть, щоб почати голосовий чат!')
-    
-    const pc=new RTCPeerConnection({ iceServers: iceServers })
-
-    chatScreen.style.display='none';menuScreen.style.display='none';voiceScreen.style.display='flex';voiceUsersDiv.innerHTML=''
-    localStream=await navigator.mediaDevices.getUserMedia({audio:true})
-    
-    localStream.getTracks().forEach(t=>pc.addTrack(t,localStream))
-    peerConnections['public']=pc
-    
-    voiceBtn.onclick=()=>{localStream.getAudioTracks()[0].enabled=!localStream.getAudioTracks()[0].enabled;voiceBtn.classList.toggle('active')}
+    alert('Публічний голосовий чат вимагає додаткового складного бекенду. Використовуйте приватні дзвінки.')
 }
+
 
 window.onload=()=>{if(currentUser)showMenu(true);else authScreen.style.display='flex'}
 </script>
