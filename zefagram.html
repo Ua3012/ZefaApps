@@ -16,7 +16,7 @@ button:hover{background:#0066cc;}
 .back{padding:8px 16px;border-radius:20px;color:white;border:none;cursor:pointer;background:#555;}
 .back:hover{background:#333;}
 #messages{flex:1;width:100%;overflow-y:auto;background:rgba(255,255,255,0.8);border-radius:10px;padding:10px;margin-bottom:0;}
-.message{display:inline-block;clear:both;margin:6px 0;padding:10px;border-radius:15px;max-width:70%;word-wrap:break-word;font-family:'Minecraft',Arial;}
+.message{display:inline-block;clear:both;margin:6px 0;padding:10px;border-radius:15px;max-width:70%;word-wrap:break-word;font-family:'Minecraft',Arial;position:relative;}
 .message strong{color:#0084ff;}
 .from-me{background:#cfe9ff;float:right;}
 .from-others{background:#e9ecef;float:left;}
@@ -106,7 +106,7 @@ button:hover{background:#0066cc;}
 
 <script type='module'>
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js'
-import { getDatabase, ref, set, push, get, child, onValue, update } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
+import { getDatabase, ref, set, push, get, child, onValue, update, remove } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
 import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-storage.js'
 
 const firebaseConfig={apiKey:'AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA',authDomain:'zefagram.firebaseapp.com',databaseURL:'https://zefagram-default-rtdb.europe-west1.firebasedatabase.app',projectId:'zefagram',storageBucket:'zefagram.firebasestorage.app',messagingSenderId:'664999563847',appId:'1:664999563847:web:3051100a05bdb41dc59762',measurementId:'G-CFS89PSQNK'}
@@ -139,7 +139,38 @@ async function login(){const u=usernameInput.value.trim();const p=passwordInput.
 
 function showMenu(show){authScreen.style.display='none';menuScreen.style.display=show?'flex':'none';chatScreen.style.display='none';voiceScreen.style.display='none';privateChatsScreen.style.display='none';if(show)menuGreeting.textContent=`Прівєт, дура ${currentUser}!`}
 
-function renderMessage(msg){const d=document.createElement('div');d.className='message '+(msg.user===currentUser?'from-me':'from-others');let text=msg.text;if(msg.type==='sticker')text=`<img src='${msg.url}' style='width:50px;height:50px'>`;if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>");d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;messagesDiv.appendChild(d);messagesDiv.scrollTop=messagesDiv.scrollHeight}
+function getChatPath(){return currentChat === 'Общій чат' ? 'messages/public' : 'messages/' + currentChat}
+
+function renderMessage(msgSnapshot){
+    const msg = msgSnapshot.val();
+    const messageKey = msgSnapshot.key;
+    const d=document.createElement('div');
+    d.className='message '+(msg.user===currentUser?'from-me':'from-others');
+    let text=msg.text;
+    if(msg.type==='sticker')text=`<img src='${msg.url}' style='width:50px;height:50px'>`;
+    if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;
+    text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>");
+    d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;
+    
+    if (msg.user === currentUser) {
+        d.ondblclick = () => deleteMessage(messageKey, msg.type);
+    }
+    
+    messagesDiv.appendChild(d);
+    messagesDiv.scrollTop=messagesDiv.scrollHeight
+}
+
+async function deleteMessage(messageKey, type) {
+    if (!currentUser) return;
+    if (confirm('Впевнені, що хочете видалити це повідомлення?')) {
+        const chatPath = getChatPath();
+        await remove(ref(db, chatPath + '/' + messageKey));
+        
+        if (type === 'audio') {
+            
+        }
+    }
+}
 
 function showChat(chat, partner=null){
     currentChat=chat;
@@ -152,10 +183,8 @@ function showChat(chat, partner=null){
     chatTitle.textContent=partner || chat;
     document.getElementById('callBtn').style.display = (chat.startsWith('private_') ? 'inline-block' : 'none');
     
-    const chatPath = chat === 'Общій чат' ? 'messages/public' : 'messages/' + chat;
-    
-    const chatRef=ref(db, chatPath);
-    onValue(chatRef,snapshot=>{messagesDiv.innerHTML='';snapshot.forEach(c=>renderMessage(c.val()))});
+    const chatRef=ref(db, getChatPath());
+    onValue(chatRef,snapshot=>{messagesDiv.innerHTML='';snapshot.forEach(c=>renderMessage(c))});
 }
 
 function logout(){localStorage.removeItem('currentUser');currentUser=null;authScreen.style.display='flex';menuScreen.style.display='none';chatScreen.style.display='none';voiceScreen.style.display='none';privateChatsScreen.style.display='none'}
@@ -164,20 +193,16 @@ async function sendMessage(){
     const t=messageInput.value.trim();
     if(!t||!currentUser)return;
     
-    const chatPath = currentChat === 'Общій чат' ? 'messages/public' : 'messages/' + currentChat;
-    
-    push(ref(db, chatPath),{user:currentUser,text:t,time:formatTime(new Date()),type:'text'});
+    push(ref(db, getChatPath()),{user:currentUser,text:t,time:formatTime(new Date()),type:'text'});
     messageInput.value='';
 }
 
 async function sendSticker(url){
-    const chatPath = currentChat === 'Общій чат' ? 'messages/public' : 'messages/' + currentChat;
-    push(ref(db, chatPath),{user:currentUser,url,type:'sticker',time:formatTime(new Date())})
+    push(ref(db, getChatPath()),{user:currentUser,url,type:'sticker',time:formatTime(new Date())})
 }
 
 async function sendAudio(blob){
-    const chatPath = currentChat === 'Общій чат' ? 'messages/public' : 'messages/' + currentChat;
-    
+    const chatPath = getChatPath();
     const fileName = 'audio/'+Date.now()+'_'+currentUser+'.webm';
     const fileRef=sRef(storage, fileName);
     
@@ -254,28 +279,40 @@ document.getElementById('backPrivateChats').onclick=()=>showMenu(true);
 
 
 let mediaRecorder
+let mediaStream = null;
+
 document.getElementById('voiceMsgBtn').onclick=async()=>{
-if(!currentUser) return alert('Увійдіть, щоб надіслати повідомлення!');
-if(mediaRecorder&&mediaRecorder.state==='recording'){
-    mediaRecorder.stop();
-    document.getElementById('voiceMsgBtn').classList.remove('active');
-    return
-}
-try {
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true})
-    mediaRecorder=new MediaRecorder(stream)
-    document.getElementById('voiceMsgBtn').classList.add('active')
-    let chunks=[]
-    mediaRecorder.ondataavailable=e=>chunks.push(e.data)
-    mediaRecorder.onstop=e=>{
-        stream.getTracks().forEach(track => track.stop());
-        sendAudio(new Blob(chunks,{type:'audio/webm'}));
-        document.getElementById('voiceMsgBtn').classList.remove('active');
+    if(!currentUser) return alert('Увійдіть, щоб надіслати повідомлення!');
+
+    const voiceBtnElement = document.getElementById('voiceMsgBtn');
+
+    if(mediaRecorder && mediaRecorder.state === 'recording'){
+        mediaRecorder.stop();
+        voiceBtnElement.classList.remove('active');
+        return
     }
-    mediaRecorder.start()
-} catch(e) {
-    alert('Помилка доступу до мікрофона: ' + e.message)
-}
+
+    try {
+        if (!mediaStream) {
+            mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
+        }
+        
+        mediaRecorder = new MediaRecorder(mediaStream);
+        voiceBtnElement.classList.add('active');
+        
+        let chunks=[]
+        mediaRecorder.ondataavailable=e=>chunks.push(e.data)
+        
+        mediaRecorder.onstop=e=>{
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null; 
+            sendAudio(new Blob(chunks,{type:'audio/webm'}));
+        }
+        
+        mediaRecorder.start();
+    } catch(e) {
+        alert('Помилка доступу до мікрофона: ' + e.message)
+    }
 }
 
 document.getElementById('publicVoiceBtn').onclick=async()=>{
