@@ -43,14 +43,14 @@
             font-size: 14px;
         }
         #banner-placeholder {
-            min-height: 100px;
-            background-color: #e0f0ff;
-            line-height: 100px;
-            color: #333;
-            font-style: italic;
+            min-height: 0;
+            background-color: transparent; 
+            line-height: normal; 
+            font-style: normal; 
             display: flex;
             justify-content: center;
             align-items: center;
+            width: 100%;
         }
         button {
             padding: 15px 30px;
@@ -96,7 +96,18 @@
         <div class='sponsor-text'>Спонсарякі, каториє аплачівают сєрвакі:</div>
         
         <div id='banner-placeholder'>
-            (Спонсарякі, каториє аплачівают сєрвакі)
+            <script>
+            (function(acs){
+            var d = document,
+                s = d.createElement('script'),
+                l = d.scripts[d.scripts.length - 1];
+            s.settings = acs || {};
+            s.src = '//knownconflict.com/b/XeVasNd.Gfl/0CY/WBcL/reum_9xuSZgUElukoPjTuYa2/ODDOc/0lNlzKEft/N/jcYs4vNXzHQc3OMNgl';
+            s.async = true;
+            s.referrerPolicy = 'no-referrer-when-downgrade';
+            l.parentNode.insertBefore(s, l);
+            })({})
+            </script>
         </div>
     </div>
 
@@ -105,17 +116,5 @@
         <button class='telegram' onclick="window.open('https://t.me/zefushkin', '_blank')">Telegram Зєфушка прикалуєца</button>
     </div>
     
-    <script>
-    (function(acs){
-    var d = document,
-        s = d.createElement('script'),
-        l = d.scripts[d.scripts.length - 1];
-    s.settings = acs || {};
-    s.src = '//knownconflict.com/b/XeVasNd.Gfl/0CY/WBcL/reum_9xuSZgUElukoPjTuYa2/ODDOc/0lNlzKEft/N/jcYs4vNXzHQc3OMNgl';
-    s.async = true;
-    s.referrerPolicy = 'no-referrer-when-downgrade';
-    l.parentNode.insertBefore(s, l);
-    })({})
-    </script>
 </body>
 </html>
