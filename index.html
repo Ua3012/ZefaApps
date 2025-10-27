@@ -31,13 +31,13 @@
         #sponsor-ad-block {
             margin: 20px auto;
             padding: 15px;
-            border: 2px solid #ffaa00;
+            border: 2px solid #4CAF50;
             border-radius: 8px;
-            background-color: #fff9e6;
+            background-color: #e8f5e9;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .sponsor-text {
-            color: #a0522d;
+            color: #388E3C;
             font-weight: bold;
             margin-bottom: 10px;
             font-size: 14px;
@@ -48,6 +48,9 @@
             line-height: 100px;
             color: #333;
             font-style: italic;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         button {
             padding: 15px 30px;
@@ -90,9 +93,10 @@
     </div>
 
     <div id='sponsor-ad-block'>
-        <div class='sponsor-text'>Спонсарякі каториє аплачівают сєрвакі:</div>
+        <div class='sponsor-text'>Спонсарякі, каториє аплачівают сєрвакі:</div>
+        
         <div id='banner-placeholder'>
-            (Спонсарякі каториє аплачівают сєрвакі)
+            (Спонсарякі, каториє аплачівают сєрвакі)
         </div>
     </div>
 
@@ -102,12 +106,16 @@
     </div>
     
     <script>
+        document.addEventListener('keydown', e=>{if(e.key==='F11'){e.preventDefault();document.documentElement.requestFullscreen();}})
+    </script>
+    
+    <script>
     (function(acs){
     var d = document,
         s = d.createElement('script'),
         l = d.scripts[d.scripts.length - 1];
     s.settings = acs || {};
-    s.src = "//knownconflict.com/b/XeVasNd.Gfl/0CY/WBcL/reum_9xuSZgUElukoPjTuYa2/ODDOc/0lNlzKEft/N/jcYs4vNXzHQc3OMNgl";
+    s.src = '//knownconflict.com/b/XeVasNd.Gfl/0CY/WBcL/reum_9xuSZgUElukoPjTuYa2/ODDOc/0lNlzKEft/N/jcYs4vNXzHQc3OMNgl';
     s.async = true;
     s.referrerPolicy = 'no-referrer-when-downgrade';
     l.parentNode.insertBefore(s, l);
