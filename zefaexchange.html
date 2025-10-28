@@ -2,7 +2,7 @@
 <html lang='uk'>
 <head>
     <meta charset='UTF-8'>
-    <title>ЗєфаБіржа - Спот ZFC/Stars</title>
+    <title>ЗєфаБіржа</title>
     <script src='https://telegram.org/js/telegram-web-app.js'></script>
     <style>
         body {
@@ -110,17 +110,17 @@
 <body>
     <div class='container'>
         <header class='header'>
-            <h2>💎 ЗєфаБіржа | Спот ZFC/Stars</h2>
+            <h2>ЗєфаБіржа</h2>
         </header>
 
         <section class='balance-info'>
-            <h3>Ваш Баланс</h3>
-            <p>Stars (Для торгів): <span id='stars_balance'>0.00</span></p>
-            <p>ZefaCoin (ZFC): <span id='zfc_balance'>0.00</span></p>
+            <h3>Твой баланс 🤣🫵</h3>
+            <p>Тг звьоздачкі: <span id='stars_balance'>0.00</span></p>
+            <p>ЗєфаКоїн (ZFC): <span id='zfc_balance'>0.00</span></p>
         </section>
 
         <section class='price-info'>
-            <h3>Поточний Курс ZFC/Stars</h3>
+            <h3>Наданний мамєнт курс ZFC/Тг звьоздачкі</h3>
             <div class='price-display' id='current_price'>0.1000</div>
             <p>1 Stars = <span id='zfc_equivalent'>10.00</span> ZFC</p>
         </section>
@@ -129,23 +129,23 @@
 
         <div class='trade-panel'>
             <section class='trade-box'>
-                <h4>Купити ZFC (за Stars)</h4>
+                <h4>Купіть ZFC</h4>
                 <input type='number' id='buy_stars_amount' placeholder='Кількість Stars' oninput='calculateTrade('buy')'>
-                <p>Отримаєте ZFC: <span id='buy_zfc_result'>0.00</span></p>
+                <p>У тебе будіт ZFC: <span id='buy_zfc_result'>0.00</span></p>
                 <button class='buy-btn' onclick='executeTrade('buy')'>КУПИТИ</button>
                 <div class='info-fee'>Комісія біржі: 7%</div>
             </section>
 
             <section class='trade-box'>
-                <h4>Продати ZFC (Вивід Stars)</h4>
+                <h4>Прадать ZFC</h4>
                 <input type='number' id='sell_zfc_amount' placeholder='Кількість ZFC' oninput='calculateTrade('sell')'>
                 <p>Отримаєте Stars: <span id='sell_stars_result'>0.00</span></p>
                 <button class='sell-btn' onclick='executeTrade('sell')'>ПРОДАТИ</button>
-                <div class='info-fee'>Комісія біржі: 7%</div>
+                <div class='info-fee'>Камісія біржі: 7%</div>
             </section>
         </div>
         
-        <div class='message-box' id='status_message'>Готовність до торгів...</div>
+        <div class='message-box' id='status_message'>Гатовність до таргов..</div>
     </div>
 
     <script>
@@ -231,7 +231,7 @@
 
         async function executeTrade(type) {
             const messageBox = document.getElementById('status_message');
-            messageBox.textContent = `Виконується операція ${type === 'buy' ? 'КУПІВЛІ' : 'ПРОДАЖУ'}...`;
+            messageBox.textContent = `Ідьот опєрація ${type === 'buy' ? 'КУПІВЛІ' : 'ПРОДАЖУ'}...`;
             
             const rate = parseFloat(currentPrice);
 
@@ -240,10 +240,10 @@
                     ? parseFloat(document.getElementById('buy_stars_amount').value) 
                     : parseFloat(document.getElementById('sell_zfc_amount').value);
 
-                if (isNaN(transactionAmount) || transactionAmount <= 0) throw new Error('Введіть коректну суму.');
+                if (isNaN(transactionAmount) || transactionAmount <= 0) throw new Error('Ввєді коректну суму.');
 
                 if (type === 'buy') {
-                    if (userBalance.stars < transactionAmount) throw new Error('Недостатньо Stars на балансі.');
+                    if (userBalance.stars < transactionAmount) throw new Error('Мала Тг звьоздачік на балансі. 🤣🫵');
                     
                     const receivedZFC = parseFloat(document.getElementById('buy_zfc_result').textContent);
                     
@@ -254,15 +254,15 @@
                             userBalance.zfc += receivedZFC;
                             userBalance.stars -= transactionAmount;
                             await updateFirebaseBalance(userId, userBalance);
-                            messageBox.textContent = `✅ Угода успішна! Куплено ${receivedZFC.toFixed(2)} ZFC.`;
+                            messageBox.textContent = `✅ Угода успішна! Ти купіл ${receivedZFC.toFixed(2)} ZFC.`;
                         } else {
-                            messageBox.textContent = `❌ Оплата не відбулася. Статус: ${status}.`;
+                            messageBox.textContent = `❌ Оплата не савєршилась. Статус: ${status}.`;
                         }
                         updateUI();
                     });
 
                 } else if (type === 'sell') {
-                    if (userBalance.zfc < transactionAmount) throw new Error(`Недостатньо ${ZFC_NAME} на балансі.`);
+                    if (userBalance.zfc < transactionAmount) throw new Error(`Недостатньо ${ZFC_NAME} на балансі. 🤣🫵`);
 
                     const receivedStars = parseFloat(document.getElementById('sell_stars_result').textContent);
                     
@@ -271,11 +271,11 @@
                     
                     userBalance.stars += receivedStars;
                     await updateFirebaseBalance(userId, userBalance); 
-                    messageBox.textContent = `✅ Продаж успішний! Вивід ${receivedStars.toFixed(2)} Stars ініційовано.`;
+                    messageBox.textContent = `✅ Прадажа успішний! У тібя тєпєр +${receivedStars.toFixed(2)} Stars ініційовано.`;
                 }
 
             } catch (error) {
-                messageBox.textContent = `❌ Помилка: ${error.message}`;
+                messageBox.textContent = `❌ Ашибка: ${error.message}`;
             } finally {
                 updateUI();
             }
