@@ -1,0 +1,30 @@
+name: Розпакування ZIP
+
+on:
+  push:
+    branches:
+      - main  # або інша гілка, якщо потрібно
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Завантаження репозиторію
+        uses: actions/checkout@v4
+
+      - name: Розпакування ZIP
+        run: |
+          mkdir -p розпаковано
+          unzip -o Зєфалятор Казла.zip -d розпаковано
+
+      - name: Перевірка результату
+        run: ls -R розпаковано
+
+      - name: Збереження результатів у репозиторії
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add розпаковано
+          git commit -m "Автоматично розпаковано archive.zip" || echo "Немає змін"
+          git push
