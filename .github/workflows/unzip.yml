@@ -1,9 +1,12 @@
-name: Розпакування ZIP
+name: Розпакування ЗєфаляторКазла.zip
 
 on:
   push:
     branches:
-      - main  # або інша гілка, якщо потрібно
+      - main
+
+permissions:
+  contents: write
 
 jobs:
   unzip:
@@ -16,15 +19,15 @@ jobs:
       - name: Розпакування ZIP
         run: |
           mkdir -p розпаковано
-          unzip -o ЗєфаляторКазла.zip -d розпаковано
+          unzip -o "ЗєфаляторКазла.zip" -d розпаковано
 
-      - name: Перевірка результату
-        run: ls -R розпаковано
+      - name: Видалення ZIP після розпакування
+        run: rm "ЗєфаляторКазла.zip"
 
-      - name: Збереження результатів у репозиторії
+      - name: Коміт і пуш результатів
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add розпаковано
-          git commit -m "Автоматично розпаковано archive.zip" || echo "Немає змін"
+          git add -A
+          git commit -m "Розпаковано ЗєфаляторКазла.zip" || echo "Немає змін"
           git push
