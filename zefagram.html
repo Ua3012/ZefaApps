@@ -267,27 +267,6 @@ function showScreen(screenId) {
     });
 }
 
-function requestNotificationPermission() {
-    if (!('Notification' in window)) {
-        alert('Браузер не підтримує увідамлєнія!');
-        return;
-    }
-    
-    if (Notification.permission === 'granted') {
-        alert('Увідамлєнія вже включені.');
-        return;
-    }
-
-    Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-            alert('Увідамлєнія включені! Лох не лох!');
-        } else {
-            alert('Не включив увідамлєнія. Ну шо ти як не лох, не лох?');
-        }
-    });
-}
-
-
 document.querySelectorAll('#emojiPicker img').forEach(i=>i.onclick=e=>sendSticker(e.target.src))
 
 document.getElementById('registerBtn').onclick=register
@@ -302,7 +281,11 @@ document.getElementById('sendBtn').onclick=sendMessage
 document.getElementById('privateChatsBtn').onclick=showPrivateChats;
 document.getElementById('createPrivateBtn').onclick=createPrivateChat;
 document.getElementById('backPrivateChats').onclick=()=>showMenu(true);
-document.getElementById('enableNotificationsBtn').onclick = requestNotificationPermission;
+
+document.getElementById('enableNotificationsBtn').onclick = ()=>{
+    // Відкриваємо сторінку Зєфаграм у новій вкладці
+    window.open('https://zefa-apps.vercel.app/zefagram.html', '_blank');
+};
 
 
 let mediaRecorder
