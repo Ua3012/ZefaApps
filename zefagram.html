@@ -56,6 +56,7 @@ button:hover{background:#0066cc;}
 <button class='menuBtn' id='publicChatBtn'>Общій чат</button>
 <button class='menuBtn' id='privateChatsBtn'>Пріватні чати</button>
 <button class='menuBtn' id='createPrivateBtn'>Створити пріватний чат</button>
+<button class='menuBtn' id='enableNotificationsBtn'>🔔 Включити увідамлєнія</button> 
 <div class='menuActions'>
 <button id='logoutMenu' class='back'>Вийті</button>
 <button id='backMenu' class='back'>⬅ Назад до меню</button>
@@ -266,6 +267,27 @@ function showScreen(screenId) {
     });
 }
 
+function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+        alert('Браузер не підтримує увідамлєнія!');
+        return;
+    }
+    
+    if (Notification.permission === 'granted') {
+        alert('Увідамлєнія вже включені.');
+        return;
+    }
+
+    Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+            alert('Увідамлєнія включені! Лох не лох!');
+        } else {
+            alert('Не включив увідамлєнія. Ну шо ти як не лох, не лох?');
+        }
+    });
+}
+
+
 document.querySelectorAll('#emojiPicker img').forEach(i=>i.onclick=e=>sendSticker(e.target.src))
 
 document.getElementById('registerBtn').onclick=register
@@ -280,6 +302,7 @@ document.getElementById('sendBtn').onclick=sendMessage
 document.getElementById('privateChatsBtn').onclick=showPrivateChats;
 document.getElementById('createPrivateBtn').onclick=createPrivateChat;
 document.getElementById('backPrivateChats').onclick=()=>showMenu(true);
+document.getElementById('enableNotificationsBtn').onclick = requestNotificationPermission;
 
 
 let mediaRecorder
