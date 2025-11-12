@@ -18,7 +18,7 @@ jobs:
           mkdir -p renamed_files
           
           # Перейменування файлів
-          mv "Зєфалятор Казла.wasm" "ЗєфаляторКазла/goatzefalator.wasm"
+          mv "ЗєфаляторКазла/Зєфалятор Казла.wasm" "ЗєфаляторКазла/goatzefalator.wasm"
 
       - name: Push renamed files
         run: |
