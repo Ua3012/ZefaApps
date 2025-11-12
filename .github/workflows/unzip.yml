@@ -13,8 +13,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Завантаження репозиторію
+      - name: Завантаження репозиторію (з LFS файлами)
         uses: actions/checkout@v4
+        with:
+          lfs: true # *** Додайте цей рядок ***
 
       - name: Розпакування ZIP
         run: |
