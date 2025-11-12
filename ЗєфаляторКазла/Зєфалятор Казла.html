@@ -1,42 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
-		<title>ЗєфаляторКозла</title>
-		<style>
+<html lang="uk">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+	<title>Зєфалятор Казла</title>
+	<style>
 html, body, #canvas {
 	margin: 0;
 	padding: 0;
 	border: 0;
 }
-
 body {
 	color: white;
 	background-color: black;
 	overflow: hidden;
 	touch-action: none;
 }
-
 #canvas {
 	display: block;
 }
-
 #canvas:focus {
 	outline: none;
 }
-
 #status, #status-splash, #status-progress {
 	position: absolute;
 	left: 0;
 	right: 0;
 }
-
 #status, #status-splash {
 	top: 0;
 	bottom: 0;
 }
-
 #status {
 	background-color: #242424;
 	display: flex;
@@ -45,37 +39,30 @@ body {
 	align-items: center;
 	visibility: hidden;
 }
-
 #status-splash {
 	max-height: 100%;
 	max-width: 100%;
 	margin: auto;
 }
-
 #status-splash.show-image--false {
 	display: none;
 }
-
 #status-splash.fullsize--true {
 	height: 100%;
 	width: 100%;
 	object-fit: contain;
 }
-
 #status-splash.use-filter--false {
 	image-rendering: pixelated;
 }
-
 #status-progress, #status-notice {
 	display: none;
 }
-
 #status-progress {
 	bottom: 10%;
 	width: 50%;
 	margin: 0 auto;
 }
-
 #status-notice {
 	background-color: #5b3943;
 	border-radius: 0.5rem;
@@ -89,29 +76,37 @@ body {
 	text-align: center;
 	z-index: 1;
 }
-		</style>
-		<link id="-gd-engine-icon" rel="icon" type="image/png" href="Зєфалятор Казла.icon.png" />
-<link rel="apple-touch-icon" href="Зєфалятор Казла.apple-touch-icon.png"/>
+	</style>
+	<link id="-gd-engine-icon" rel="icon" type="image/png" href="Зєфалятор Казла.icon.png" />
+	<link rel="apple-touch-icon" href="Зєфалятор Казла.apple-touch-icon.png"/>
+</head>
+<body>
+	<canvas id="canvas">Ваш браузер не підтримує тег canvas.</canvas>
 
-	</head>
-	<body>
-		<canvas id="canvas">
-			Your browser does not support the canvas tag.
-		</canvas>
+	<noscript>Ваш браузер не підтримує JavaScript.</noscript>
 
-		<noscript>
-			Your browser does not support JavaScript.
-		</noscript>
+	<div id="status">
+		<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="Зєфалятор Казла.png" alt="">
+		<progress id="status-progress"></progress>
+		<div id="status-notice"></div>
+	</div>
 
-		<div id="status">
-			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="Зєфалятор Казла.png" alt="">
-			<progress id="status-progress"></progress>
-			<div id="status-notice"></div>
-		</div>
-
-		<script src="Зєфалятор Казла.js"></script>
-		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"Зєфалятор Казла","experimentalVK":false,"fileSizes":{"Зєфалятор Казла.pck":587535228,"Зєфалятор Казла.wasm":36160334},"focusCanvas":false,"gdextensionLibs":[],"godotPoolSize":4};
+	<script src="Зєфалятор Казла.js"></script>
+	<script>
+const GODOT_CONFIG = {
+	args: [],
+	canvasResizePolicy: 2,
+	ensureCrossOriginIsolationHeaders: true,
+	executable: 'Зєфалятор Казла',
+	experimentalVK: false,
+	fileSizes: {
+		'Зєфалятор Казла.pck': 587535228,
+		'Зєфалятор Казла.wasm': 36160334
+	},
+	focusCanvas: false,
+	gdextensionLibs: [],
+	godotPoolSize: 4
+};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
@@ -124,9 +119,7 @@ const engine = new Engine(GODOT_CONFIG);
 	let statusMode = '';
 
 	function setStatusMode(mode) {
-		if (statusMode === mode || !initializing) {
-			return;
-		}
+		if (statusMode === mode || !initializing) return;
 		if (mode === 'hidden') {
 			statusOverlay.remove();
 			initializing = false;
@@ -139,11 +132,9 @@ const engine = new Engine(GODOT_CONFIG);
 	}
 
 	function setStatusNotice(text) {
-		while (statusNotice.lastChild) {
-			statusNotice.removeChild(statusNotice.lastChild);
-		}
+		while (statusNotice.lastChild) statusNotice.removeChild(statusNotice.lastChild);
 		const lines = text.split('\n');
-		lines.forEach((line) => {
+		lines.forEach(line => {
 			statusNotice.appendChild(document.createTextNode(line));
 			statusNotice.appendChild(document.createElement('br'));
 		});
@@ -151,56 +142,21 @@ const engine = new Engine(GODOT_CONFIG);
 
 	function displayFailureNotice(err) {
 		console.error(err);
-		if (err instanceof Error) {
-			setStatusNotice(err.message);
-		} else if (typeof err === 'string') {
-			setStatusNotice(err);
-		} else {
-			setStatusNotice('An unknown error occurred.');
-		}
+		if (err instanceof Error) setStatusNotice(err.message);
+		else if (typeof err === 'string') setStatusNotice(err);
+		else setStatusNotice('Невідома помилка.');
 		setStatusMode('notice');
 		initializing = false;
 	}
 
-	const missing = Engine.getMissingFeatures({
-		threads: GODOT_THREADS_ENABLED,
-	});
-
+	const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
 	if (missing.length !== 0) {
-		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
-			let serviceWorkerRegistrationPromise;
-			try {
-				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
-			} catch (err) {
-				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
-			}
-			// There's a chance that installing the service worker would fix the issue
-			Promise.race([
-				serviceWorkerRegistrationPromise.then((registration) => {
-					if (registration != null) {
-						return Promise.reject(new Error('Service worker already exists.'));
-					}
-					return registration;
-				}).then(() => engine.installServiceWorker()),
-				// For some reason, `getRegistration()` can stall
-				new Promise((resolve) => {
-					setTimeout(() => resolve(), 2000);
-				}),
-			]).then(() => {
-				// Reload if there was no error.
-				window.location.reload();
-			}).catch((err) => {
-				console.error('Error while registering service worker:', err);
-			});
-		} else {
-			// Display the message as usual
-			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
-			displayFailureNotice(missingMsg + missing.join('\n'));
-		}
+		const missingMsg = 'Помилка\nДля запуску гри у браузері відсутні необхідні функції:\n';
+		displayFailureNotice(missingMsg + missing.join('\n'));
 	} else {
 		setStatusMode('progress');
 		engine.startGame({
-			'onProgress': function (current, total) {
+			onProgress: function (current, total) {
 				if (current > 0 && total > 0) {
 					statusProgress.value = current;
 					statusProgress.max = total;
@@ -209,12 +165,11 @@ const engine = new Engine(GODOT_CONFIG);
 					statusProgress.removeAttribute('max');
 				}
 			},
-		}).then(() => {
-			setStatusMode('hidden');
-		}, displayFailureNotice);
+			packFileURL: 'https://drive.google.com/uc?export=download&id=1Q2hDd38sVHkqBZhIETNYmO8BpYPPcQV_',
+			wasmUrl: 'https://drive.google.com/uc?export=download&id=1TQ7Lnp_0Yg9x_FKjtBzVNv32Yw_R8ci3'
+		}).then(() => setStatusMode('hidden'), displayFailureNotice);
 	}
-}());
-		</script>
-	</body>
+})();
+	</script>
+</body>
 </html>
-
