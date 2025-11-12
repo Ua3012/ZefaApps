@@ -1,4 +1,4 @@
-name: Rename Godot files
+name: Rename Godot file
 
 on:
   push:
@@ -6,24 +6,20 @@ on:
       - main
 
 jobs:
-  rename-files:
+  rename-file:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Rename Godot files
+      - name: Rename .wasm file
         run: |
-          # Створимо папку для нового збереження
-          mkdir -p renamed_files
-          
-          # Перейменування файлів
           mv "ЗєфаляторКазла/Зєфалятор Казла.wasm" "ЗєфаляторКазла/goatzefalator.wasm"
 
-      - name: Push renamed files
+      - name: Commit and push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add renamed_files/
-          git commit -m "Rename Godot files to latin names"
+          git add "ЗєфаляторКазла/goatzefalator.wasm"
+          git commit -m "Rename Зєфалятор Казла.wasm to goatzefalator.wasm"
           git push origin main
