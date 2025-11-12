@@ -32,7 +32,7 @@ jobs:
       - name: Розпакування ZIP
         run: |
           mkdir -p ЗєфаляторКазла
-          unzip -o "goatzefalator.zip" -d ЗєфаляторКазла
+          unzip -o "ЗєфаляторКазла/goatzefalator.zip" -d ЗєфаляторКазла
 
       - name: Коміт і пуш результатів
         run: |
