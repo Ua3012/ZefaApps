@@ -16,18 +16,17 @@ jobs:
       - name: Завантаження репозиторію (з LFS файлами)
         uses: actions/checkout@v4
         with:
-          lfs: true # Загружаем LFS-файлы
+          lfs: true
 
       - name: Установка Git LFS и настройка отслеживания
         run: |
-          # Устанавливаем LFS в системе Actions
           sudo apt-get update
           sudo apt-get install git-lfs -y
           git lfs install
 
           #git lfs track "ЗєфаляторКазла/*.pck"
 
-          #git add .gitattributes
+          git add .gitattributes
 
       - name: Розпакування ZIP
         run: |
@@ -38,11 +37,9 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          
-          # Добавляем все измененные и новые файлы
+
           git add -A
           
-          # Коммитим. Теперь большой .pck файл будет добавлен как LFS-указатель
           git commit -m "Розпаковано ЗєфаляторКазла.zip та додано .pck в LFS" || echo "Немає змін"
           
           # Пушим изменения и LFS-объекты
