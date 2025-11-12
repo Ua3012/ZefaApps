@@ -1,0 +1,33 @@
+name: Розпакування ЗєфаляторКазла.zip
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Завантаження репозиторію
+        uses: actions/checkout@v4
+
+      - name: Розпакування ZIP
+        run: |
+          mkdir -p ЗєфаляторКазла
+          unzip -o "ЗєфаляторКазла.zip" -d ЗєфаляторКазла
+
+      - name: Видалення ZIP після розпакування
+        run: rm "ЗєфаляторКазла.zip"
+
+      - name: Коміт і пуш результатів
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -m "Розпаковано ЗєфаляторКазла.zip" || echo "Немає змін"
+          git push

@@ -1,0 +1,8 @@
+# Made in Blockbench 4.12.5
+newmtl m_a518d0aa-8cd9-3d91-d48d-a3cfbfa76fd1
+map_Kd Body.png
+newmtl m_766ccc0e-4495-3d54-dc5c-7c2de22670af
+map_Kd Legs.png
+newmtl m_5d1b97b1-e91e-cae4-2b64-9d84bc8353b3
+map_Kd Head.png
+newmtl none

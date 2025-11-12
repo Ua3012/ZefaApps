@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Симулятор Козла: Ходьба (Walking)</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f0f0f0; }
+        canvas { display: block; }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: sans-serif;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-size: 24px;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        Завантаження ZEFAGOAT...
+        <p id="progress-status">0%</p>
+        <p style="font-size: 14px;">(Потрібен локальний сервер для завантаження файлу .glb)</p>
+    </div>
+
+    <div id="ui" style="display: none;">
+        <h2>🐐 ZEFAGOAT 3D</h2>
+        <p>Керування від 3-ї особи:</p>
+        <ul>
+            <li>**W, A, S, D:** Рух козла (Анімація **Walking**)</li>
+            <li>**Пробіл (Space):** Стрибок (Фізичний підйом на 1м)</li>
+        </ul>
+        <p id="animation-status">Поточна анімація: ...</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+<script>
+    // --- 1. Ініціалізація Сцени, Камери та Рендера ---
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    
+    // Налаштування для неба та тіней
+    const skyColor = 0x87CEEB; 
+    renderer.setClearColor(skyColor);
+    scene.background = new THREE.Color(skyColor);
+    renderer.shadowMap.enabled = true; 
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // --- 2. Глобальні Змінні ---
+    let goatModel;
+    let mixer;
+    const clock = new THREE.Clock();
+    
+    // Фізика та рух
+    const keys = {};
+    let isJumping = false;
+    let jumpVelocity = 0;
+    const initialY = 0.5;
+    const jumpHeight = 1.0;
+    const gravity = -3.0; 
+    const movementSpeed = 0.05;
+    
+    // Анімації: Використовуємо точну назву "Walking"
+    const AnimationNames = {
+        IDLE: 'Idle',
+        WALK: 'Walking' // ТОЧНЕ ІМ'Я ВАШОЇ АНІМАЦІЇ
+    };
+    let activeAction;
+    const actions = {};
+
+    // --- 3. Налаштування Камери та Контролів ---
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.1;
+    controls.enablePan = false;
+    controls.minDistance = 2;
+    controls.maxDistance = 6;
+    controls.target.set(0, 0.8, 0); 
+    controls.update();
+
+    // --- 4. Завантаження Ресурсів (GLB) та Анімація ---
+    
+    function initAnimations(gltf) {
+        mixer = new THREE.AnimationMixer(gltf.scene);
+
+        gltf.animations.forEach(clip => {
+            const name = clip.name;
+            const action = mixer.clipAction(clip);
+            
+            // Зберігаємо Walking під точною назвою
+            if (name === AnimationNames.WALK) {
+                actions[AnimationNames.WALK] = action;
+            } 
+            
+            // Перша знайдена анімація вважається "Idle"
+            if (!actions[AnimationNames.IDLE]) {
+                 actions[AnimationNames.IDLE] = action;
+            }
+        });
+        
+        // Встановлюємо початкову дію (Idle або першу знайдену)
+        setAction(actions[AnimationNames.IDLE] ? AnimationNames.IDLE : (actions[AnimationNames.WALK] ? AnimationNames.WALK : null));
+
+        if (!actions[AnimationNames.WALK]) {
+            console.warn(`Попередження: Анімація '${AnimationNames.WALK}' не знайдена. Рух буде без анімації.`);
+        }
+    }
+    
+    function setAction(name) {
+        if (!name || !actions[name] || activeAction === actions[name]) return;
+        
+        const previousAction = activeAction;
+        activeAction = actions[name];
+
+        if (previousAction) {
+            previousAction.fadeOut(0.3);
+        }
+
+        activeAction
+            .reset()
+            .setEffectiveTimeScale(1)
+            .setEffectiveWeight(1)
+            .fadeIn(0.3)
+            .play();
+            
+        animationStatus.textContent = `Поточна анімація: ${name}`;
+    }
+
+    const gltfLoader = new THREE.GLTFLoader();
+
+    gltfLoader.load(
+        'zefagoat.glb',
+        (gltf) => {
+            goatModel = gltf.scene;
+            goatModel.scale.set(1, 1, 1);
+            goatModel.position.y = initialY; 
+            
+            goatModel.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = false;
+                }
+            });
+            scene.add(goatModel);
+
+            initAnimations(gltf);
+
+            loadingScreen.style.display = 'none';
+            ui.style.display = 'block';
+            
+            animate();
+        },
+        // on progress
+        (xhr) => { progressStatus.textContent = `Прогрес: ${Math.round(xhr.loaded / xhr.total * 100)}%`; },
+        // on error
+        (error) => {
+            console.error('Помилка завантаження моделі козла:', error);
+            progressStatus.textContent = 'ПОМИЛКА! Перевірте консоль та наявність файлу zefagoat.glb.';
+        }
+    );
+
+    // --- 5. Створення Світу та Освітлення ---
+    
+    // Земля 
+    const groundGeometry = new THREE.PlaneGeometry(100, 100);
+    const groundMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x558B2F,
+        metalness: 0.1,
+        roughness: 0.8
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = 0;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Освітлення
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); 
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.5); 
+    sunLight.position.set(10, 20, 10);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 50;
+    sunLight.shadow.camera.left = -15;
+    sunLight.shadow.camera.right = 15;
+    sunLight.shadow.camera.top = 15;
+    sunLight.shadow.camera.bottom = -15;
+    scene.add(sunLight);
+    
+    const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x006400, 0.9);
+    scene.add(hemiLight);
+
+    // --- 6. Керування та Фізика ---
+    
+    document.addEventListener('keydown', (event) => {
+        keys[event.code] = true;
+        if (event.code === 'Space') {
+            jumpGoat();
+        }
+    });
+    document.addEventListener('keyup', (event) => {
+        keys[event.code] = false;
+    });
+
+    /**
+     * Стрибок без анімації, підняття на 1 метр.
+     */
+    function jumpGoat() {
+        if (!isJumping) {
+            isJumping = true;
+            jumpVelocity = Math.sqrt(-2 * gravity * jumpHeight); 
+            
+            // Зупиняємо анімацію ходьби/стояння
+            if (activeAction) {
+                 activeAction.stop();
+                 activeAction = null;
+            }
+            animationStatus.textContent = `Поточна анімація: СТРИБОК (Фізика)`;
+        }
+    }
+    
+    function handleMovement() {
+        let isMoving = false;
+        const forward = new THREE.Vector3(0, 0, 1);
+        const rotationMatrix = new THREE.Matrix4();
+        rotationMatrix.extractRotation(camera.matrix);
+        forward.applyMatrix4(rotationMatrix);
+        forward.y = 0;
+        forward.normalize();
+        
+        const right = new THREE.Vector3();
+        right.crossVectors(forward, new THREE.Vector3(0, 1, 0)); 
+        
+        let deltaPosition = new THREE.Vector3();
+
+        if (keys['KeyW']) {
+            deltaPosition.add(forward.multiplyScalar(-movementSpeed));
+            isMoving = true;
+        }
+        if (keys['KeyS']) {
+            deltaPosition.add(forward.multiplyScalar(movementSpeed));
+            isMoving = true;
+        }
+        if (keys['KeyA']) {
+            deltaPosition.add(right.multiplyScalar(-movementSpeed));
+            isMoving = true;
+        }
+        if (keys['KeyD']) {
+            deltaPosition.add(right.multiplyScalar(movementSpeed));
+            isMoving = true;
+        }
+        
+        if (isMoving) {
+            const angle = Math.atan2(-deltaPosition.x, -deltaPosition.z);
+            goatModel.rotation.y = angle;
+
+            goatModel.position.add(deltaPosition);
+
+            // Анімація ходьби, тільки якщо не стрибаємо
+            if (!isJumping) {
+                // Використовуємо лише 'Walking' для руху
+                setAction(AnimationNames.WALK);
+            }
+        } else if (!isJumping) {
+            // Анімація IDLE, якщо не рухаємося і не стрибаємо
+            setAction(AnimationNames.IDLE);
+        }
+    }
+
+    function applyGravity() {
+        if (isJumping) {
+            const delta = clock.getDelta();
+            jumpVelocity += gravity * delta;
+            goatModel.position.y += jumpVelocity * delta;
+
+            if (goatModel.position.y <= initialY) {
+                goatModel.position.y = initialY;
+                isJumping = false;
+                jumpVelocity = 0;
+                
+                // Повертаємось до IDLE/WALK залежно від натискання клавіш
+                const currentlyMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
+                setAction(currentlyMoving ? AnimationNames.WALK : AnimationNames.IDLE);
+            }
+        }
+    }
+    
+    function updateCameraTarget() {
+        controls.target.copy(goatModel.position);
+        controls.target.y += 0.8;
+        controls.update();
+    }
+
+    // --- 7. Анімаційний Цикл (Рендеринг) ---
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        const delta = clock.getDelta();
+
+        if (goatModel && mixer) {
+            // Оновлюємо мікшер анімацій, тільки якщо є активна дія (WALK/IDLE)
+            if (activeAction) {
+                mixer.update(delta);
+            }
+            
+            handleMovement();
+            applyGravity();
+            updateCameraTarget();
+            
+            // Оновлюємо позицію світла
+            sunLight.position.set(
+                goatModel.position.x + 10,
+                goatModel.position.y + 20, 
+                goatModel.position.z + 10
+            );
+            sunLight.target.copy(goatModel.position);
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    // --- 8. Адаптивність (Resize) ---
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+</script>
+
+</body>
+</html>
