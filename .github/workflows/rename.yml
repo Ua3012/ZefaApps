@@ -17,11 +17,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Перейменування одного файлу
           mv "ЗєфаляторКазла/Зєфалятор Казла.wasm" "ЗєфаляторКазла/goatzefalator.wasm"
           
           git add "ЗєфаляторКазла/goatzefalator.wasm"
           git commit -m "Rename Зєфалятор Казла.wasm to goatzefalator.wasm" || echo "No changes to commit"
           
-          # Пуш через PAT
-          git push https://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@github.com/Ua3012/ZefaApps.git main
+          git push https://$GH_PAT@github.com/Ua3012/ZefaApps.git main
