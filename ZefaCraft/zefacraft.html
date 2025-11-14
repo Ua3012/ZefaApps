@@ -20,9 +20,10 @@
         <button id="right">Right</button>
         <button id="jump">Jump</button>
     </div>
-    <script src="https://threejs.org/build/three.js"></script>
-    <script src="https://threejs.org/examples/js/controls/PointerLockControls.js"></script>
-    <script>
+    <script type="module">
+        import * as THREE from 'https://threejs.org/build/three.module.js';
+        import { PointerLockControls } from 'https://threejs.org/examples/jsm/controls/PointerLockControls.js';
+
         // Detect if mobile
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -49,7 +50,7 @@
         // Controls
         let controls;
         if (!isMobile) {
-            controls = new THREE.PointerLockControls(camera, renderer.domElement);
+            controls = new PointerLockControls(camera, renderer.domElement);
             document.body.addEventListener('click', () => controls.lock());
         } else {
             // For mobile, show buttons
