@@ -1,510 +1,351 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>ZefaCraft</title>
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { overflow:hidden; background:#87CEEB; font-family:Arial, sans-serif; touch-action:none; }
-        #container { position:relative; width:100vw; height:100vh; }
-        canvas { display:block; width:100%; height:100%; image-rendering:pixelated; }
-        #ui {
-            position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
-            display:flex; gap:8px; background:rgba(0,0,0,0.5); padding:10px; border-radius:10px;
-            pointer-events:auto;
-        }
-        .block-btn {
-            width:50px; height:50px; background:#fff; border:2px solid #000; cursor:pointer;
-            image-rendering:pixelated; background-size:cover; background-position:center;
-        }
-        .block-btn.selected { border:3px solid yellow; }
-        #crosshair {
-            position:absolute; top:50%; left:50%; width:20px; height:20px;
-            transform:translate(-50%,-50%); pointer-events:none;
-            color:white; font-size:20px; text-shadow:0 0 2px black;
-        }
-        #save-btn, #load-btn {
-            position:absolute; top:10px; padding:8px 12px; background:rgba(0,0,0,0.7);
-            color:white; border:none; border-radius:5px; cursor:pointer; font-size:14px;
-        }
-        #save-btn { left:10px; }
-        #load-btn { left:80px; }
-        #mobile-controls {
-            position:absolute; bottom:80px; left:20px; display:none; gap:20px;
-        }
-        .joy-stick {
-            width:80px; height:80px; background:rgba(255,255,255,0.3); border-radius:50%;
-            position:relative; touch-action:none;
-        }
-        .joy-knob {
-            width:30px; height:30px; background:white; border-radius:50%;
-            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-        }
-        @media (max-width:768px) {
-            #mobile-controls { display:flex; }
-            #ui { bottom:160px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<title>ZefaCraft</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{overflow:hidden;background:#87CEEB;font-family:sans-serif;touch-action:none}
+    canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+    #ui{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:6px;background:rgba(0,0,0,0.5);padding:8px;border-radius:8px}
+    .btn{width:44px;height:44px;border:2px solid #000;background:#fff;cursor:pointer;background-size:cover}
+    .btn.sel{border:3px solid yellow}
+    #cross{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:20px/1 sans-serif;color:#fff;text-shadow:0 0 2px #000;pointer-events:none}
+    #save,#load{position:absolute;top:10px;padding:6px 10px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:4px;cursor:pointer}
+    #save{left:10px}#load{left:70px}
+    #joy{display:none;gap:30px;position:absolute;bottom:90px;left:20px}
+    .stick{width:80px;height:80px;background:rgba(255,255,255,0.3);border-radius:50%;position:relative}
+    .knob{width:30px;height:30px;background:#fff;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+    @media(max-width:768px){#joy{display:flex}#ui{bottom:170px}}
+</style>
 </head>
 <body>
-<div id="container">
-    <canvas id="canvas"></canvas>
-    <div id="crosshair">+</div>
-    <button id="save-btn">Save</button>
-    <button id="load-btn">Load</button>
-    <div id="ui"></div>
-    <div id="mobile-controls">
-        <div class="joy-stick" id="move-stick"><div class="joy-knob"></div></div>
-        <div class="joy-stick" id="look-stick"><div class="joy-knob"></div></div>
-    </div>
+<canvas id="c"></canvas>
+<div id="cross">+</div>
+<button id="save">Save</button><button id="load">Load</button>
+<div id="ui"></div>
+<div id="joy">
+    <div class="stick" id="move"><div class="knob"></div></div>
+    <div class="stick" id="look"><div class="knob"></div></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.167.1/examples/js/controls/PointerLockControls.js"></script>
 <script>
-/* ==============================================================
-   ZefaCraft – tiny Minecraft-style voxel engine (HTML/Three.js)
-   ============================================================== */
-
-const WORLD_SIZE = 32;          // world = 32×32×32 chunks
-const CHUNK_SIZE = 16;
-const BLOCK_SIZE = 1;
-const RENDER_DISTANCE = 3;
-const SEA_LEVEL = 8;
-
-const BLOCK = {
-    AIR:0, GRASS:1, STONE:2, WOOD:3, LEAVES:4, WATER:5,
-    COLOR_START:6,                // 6 … 21 = 16 colored blocks
-    ZEFABLOCK:22
-};
-const TOTAL_BLOCK_TYPES = 23;
+/* ==================== ZefaCraft – tiny Minecraft clone ==================== */
+const W=32, CS=16, BS=1, RD=3, SEA=8;
+const B={AIR:0,GRASS:1,STONE:2,WOOD:3,LEAVES:4,WATER:5,COLOR:6,ZEFABLOCK:22};
+const TOTAL=23;
 
 /* ---------- Textures ---------- */
-const textures = {};
-const texLoader = new THREE.TextureLoader();
+const tex={};
+const loader=new THREE.TextureLoader();
+loader.setPath(''); // same folder
 
-// built-in simple textures
-function createColorTexture(r,g,b){
-    const c = document.createElement('canvas');
-    c.width = c.height = 16;
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = `rgb(${r},${g},${b})`;
-    ctx.fillRect(0,0,16,16);
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-    for(let i=0;i<16;i+=4){
-        ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(16,i);
-        ctx.moveTo(i,0); ctx.lineTo(i,16); ctx.stroke();
-    }
-    const tex = new THREE.CanvasTexture(c);
-    tex.magFilter = tex.minFilter = THREE.NearestFilter;
-    return tex;
+function colTex(r,g,b){
+    const c=document.createElement('canvas');c.width=c.height=16;
+    const x=c.getContext('2d');x.fillStyle=`rgb(${r},${g},${b})`;x.fillRect(0,0,16,16);
+    x.strokeStyle='#000';x.lineWidth=1;
+    for(let i=0;i<16;i+=4){x.beginPath();x.moveTo(0,i);x.lineTo(16,i);x.moveTo(i,0);x.lineTo(i,16);x.stroke();}
+    const t=new THREE.CanvasTexture(c);t.magFilter=t.minFilter=THREE.NearestFilter;return t;
 }
-const colorPalette = [
-    [221,221,221],[219,125,62],[179,80,188],[107,138,201],
-    [177,166,39],[65,174,56],[216,129,248],[55,74,88],
-    [132,182,219],[70,68,64],[180,110,255],[136,67,40],
-    [46,46,46],[230,230,230],[248,197,149],[255,255,255]
-];
-for(let i=0;i<16;i++){
-    const [r,g,b] = colorPalette[i];
-    textures[BLOCK.COLOR_START + i] = createColorTexture(r,g,b);
-}
+const palette=[[221,221,221],[219,125,62],[179,80,188],[107,138,201],[177,166,39],[65,174,56],[216,129,248],[55,74,88],
+               [132,182,219],[70,68,64],[180,110,255],[136,67,40],[46,46,46],[230,230,230],[248,197,149],[255,255,255]];
+for(let i=0;i<16;i++) tex[B.COLOR+i]=colTex(...palette[i]);
 
-// external ZefaBlock texture
-texLoader.load('zefablock.png', tex => {
-    tex.magFilter = tex.minFilter = THREE.NearestFilter;
-    textures[BLOCK.ZEFABLOCK] = tex;
-}, undefined, err => console.error('Failed to load zefablock.png', err));
+// ZefaBlock – external file
+loader.load('zefablock.png',t=>{t.magFilter=t.minFilter=THREE.NearestFilter;tex[B.ZEFABLOCK]=t;},null,e=>console.error(e));
 
-/* ---------- Block palette UI ---------- */
-const ui = document.getElementById('ui');
-const blockOrder = [BLOCK.GRASS, BLOCK.STONE, BLOCK.WOOD, BLOCK.LEAVES, BLOCK.WATER,
-    ...Array.from({length:16},(_,i)=>BLOCK.COLOR_START+i), BLOCK.ZEFABLOCK];
-let selectedBlock = BLOCK.GRASS;
-
-blockOrder.forEach(id => {
-    const btn = document.createElement('div');
-    btn.className = 'block-btn';
-    if(id===BLOCK.ZEFABLOCK){
-        // show placeholder until loaded
-        btn.style.background = '#888';
-        const img = new Image();
-        img.onload = () => btn.style.backgroundImage = `url(zefablock.png)`;
-        img.src = 'zefablock.png';
-    } else if(id===BLOCK.WATER){
-        btn.style.background = 'rgba(0,150,255,0.6)';
-    } else {
-        const tex = textures[id] || createColorTexture(150,150,150);
-        const url = tex.source?.data?.currentSrc || tex.image?.src || '';
-        if(url) btn.style.backgroundImage = `url(${url})`;
-        else btn.style.backgroundColor = '#ccc';
+/* ---------- UI palette ---------- */
+const ui=document.getElementById('ui');
+const order=[B.GRASS,B.STONE,B.WOOD,B.LEAVES,B.WATER,...Array.from({length:16},(_,i)=>B.COLOR+i),B.ZEFABLOCK];
+let sel=B.GRASS;
+order.forEach(id=>{
+    const b=document.createElement('div');b.className='btn';
+    if(id===B.ZEFABLOCK){
+        const img=new Image();img.src='zefablock.png';
+        img.onload=()=>{b.style.backgroundImage=`url(zefablock.png)`;};
+    }else if(id===B.WATER) b.style.background='rgba(0,120,255,0.6)';
+    else{
+        const t=tex[id]||colTex(150,150,150);
+        b.style.backgroundImage=`url(${t.image.src||t.source.data.currentSrc})`;
     }
-    btn.dataset.id = id;
-    btn.onclick = () => {
-        document.querySelectorAll('.block-btn').forEach(b=>b.classList.remove('selected'));
-        btn.classList.add('selected');
-        selectedBlock = id;
-    };
-    ui.appendChild(btn);
+    b.dataset.id=id;
+    b.onclick=()=>{ui.querySelectorAll('.btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');sel=id;};
+    ui.appendChild(b);
 });
-ui.firstChild.classList.add('selected');
+ui.firstChild.classList.add('sel');
 
-/* ---------- Three.js setup ---------- */
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87CEEB);
-const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({canvas: document.getElementById('canvas'), antialias:false});
-renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
-
-const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-scene.add(ambient);
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-dirLight.position.set(10,20,10);
-scene.add(dirLight);
+/* ---------- Three.js ---------- */
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x87CEEB);
+const cam=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.1,200);
+const ren=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:false});
+ren.setSize(innerWidth,innerHeight);ren.setPixelRatio(devicePixelRatio);
+scene.add(new THREE.AmbientLight(0xffffff,0.6));
+const sun=new THREE.DirectionalLight(0xffffff,0.8);sun.position.set(10,20,10);scene.add(sun);
 
 /* ---------- Controls ---------- */
-let controls, move = {forward:0, right:0}, look = {x:0,y:0};
-if('ontouchstart' in window){
-    // mobile virtual joysticks
-    const moveStick = document.getElementById('move-stick'), lookStick = document.getElementById('look-stick');
-    const moveKnob = moveStick.querySelector('.joy-knob'), lookKnob = lookStick.querySelector('.joy-knob');
-    function handleJoy(stick, knob, out){
-        let active = false, startX, startY;
-        const radius = 40;
-        const onStart = e => { active=true; const r=stick.getBoundingClientRect(); startX=r.left+40; startY=r.top+40; };
-        const onMove = e => { if(!active) return; const touch = e.touches[0]; const dx=touch.clientX-startX, dy=touch.clientY-startY; const dist=Math.hypot(dx,dy); const limited = dist>radius? radius/dist:1; out.x = dx*limited; out.y = dy*limited; knob.style.transform = `translate(${out.x}px, ${out.y}px)`; };
-        const onEnd = () => { active=false; out.x=out.y=0; knob.style.transform='translate(-50%,-50%)'; };
-        stick.addEventListener('touchstart',onStart); stick.addEventListener('touchmove',onMove); stick.addEventListener('touchend',onEnd);
+let move={f:0,r:0},look={x:0,y:0};
+let mobile='ontouchstart' in window;
+if(mobile){
+    // virtual joysticks
+    function joy(stick,knob,out){
+        let active=false,startX,startY,r=40;
+        const start=e=>{active=true;const r=stick.getBoundingClientRect();startX=r.left+40;startY=r.top+40;};
+        const move=e=>{if(!active)return;const t=e.touches[0];const dx=t.clientX-startX,dy=t.clientY-startY;
+            const d=Math.hypot(dx,dy);const lim=d>r?r/d:1;out.x=dx*lim;out.y=dy*lim;
+            knob.style.transform=`translate(${out.x}px,${out.y}px)`;};
+        const end={()=>{active=false;out.x=out.y=0;knob.style.transform='translate(-50%,-50%)';};
+        stick.addEventListener('touchstart',start);stick.addEventListener('touchmove',move);stick.addEventListener('touchend',end);
     }
-    handleJoy(moveStick, moveKnob, {x:0,y:0});
-    handleJoy(lookStick, lookKnob, look);
-    // simple first-person camera for mobile
-    camera.position.set(16,12,16);
-    controls = {update:()=>{}};
+    const mv={},lk={};
+    joy(document.getElementById('move'),document.querySelector('#move .knob'),mv);
+    joy(document.getElementById('look'),document.querySelector('#look .knob'),lk);
+    // expose for game loop
+    window._joyMove=mv; window._joyLook=lk;
 }else{
-    // PC pointer-lock
-    controls = new THREE.PointerLockControls(camera, document.body);
-    document.body.addEventListener('click',()=>controls.lock());
-    scene.add(controls.getObject());
+    // PC pointer lock
+    const ctrl=new THREE.PointerLockControls(cam,ren.domElement);
+    ren.domElement.addEventListener('click',()=>ctrl.lock());
+    scene.add(ctrl.getObject());
+    window._pcCtrl=ctrl;
 }
 
-/* ---------- Chunk & World ---------- */
-const chunks = new Map(); // key: `${cx}_${cy}_${cz}`
-
-function getChunkKey(cx,cy,cz){ return `${cx}_${cy}_${cz}`; }
-
+/* ---------- Chunk system ---------- */
+const chunks=new Map();
+function key(cx,cy,cz){return `${cx}_${cy}_${cz}`;}
 class Chunk{
     constructor(cx,cy,cz){
-        this.cx=cx; this.cy=cy; this.cz=cz;
-        this.data = new Uint8Array(CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE);
-        this.mesh = null;
+        this.cx=cx;this.cy=cy;this.cz=cz;
+        this.data=new Uint8Array(CS*CS*CS);
+        this.mesh=null;
     }
-    get(x,y,z){ return this.data[x + y*CHUNK_SIZE + z*CHUNK_SIZE*CHUNK_SIZE]; }
-    set(x,y,z,v){ this.data[x + y*CHUNK_SIZE + z*CHUNK_SIZE*CHUNK_SIZE]=v; }
-    buildMesh(){
-        if(this.mesh) scene.remove(this.mesh);
-        const geom = new THREE.BufferGeometry();
-        const pos = [], uv = [], index = [];
-        let idx = 0;
-        const addFace = (px,py,pz, nx,ny,nz, face) => {
-            const block = this.get(px,py,pz);
-            if(block===BLOCK.AIR) return;
-            const tex = textures[block] || textures[BLOCK.STONE];
-            const u0 = 0, v0 = 0, u1 = 1, v1 = 1;
-            const verts = [
-                [0,0,0],[1,0,0],[1,1,0],[0,1,0], // positions relative to block
-                [0,0,1],[1,0,1],[1,1,1],[0,1,1]
-            ];
-            const faces = [
-                [[0,1,2,3], [0,1,1,0]], // -z
-                [[4,5,6,7], [0,1,1,0]], // +z
-                [[0,4,5,1], [0,0,1,1]], // -x
-                [[1,5,6,2], [0,0,1,1]], // +x
-                [[0,1,5,4], [0,0,1,1]], // -y
-                [[3,2,6,7], [0,0,1,1]]  // +y
-            ];
-            const f = faces[face];
-            const base = idx;
-            for(let i=0;i<4;i++){
-                const v = verts[f[0][i]];
-                pos.push(px+v[0]+nx, py+v[1]+ny, pz+v[2]+nz);
-                uv.push( i%2?u1:u0, i<2?v1:v0 );
-            }
-            index.push(base, base+1, base+2, base, base+2, base+3);
-            idx += 4;
-        };
-        for(let x=0;x<CHUNK_SIZE;x++) for(let y=0;y<CHUNK_SIZE;y++) for(let z=0;z<CHUNK_SIZE;z++){
-            const block = this.get(x,y,z);
-            if(block===BLOCK.AIR) continue;
-            const wx = this.cx*CHUNK_SIZE + x, wy = this.cy*CHUNK_SIZE + y, wz = this.cz*CHUNK_SIZE + z;
-            // check 6 neighbours
-            const dirs = [[-1,0,0],[1,0,0],[0,-1,0],[0,1,0],[0,0,-1],[0,0,1]];
-            dirs.forEach((d,i)=>{
-                const nx = x+d[0], ny = y+d[1], nz = z+d[2];
-                let neighbour = BLOCK.AIR;
-                if(nx>=0&&nx<CHUNK_SIZE && ny>=0&&ny<CHUNK_SIZE && nz>=0&&nz<CHUNK_SIZE){
-                    neighbour = this.get(nx,ny,nz);
-                }else{
-                    const ocx = this.cx + d[0], ocy = this.cy + d[1], ocz = this.cz + d[2];
-                    const ck = getChunkKey(ocx,ocy,ocz);
-                    const other = chunks.get(ck);
-                    if(other){
-                        const lx = nx<0?CHUNK_SIZE-1:(nx>=CHUNK_SIZE?0:nx);
-                        const ly = ny<0?CHUNK_SIZE-1:(ny>=CHUNK_SIZE?0:ny);
-                        const lz = nz<0?CHUNK_SIZE-1:(nz>=CHUNK_SIZE?0:nz);
-                        neighbour = other.get(lx,ly,lz);
+    get(x,y,z){return this.data[x+y*CS+z*CS*CS];}
+    set(x,y,z,v){this.data[x+y*CS+z*CS*CS]=v;}
+    build(){
+        if(this.mesh)scene.remove(this.mesh);
+        const geom=new THREE.BufferGeometry();
+        const pos=[],uv=[],idx=[],matIdx=[];
+        let vert=0;
+        const faces=[
+            [[0,0,0],[1,0,0],[1,1,0],[0,1,0], [0,1,1,0]], // -z
+            [[0,0,1],[1,0,1],[1,1,1],[0,1,1], [0,1,1,0]], // +z
+            [[0,0,0],[0,0,1],[0,1,1],[0,1,0], [0,0,1,1]], // -x
+            [[1,0,0],[1,0,1],[1,1,1],[1,1,0], [0,0,1,1]], // +x
+            [[0,0,0],[1,0,0],[1,0,1],[0,0,1], [0,0,1,1]], // -y
+            [[0,1,0],[1,1,0],[1,1,1],[0,1,1], [0,0,1,1]]  // +y
+        ];
+        for(let x=0;x<CS;x++)for(let y=0;y<CS;y++)for(let z=0;z<CS;z++){
+            const id=this.get(x,y,z); if(id===B.AIR)continue;
+            const dirs=[[-1,0,0],[1,0,0],[0,-1,0],[0,1,0],[0,0,-1],[0,0,1]];
+            dirs.forEach((d,face)=>{
+                const nx=x+d[0],ny=y+d[1],nz=z+d[2];
+                let nb=B.AIR;
+                if(nx>=0&&nx<CS&&ny>=0&&ny<CS&&nz>=0&&nz<CS) nb=this.get(nx,ny,nz);
+                else{
+                    const ocx=this.cx+(nx<0?-1:(nx>=CS?1:0));
+                    const ocy=this.cy+(ny<0?-1:(ny>=CS?1:0));
+                    const ocz=this.cz+(nz<0?-1:(nz>=CS?1:0));
+                    const ch=chunks.get(key(ocx,ocy,ocz));
+                    if(ch){
+                        const lx=nx<0?CS-1:(nx>=CS?0:nx);
+                        const ly=ny<0?CS-1:(ny>=CS?0:ny);
+                        const lz=nz<0?CS-1:(nz>=CS?0:nz);
+                        nb=ch.get(lx,ly,lz);
                     }
                 }
-                if(neighbour===BLOCK.AIR || neighbour===BLOCK.WATER){
-                    addFace(x,y,z, d[0],d[1],d[2], i);
+                if(nb===B.AIR || nb===B.WATER){
+                    const f=faces[face];
+                    const base=vert;
+                    for(let i=0;i<4;i++){
+                        const v=f[0][i];
+                        pos.push(this.cx*CS+x+v[0], this.cy*CS+y+v[1], this.cz*CS+z+v[2]);
+                        uv.push(i%2?1:0, i<2?1:0);
+                        matIdx.push(id);
+                    }
+                    idx.push(base,base+1,base+2, base,base+2,base+3);
+                    vert+=4;
                 }
             });
         }
-        if(pos.length===0) return;
-        geom.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
-        geom.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
-        geom.setIndex(index);
+        if(vert===0) return;
+        geom.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+        geom.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+        geom.setAttribute('blockId',new THREE.Float32BufferAttribute(matIdx,1));
+        geom.setIndex(idx);
         geom.computeVertexNormals();
-        const mat = new THREE.MeshLambertMaterial({map: textures[BLOCK.STONE], vertexColors:false, transparent:true, alphaTest:0.1});
-        const mesh = new THREE.Mesh(geom, mat);
-        mesh.position.set(this.cx*CHUNK_SIZE, this.cy*CHUNK_SIZE, this.cz*CHUNK_SIZE);
-        this.mesh = mesh;
+
+        // one material per block type
+        const mats=[];
+        for(let i=1;i<TOTAL;i++){
+            const t=tex[i]||tex[B.STONE];
+            const m=new THREE.MeshLambertMaterial({map:t,transparent:i===B.WATER,alphaTest:0.1});
+            mats.push(m);
+        }
+        const mesh=new THREE.Mesh(geom,mats);
+        this.mesh=mesh;
         scene.add(mesh);
     }
 }
 
-/* ---------- World generation ---------- */
-function generateChunk(cx,cy,cz){
-    const chunk = new Chunk(cx,cy,cz);
-    const wx0 = cx*CHUNK_SIZE, wy0 = cy*CHUNK_SIZE, wz0 = cz*CHUNK_SIZE;
-    for(let x=0;x<CHUNK_SIZE;x++) for(let z=0;z<CHUNK_SIZE;z++){
-        const wx = wx0 + x, wz = wz0 + z;
-        const height = Math.floor(SEA_LEVEL + 3*Math.sin(wx*0.05) + 2*Math.cos(wz*0.07));
-        for(let y=0;y<CHUNK_SIZE;y++){
-            const wy = wy0 + y;
-            if(wy < height-3) chunk.set(x,y,z,BLOCK.STONE);
-            else if(wy < height) chunk.set(x,y,z,BLOCK.GRASS);
-            else if(wy === height && Math.random()<0.1) chunk.set(x,y,z,BLOCK.WOOD);
-            else if(wy > height && wy < height+4 && Math.random()<0.3) chunk.set(x,y,z,BLOCK.LEAVES);
-            else if(wy <= SEA_LEVEL) chunk.set(x,y,z,BLOCK.WATER);
+/* ---------- Generation ---------- */
+function gen(cx,cy,cz){
+    const ch=new Chunk(cx,cy,cz);
+    for(let x=0;x<CS;x++)for(let z=0;z<CS;z++){
+        const wx=cx*CS+x, wz=cz*CS+z;
+        const h=Math.floor(SEA+3*Math.sin(wx*0.05)+2*Math.cos(wz*0.07));
+        for(let y=0;y<CS;y++){
+            const wy=cy*CS+y;
+            if(wy<h-3) ch.set(x,y,z,B.STONE);
+            else if(wy<h) ch.set(x,y,z,B.GRASS);
+            else if(wy===h && Math.random()<0.12) ch.set(x,y,z,B.WOOD);
+            else if(wy>h && wy<h+4 && Math.random()<0.3) ch.set(x,y,z,B.LEAVES);
+            else if(wy<=SEA) ch.set(x,y,z,B.WATER);
         }
     }
-    // sprinkle some colored blocks
     if(Math.random()<0.2){
-        const bx = Math.floor(Math.random()*CHUNK_SIZE);
-        const by = Math.floor(Math.random()*CHUNK_SIZE);
-        const bz = Math.floor(Math.random()*CHUNK_SIZE);
-        const col = BLOCK.COLOR_START + Math.floor(Math.random()*16);
-        chunk.set(bx,by,bz,col);
+        const bx=Math.floor(Math.random()*CS), by=Math.floor(Math.random()*CS), bz=Math.floor(Math.random()*CS);
+        ch.set(bx,by,bz,B.COLOR+Math.floor(Math.random()*16));
     }
-    // one ZefaBlock somewhere in the world
-    if(cx===0 && cy===0 && cz===0 && !chunks.has(getChunkKey(0,0,0))){
-        chunk.set(8,SEA_LEVEL+2,8,BLOCK.ZEFABLOCK);
-    }
-    chunks.set(getChunkKey(cx,cy,cz), chunk);
-    chunk.buildMesh();
+    if(cx===0&&cy===0&&cz===0) ch.set(8,SEA+2,8,B.ZEFABLOCK);
+    chunks.set(key(cx,cy,cz),ch);
+    ch.build();
 }
 
-/* ---------- Chunk management ---------- */
+/* ---------- Chunk loading ---------- */
 function updateChunks(){
-    const cx = Math.floor(camera.position.x / CHUNK_SIZE);
-    const cy = Math.floor(camera.position.y / CHUNK_SIZE);
-    const cz = Math.floor(camera.position.z / CHUNK_SIZE);
-    const toLoad = new Set(), toUnload = new Set(chunks.keys());
-    for(let dx=-RENDER_DISTANCE;dx<=RENDER_DISTANCE;dx++)
-    for(let dy=-RENDER_DISTANCE;dy<=RENDER_DISTANCE;dy++)
-    for(let dz=-RENDER_DISTANCE;dz<=RENDER_DISTANCE;dz++){
-        const key = getChunkKey(cx+dx, cy+dy, cz+dz);
-        toLoad.add(key);
-        toUnload.delete(key);
+    const cx=Math.floor(cam.position.x/CS), cy=Math.floor(cam.position.y/CS), cz=Math.floor(cam.position.z/CS);
+    const keep=new Set();
+    for(let dx=-RD;dx<=RD;dx++)for(let dy=-RD;dy<=RD;dy++)for(let dz=-RD;dz<=RD;dz++){
+        const k=key(cx+dx,cy+dy,cz+dz); keep.add(k);
+        if(!chunks.has(k)) gen(cx+dx,cy+dy,cz+dz);
     }
-    toUnload.forEach(k=>{
-        const ch = chunks.get(k);
-        if(ch && ch.mesh) scene.remove(ch.mesh);
-        chunks.delete(k);
-    });
-    toLoad.forEach(k=>{
-        if(!chunks.has(k)){
-            const [cx,cy,cz] = k.split('_').map(Number);
-            generateChunk(cx,cy,cz);
-        }
-    });
+    for(const k of chunks.keys()) if(!keep.has(k)){
+        const ch=chunks.get(k); if(ch.mesh)scene.remove(ch.mesh); chunks.delete(k);
+    }
 }
 
-/* ---------- Raycasting & block interaction ---------- */
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-function getTargetBlock(){
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(scene.children, true);
-    if(intersects.length===0) return null;
-    const hit = intersects[0];
-    const pos = hit.point.clone().add(hit.face.normal.clone().multiplyScalar(0.001));
-    const bx = Math.floor(pos.x), by = Math.floor(pos.y), bz = Math.floor(pos.z);
-    const cx = Math.floor(bx/CHUNK_SIZE), cy = Math.floor(by/CHUNK_SIZE), cz = Math.floor(bz/CHUNK_SIZE);
-    const chunk = chunks.get(getChunkKey(cx,cy,cz));
-    if(!chunk) return null;
-    const lx = ((bx%CHUNK_SIZE)+CHUNK_SIZE)%CHUNK_SIZE;
-    const ly = ((by%CHUNK_SIZE)+CHUNK_SIZE)%CHUNK_SIZE;
-    const lz = ((bz%CHUNK_SIZE)+CHUNK_SIZE)%CHUNK_SIZE;
-    return {chunk, lx, ly, lz, world:{x:bx,y:by,z:bz}, face:hit.face};
+/* ---------- Raycast ---------- */
+const ray=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+function target(){
+    ray.setFromCamera(mouse,cam);
+    const hits=ray.intersectObjects(scene.children,true);
+    if(!hits.length) return null;
+    const p=hits[0].point.clone().add(hits[0].face.normal.clone().multiplyScalar(0.001));
+    const bx=Math.floor(p.x),by=Math.floor(p.y),bz=Math.floor(p.z);
+    const cx=Math.floor(bx/CS),cy=Math.floor(by/CS),cz=Math.floor(bz/CS);
+    const ch=chunks.get(key(cx,cy,cz)); if(!ch) return null;
+    const lx=((bx%CS)+CS)%CS, ly=((by%CS)+CS)%CS, lz=((bz%CS)+CS)%CS;
+    return {ch,lx,ly,lz,wx:bx,wy:by,wz:bz};
 }
-function placeBlock(){
-    const target = getTargetBlock();
-    if(!target) return;
-    const {chunk, lx, ly, lz} = target;
-    if(selectedBlock===BLOCK.WATER && chunk.get(lx,ly,lz)!==BLOCK.AIR) return;
-    chunk.set(lx,ly,lz, selectedBlock);
-    chunk.buildMesh();
-    updateNeighbourChunks(lx,ly,lz,chunk);
-}
-function breakBlock(){
-    const target = getTargetBlock();
-    if(!target) return;
-    const {chunk, lx, ly, lz} = target;
-    chunk.set(lx,ly,lz, BLOCK.AIR);
-    chunk.buildMesh();
-    updateNeighbourChunks(lx,ly,lz,chunk);
-}
-function updateNeighbourChunks(lx,ly,lz,srcChunk){
-    const dirs = [[-1,0,0],[1,0,0],[0,-1,0],[0,1,0],[0,0,-1],[0,0,1]];
+function place(){ const t=target(); if(!t) return; t.ch.set(t.lx,t.ly,t.lz,sel); rebuildAround(t.ch,t.lx,t.ly,t.lz); }
+function breakB(){ const t=target(); if(!t) return; t.ch.set(t.lx,t.ly,t.lz,B.AIR); rebuildAround(t.ch,t.lx,t.ly,t.lz); }
+function rebuildAround(ch,x,y,z){
+    ch.build();
+    const dirs=[[-1,0,0],[1,0,0],[0,-1,0],[0,1,0],[0,0,-1],[0,0,1]];
     dirs.forEach(d=>{
-        const nx = lx + d[0], ny = ly + d[1], nz = lz + d[2];
-        const cx = srcChunk.cx + (nx<0?-1:(nx>=CHUNK_SIZE?1:0));
-        const cy = srcChunk.cy + (ny<0?-1:(ny>=CHUNK_SIZE?1:0));
-        const cz = srcChunk.cz + (nz<0?-1:(nz>=CHUNK_SIZE?1:0));
-        const key = getChunkKey(cx,cy,cz);
-        const ch = chunks.get(key);
-        if(ch) ch.buildMesh();
+        const nx=x+d[0],ny=y+d[1],nz=z+d[2];
+        const cx=ch.cx+(nx<0?-1:(nx>=CS?1:0));
+        const cy=ch.cy+(ny<0?-1:(ny>=CS?1:0));
+        const cz=ch.cz+(nz<0?-1:(nz>=CS?1:0));
+        const nb=chunks.get(key(cx,cy,cz));
+        if(nb) nb.build();
     });
 }
 
-/* ---------- Input handling ---------- */
-let isPointerLocked = false;
-document.addEventListener('pointerlockchange',()=>{ isPointerLocked = document.pointerLockElement===renderer.domElement; });
+/* ---------- Input ---------- */
+let left=false,right=false;
+ren.domElement.addEventListener('mousedown',e=>{if(e.button===0)left=true;else if(e.button===2)right=true;});
+ren.domElement.addEventListener('mouseup',e=>{if(e.button===0)left=false;else if(e.button===2)right=false;});
+ren.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
-window.addEventListener('resize',()=>{
-    camera.aspect = innerWidth/innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth,innerHeight);
-});
-
-let leftClick = false, rightClick = false;
-renderer.domElement.addEventListener('mousedown', e=>{ if(e.button===0) leftClick=true; else if(e.button===2) rightClick=true; });
-renderer.domElement.addEventListener('mouseup', e=>{ if(e.button===0) leftClick=false; else if(e.button===2) rightClick=false; });
-renderer.domElement.addEventListener('contextmenu', e=>e.preventDefault());
-
-if('ontouchstart' in window){
-    renderer.domElement.addEventListener('touchstart', e=>{
-        const touch = e.touches[0];
-        mouse.x = (touch.clientX / innerWidth)*2 - 1;
-        mouse.y = -(touch.clientY / innerHeight)*2 + 1;
-        if(e.touches.length===1) leftClick = true;
-        else if(e.touches.length===2) rightClick = true;
+if(mobile){
+    ren.domElement.addEventListener('touchstart',e=>{
+        const t=e.touches[0];
+        mouse.x=(t.clientX/innerWidth)*2-1;
+        mouse.y=-(t.clientY/innerHeight)*2+1;
+        if(e.touches.length===1) left=true;
+        else if(e.touches.length===2) right=true;
     });
-    renderer.domElement.addEventListener('touchend',()=>{ leftClick=rightClick=false; });
+    ren.domElement.addEventListener('touchend',()=>{left=right=false;});
 }
 
 /* ---------- Save / Load (IndexedDB) ---------- */
-const DB_NAME = 'ZefaCraft', STORE = 'world';
-let db;
-const request = indexedDB.open(DB_NAME,1);
-request.onupgradeneeded = e=>{
-    db = e.target.result;
-    db.createObjectStore(STORE);
-};
-request.onsuccess = e=>{ db = e.target.result; };
-request.onerror = e=> console.error('IndexedDB error',e);
-
-function saveWorld(){
-    if(!db) return alert('DB not ready');
-    const tx = db.transaction(STORE,'readwrite');
-    const store = tx.objectStore(STORE);
-    const data = {};
-    chunks.forEach((ch,key)=>{ data[key] = Array.from(ch.data); });
-    store.put(data,'world');
-    tx.oncomplete = ()=>alert('World saved!');
+let db=null;
+const req=indexedDB.open('ZefaCraft',1);
+req.onupgradeneeded=e=>{db=e.target.result;db.createObjectStore('w');};
+req.onsuccess=e=>{db=e.target.result;};
+function save(){ if(!db) return alert('DB not ready');
+    const tx=db.transaction('w','readwrite'); const s=tx.objectStore('w');
+    const data={}; chunks.forEach((c,k)=>{data[k]=Array.from(c.data);});
+    s.put(data,'world'); tx.oncomplete=()=>alert('Saved');
 }
-function loadWorld(){
-    if(!db) return alert('DB not ready');
-    const tx = db.transaction(STORE,'readonly');
-    const store = tx.objectStore(STORE);
-    const req = store.get('world');
-    req.onsuccess = e=>{
-        const saved = e.target.result;
-        if(!saved) return alert('No saved world');
-        // clear current
-        chunks.forEach(ch=>{ if(ch.mesh) scene.remove(ch.mesh); });
-        chunks.clear();
-        // restore
-        Object.entries(saved).forEach(([key,arr])=>{
-            const [cx,cy,cz] = key.split('_').map(Number);
-            const chunk = new Chunk(cx,cy,cz);
-            chunk.data = new Uint8Array(arr);
-            chunks.set(key,chunk);
-            chunk.buildMesh();
+function load(){ if(!db) return alert('DB not ready');
+    const tx=db.transaction('w','readonly'); const s=tx.objectStore('w');
+    const r=s.get('world'); r.onsuccess=e=>{
+        const d=e.target.result; if(!d) return alert('No save');
+        chunks.forEach(c=>{if(c.mesh)scene.remove(c.mesh);}); chunks.clear();
+        Object.entries(d).forEach(([k,a])=>{
+            const [cx,cy,cz]=k.split('_').map(Number);
+            const ch=new Chunk(cx,cy,cz); ch.data=new Uint8Array(a);
+            chunks.set(k,ch); ch.build();
         });
-        updateChunks();
-        alert('World loaded!');
+        updateChunks(); alert('Loaded');
     };
 }
-document.getElementById('save-btn').onclick = saveWorld;
-document.getElementById('load-btn').onclick = loadWorld;
+document.getElementById('save').onclick=save;
+document.getElementById('load').onclick=load;
 
 /* ---------- Game loop ---------- */
-const clock = new THREE.Clock();
-function animate(){
-    requestAnimationFrame(animate);
-    const delta = clock.getDelta();
+const clock=new THREE.Clock();
+function loop(){
+    requestAnimationFrame(loop);
+    const dt=clock.getDelta();
+    const speed=8*dt;
 
-    // ---- player movement ----
-    const speed = 8 * delta;
-    const moveVec = new THREE.Vector3();
-    if('ontouchstart' in window){
-        // mobile joystick
-        const mv = document.querySelector('#move-stick .joy-knob').style.transform;
-        const vals = mv.match(/translate\((-?\d+)px, (-?\d+)px\)/);
-        if(vals){
-            const mx = parseInt(vals[1])/40, my = parseInt(vals[2])/40;
-            moveVec.set(mx,0,-my).normalize().multiplyScalar(speed);
+    // movement
+    const dir=new THREE.Vector3();
+    if(mobile){
+        const mv=window._joyMove||{x:0,y:0};
+        dir.set(mv.x,0,-mv.y).normalize().multiplyScalar(speed);
+        const lk=window._joyLook||{x:0,y:0};
+        look.x+=lk.x*0.003; look.y=Math.max(-Math.PI/2,Math.min(Math.PI/2,look.y-lk.y*0.003));
+        cam.rotation.set(look.y,look.x,0);
+    }else{
+        const pc=window._pcCtrl;
+        if(pc && pc.isLocked){
+            const fwd=pc.getDirection(new THREE.Vector3());
+            const right=new THREE.Vector3().crossVectors(cam.up,fwd).normalize();
+            dir.add(fwd.clone().multiplyScalar(move.f*speed));
+            dir.add(right.clone().multiplyScalar(move.r*speed));
         }
-        // look joystick
-        const lk = document.querySelector('#look-stick .joy-knob').style.transform;
-        const lkvals = lk.match(/translate\((-?\d+)px, (-?\d+)px\)/);
-        if(lkvals){
-            look.x += parseInt(lkvals[1])*0.002;
-            look.y = Math.max(-Math.PI/2, Math.min(Math.PI/2, look.y - parseInt(lkvals[2])*0.002));
-            camera.rotation.order = 'YXZ';
-            camera.rotation.y = look.x;
-            camera.rotation.x = look.y;
-        }
-    }else if(isPointerLocked){
-        const forward = controls.getDirection(new THREE.Vector3());
-        const right = new THREE.Vector3().crossVectors(camera.up, forward).normalize();
-        moveVec.add(forward.clone().multiplyScalar(move.forward * speed));
-        moveVec.add(right.clone().multiplyScalar(move.right * speed));
-        if(controls.isOnObject) moveVec.y = 0; // simple ground clamp
     }
-    camera.position.add(moveVec);
+    cam.position.add(dir);
 
-    // ---- block interaction ----
-    if(leftClick) { placeBlock(); leftClick=false; }
-    if(rightClick) { breakBlock(); rightClick=false; }
+    // block interaction
+    if(left){place();left=false;}
+    if(right){breakB();right=false;}
 
-    // ---- chunk update ----
     updateChunks();
-
-    renderer.render(scene, camera);
+    ren.render(scene,cam);
 }
-animate();
+loop();
 
-/* ---------- Initial world ---------- */
-camera.position.set(16, 15, 16);
+/* ---------- Keyboard (PC) ---------- */
+if(!mobile){
+    const keys={};
+    window.addEventListener('keydown',e=>{keys[e.code]=true;});
+    window.addEventListener('keyup',e=>{keys[e.code]=false;});
+    setInterval(()=>{
+        move.f= (keys['KeyW']?1:0) - (keys['KeyS']?1:0);
+        move.r= (keys['KeyD']?1:0) - (keys['KeyA']?1:0);
+    },16);
+}
+
+/* ---------- Init ---------- */
+cam.position.set(16,15,16);
 updateChunks();
-
 </script>
 </body>
 </html>
