@@ -1,351 +1,348 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>ZefaCraft</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{overflow:hidden;background:#87CEEB;font-family:sans-serif;touch-action:none}
-    canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
-    #ui{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:6px;background:rgba(0,0,0,0.5);padding:8px;border-radius:8px}
-    .btn{width:44px;height:44px;border:2px solid #000;background:#fff;cursor:pointer;background-size:cover}
-    .btn.sel{border:3px solid yellow}
-    #cross{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:20px/1 sans-serif;color:#fff;text-shadow:0 0 2px #000;pointer-events:none}
-    #save,#load{position:absolute;top:10px;padding:6px 10px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:4px;cursor:pointer}
-    #save{left:10px}#load{left:70px}
-    #joy{display:none;gap:30px;position:absolute;bottom:90px;left:20px}
-    .stick{width:80px;height:80px;background:rgba(255,255,255,0.3);border-radius:50%;position:relative}
-    .knob{width:30px;height:30px;background:#fff;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-    @media(max-width:768px){#joy{display:flex}#ui{bottom:170px}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZefaCraft</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        #controls { position: absolute; bottom: 20px; left: 20px; z-index: 10; }
+        button { padding: 10px; margin: 5px; }
+    </style>
 </head>
 <body>
-<canvas id="c"></canvas>
-<div id="cross">+</div>
-<button id="save">Save</button><button id="load">Load</button>
-<div id="ui"></div>
-<div id="joy">
-    <div class="stick" id="move"><div class="knob"></div></div>
-    <div class="stick" id="look"><div class="knob"></div></div>
-</div>
+    <canvas id="canvas"></canvas>
+    <div id="controls" style="display: none;">
+        <button id="forward">Forward</button>
+        <button id="left">Left</button>
+        <button id="back">Back</button>
+        <button id="right">Right</button>
+        <button id="jump">Jump</button>
+    </div>
+    <script src="https://threejs.org/build/three.js"></script>
+    <script src="https://threejs.org/examples/js/controls/PointerLockControls.js"></script>
+    <script>
+        // Detect if mobile
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.min.js"></script>
-<script>
-/* ==================== ZefaCraft – tiny Minecraft clone ==================== */
-const W=32, CS=16, BS=1, RD=3, SEA=8;
-const B={AIR:0,GRASS:1,STONE:2,WOOD:3,LEAVES:4,WATER:5,COLOR:6,ZEFABLOCK:22};
-const TOTAL=23;
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); // Sky blue
+        scene.fog = new THREE.Fog(0x87CEEB, 0, 100);
 
-/* ---------- Textures ---------- */
-const tex={};
-const loader=new THREE.TextureLoader();
-loader.setPath(''); // same folder
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-function colTex(r,g,b){
-    const c=document.createElement('canvas');c.width=c.height=16;
-    const x=c.getContext('2d');x.fillStyle=`rgb(${r},${g},${b})`;x.fillRect(0,0,16,16);
-    x.strokeStyle='#000';x.lineWidth=1;
-    for(let i=0;i<16;i+=4){x.beginPath();x.moveTo(0,i);x.lineTo(16,i);x.moveTo(i,0);x.lineTo(i,16);x.stroke();}
-    const t=new THREE.CanvasTexture(c);t.magFilter=t.minFilter=THREE.NearestFilter;return t;
-}
-const palette=[[221,221,221],[219,125,62],[179,80,188],[107,138,201],[177,166,39],[65,174,56],[216,129,248],[55,74,88],
-               [132,182,219],[70,68,64],[180,110,255],[136,67,40],[46,46,46],[230,230,230],[248,197,149],[255,255,255]];
-for(let i=0;i<16;i++) tex[B.COLOR+i]=colTex(...palette[i]);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
 
-// ZefaBlock – external file
-loader.load('zefablock.png',t=>{t.magFilter=t.minFilter=THREE.NearestFilter;tex[B.ZEFABLOCK]=t;},null,e=>console.error(e));
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
 
-/* ---------- UI palette ---------- */
-const ui=document.getElementById('ui');
-const order=[B.GRASS,B.STONE,B.WOOD,B.LEAVES,B.WATER,...Array.from({length:16},(_,i)=>B.COLOR+i),B.ZEFABLOCK];
-let sel=B.GRASS;
-order.forEach(id=>{
-    const b=document.createElement('div');b.className='btn';
-    if(id===B.ZEFABLOCK){
-        const img=new Image();img.src='zefablock.png';
-        img.onload=()=>{b.style.backgroundImage=`url(zefablock.png)`;};
-    }else if(id===B.WATER) b.style.background='rgba(0,120,255,0.6)';
-    else{
-        const t=tex[id]||colTex(150,150,150);
-        b.style.backgroundImage=`url(${t.image.src||t.source.data.currentSrc})`;
-    }
-    b.dataset.id=id;
-    b.onclick=()=>{ui.querySelectorAll('.btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');sel=id;};
-    ui.appendChild(b);
-});
-ui.firstChild.classList.add('sel');
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(50, 50, 50);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
 
-/* ---------- Three.js ---------- */
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x87CEEB);
-const cam=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.1,200);
-const ren=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:false});
-ren.setSize(innerWidth,innerHeight);ren.setPixelRatio(devicePixelRatio);
-scene.add(new THREE.AmbientLight(0xffffff,0.6));
-const sun=new THREE.DirectionalLight(0xffffff,0.8);sun.position.set(10,20,10);scene.add(sun);
+        // Controls
+        let controls;
+        if (!isMobile) {
+            controls = new THREE.PointerLockControls(camera, renderer.domElement);
+            document.body.addEventListener('click', () => controls.lock());
+        } else {
+            // For mobile, show buttons
+            document.getElementById('controls').style.display = 'block';
+            // Use OrbitControls for look, but for FPS, custom
+            // For simplicity, use touch for look, buttons for move
+        }
 
-/* ---------- Controls ---------- */
-let move={f:0,r:0},look={x:0,y:0};
-let mobile='ontouchstart' in window;
-if(mobile){
-    // virtual joysticks
-    function joy(stick,knob,out){
-        let active=false,startX,startY,r=40;
-        const start=e=>{active=true;const r=stick.getBoundingClientRect();startX=r.left+40;startY=r.top+40;};
-        const move=e=>{if(!active)return;const t=e.touches[0];const dx=t.clientX-startX,dy=t.clientY-startY;
-            const d=Math.hypot(dx,dy);const lim=d>r?r/d:1;out.x=dx*lim;out.y=dy*lim;
-            knob.style.transform=`translate(${out.x}px,${out.y}px)`;};
-        const end={()=>{active=false;out.x=out.y=0;knob.style.transform='translate(-50%,-50%)';};
-        stick.addEventListener('touchstart',start);stick.addEventListener('touchmove',move);stick.addEventListener('touchend',end);
-    }
-    const mv={},lk={};
-    joy(document.getElementById('move'),document.querySelector('#move .knob'),mv);
-    joy(document.getElementById('look'),document.querySelector('#look .knob'),lk);
-    // expose for game loop
-    window._joyMove=mv; window._joyLook=lk;
-}else{
-    // PC pointer lock
-    const ctrl=new THREE.PointerLockControls(cam,ren.domElement);
-    ren.domElement.addEventListener('click',()=>ctrl.lock());
-    scene.add(ctrl.getObject());
-    window._pcCtrl=ctrl;
-}
+        // Block types
+        const blockTypes = {
+            grass: { color: 0x228B22 }, // Forest green
+            stone: { color: 0x808080 }, // Gray
+            wood: { color: 0x8B4513 }, // Saddle brown
+            leaves: { color: 0x006400 }, // Dark green
+            water: { color: 0x0000FF, transparent: true, opacity: 0.5 },
+            red: { color: 0xFF0000 },
+            green: { color: 0x00FF00 },
+            blue: { color: 0x0000FF },
+            yellow: { color: 0xFFFF00 },
+            cyan: { color: 0x00FFFF },
+            magenta: { color: 0xFF00FF },
+            black: { color: 0x000000 },
+            white: { color: 0xFFFFFF },
+            orange: { color: 0xFFA500 },
+            purple: { color: 0x800080 },
+            brown: { color: 0xA52A2A },
+            pink: { color: 0xFFC0CB },
+            lime: { color: 0x32CD32 },
+            gray: { color: 0x808080 },
+            lightgray: { color: 0xD3D3D3 },
+            darkgray: { color: 0xA9A9A9 },
+            zefa: { map: 'zefablock.png' } // Assume texture in same directory
+        };
 
-/* ---------- Chunk system ---------- */
-const chunks=new Map();
-function key(cx,cy,cz){return `${cx}_${cy}_${cz}`;}
-class Chunk{
-    constructor(cx,cy,cz){
-        this.cx=cx;this.cy=cy;this.cz=cz;
-        this.data=new Uint8Array(CS*CS*CS);
-        this.mesh=null;
-    }
-    get(x,y,z){return this.data[x+y*CS+z*CS*CS];}
-    set(x,y,z,v){this.data[x+y*CS+z*CS*CS]=v;}
-    build(){
-        if(this.mesh)scene.remove(this.mesh);
-        const geom=new THREE.BufferGeometry();
-        const pos=[],uv=[],idx=[],matIdx=[];
-        let vert=0;
-        const faces=[
-            [[0,0,0],[1,0,0],[1,1,0],[0,1,0], [0,1,1,0]], // -z
-            [[0,0,1],[1,0,1],[1,1,1],[0,1,1], [0,1,1,0]], // +z
-            [[0,0,0],[0,0,1],[0,1,1],[0,1,0], [0,0,1,1]], // -x
-            [[1,0,0],[1,0,1],[1,1,1],[1,1,0], [0,0,1,1]], // +x
-            [[0,0,0],[1,0,0],[1,0,1],[0,0,1], [0,0,1,1]], // -y
-            [[0,1,0],[1,1,0],[1,1,1],[0,1,1], [0,0,1,1]]  // +y
-        ];
-        for(let x=0;x<CS;x++)for(let y=0;y<CS;y++)for(let z=0;z<CS;z++){
-            const id=this.get(x,y,z); if(id===B.AIR)continue;
-            const dirs=[[-1,0,0],[1,0,0],[0,-1,0],[0,1,0],[0,0,-1],[0,0,1]];
-            dirs.forEach((d,face)=>{
-                const nx=x+d[0],ny=y+d[1],nz=z+d[2];
-                let nb=B.AIR;
-                if(nx>=0&&nx<CS&&ny>=0&&ny<CS&&nz>=0&&nz<CS) nb=this.get(nx,ny,nz);
-                else{
-                    const ocx=this.cx+(nx<0?-1:(nx>=CS?1:0));
-                    const ocy=this.cy+(ny<0?-1:(ny>=CS?1:0));
-                    const ocz=this.cz+(nz<0?-1:(nz>=CS?1:0));
-                    const ch=chunks.get(key(ocx,ocy,ocz));
-                    if(ch){
-                        const lx=nx<0?CS-1:(nx>=CS?0:nx);
-                        const ly=ny<0?CS-1:(ny>=CS?0:ny);
-                        const lz=nz<0?CS-1:(nz>=CS?0:nz);
-                        nb=ch.get(lx,ly,lz);
+        // World data
+        let blocks = {};
+        const blockSize = 1;
+
+        // Load world from localStorage
+        function loadWorld() {
+            const saved = localStorage.getItem('zefaCraftWorld');
+            if (saved) {
+                blocks = JSON.parse(saved);
+                Object.keys(blocks).forEach(key => {
+                    const [x, y, z] = key.split(',').map(Number);
+                    createBlock(x, y, z, blocks[key]);
+                });
+            } else {
+                // Generate small grass platform
+                for (let x = -5; x <= 5; x++) {
+                    for (let z = -5; z <= 5; z++) {
+                        addBlock(x, 0, z, 'grass');
                     }
                 }
-                if(nb===B.AIR || nb===B.WATER){
-                    const f=faces[face];
-                    const base=vert;
-                    for(let i=0;i<4;i++){
-                        const v=f[0][i];
-                        pos.push(this.cx*CS+x+v[0], this.cy*CS+y+v[1], this.cz*CS+z+v[2]);
-                        uv.push(i%2?1:0, i<2?1:0);
-                        matIdx.push(id);
+            }
+        }
+
+        // Save world
+        function saveWorld() {
+            localStorage.setItem('zefaCraftWorld', JSON.stringify(blocks));
+        }
+
+        // Create block mesh
+        const blockMeshes = new Map();
+        function createBlock(x, y, z, type) {
+            const props = blockTypes[type] || { color: 0xFFFFFF };
+            let material;
+            if (props.map) {
+                const texture = new THREE.TextureLoader().load(props.map);
+                material = new THREE.MeshLambertMaterial({ map: texture });
+            } else {
+                material = new THREE.MeshLambertMaterial({
+                    color: props.color,
+                    transparent: !!props.transparent,
+                    opacity: props.opacity || 1
+                });
+            }
+            const geometry = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(x * blockSize + blockSize/2, y * blockSize + blockSize/2, z * blockSize + blockSize/2);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+            blockMeshes.set(`${x},${y},${z}`, mesh);
+        }
+
+        // Add block
+        function addBlock(x, y, z, type = 'stone') { // Default to stone for placement
+            const key = `${x},${y},${z}`;
+            if (!blocks[key]) {
+                blocks[key] = type;
+                createBlock(x, y, z, type);
+                saveWorld();
+            }
+        }
+
+        // Remove block
+        function removeBlock(x, y, z) {
+            const key = `${x},${y},${z}`;
+            if (blocks[key]) {
+                const mesh = blockMeshes.get(key);
+                if (mesh) {
+                    scene.remove(mesh);
+                    blockMeshes.delete(key);
+                }
+                delete blocks[key];
+                saveWorld();
+            }
+        }
+
+        // Player
+        const player = {
+            position: new THREE.Vector3(0, 5, 0),
+            velocity: new THREE.Vector3(0, 0, 0),
+            height: 1.8,
+            width: 0.6,
+            speed: 0.1,
+            jumpHeight: 0.3,
+            gravity: -0.01,
+            onGround: false
+        };
+
+        camera.position.copy(player.position);
+        camera.position.y += player.height - 0.5; // Eye level
+
+        // Raycaster for interaction
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2(0, 0); // For click
+
+        // Keyboard controls
+        const keys = {};
+        document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+        // Mouse click for break/place
+        document.addEventListener('mousedown', e => {
+            if (!controls.isLocked && !isMobile) return;
+            mouse.x = 0; mouse.y = 0; // Center for ray
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children);
+            if (intersects.length > 0) {
+                const intersect = intersects[0];
+                if (e.button === 0) { // Left click remove
+                    const pos = intersect.point.clone().sub(intersect.face.normal.multiplyScalar(0.5)).floor();
+                    removeBlock(pos.x, pos.y, pos.z);
+                } else if (e.button === 2) { // Right click place
+                    const pos = intersect.point.clone().add(intersect.face.normal.multiplyScalar(0.5)).floor();
+                    addBlock(pos.x, pos.y, pos.z, 'stone'); // Change to selected block
+                }
+            }
+        });
+
+        // Mobile buttons
+        if (isMobile) {
+            const forwardBtn = document.getElementById('forward');
+            const leftBtn = document.getElementById('left');
+            const backBtn = document.getElementById('back');
+            const rightBtn = document.getElementById('right');
+            const jumpBtn = document.getElementById('jump');
+
+            // Touch events for buttons
+            forwardBtn.addEventListener('touchstart', () => keys['w'] = true);
+            forwardBtn.addEventListener('touchend', () => keys['w'] = false);
+            leftBtn.addEventListener('touchstart', () => keys['a'] = true);
+            leftBtn.addEventListener('touchend', () => keys['a'] = false);
+            backBtn.addEventListener('touchstart', () => keys['s'] = true);
+            backBtn.addEventListener('touchend', () => keys['s'] = false);
+            rightBtn.addEventListener('touchstart', () => keys['d'] = true);
+            rightBtn.addEventListener('touchend', () => keys['d'] = false);
+            jumpBtn.addEventListener('touchstart', () => {
+                if (player.onGround) player.velocity.y = player.jumpHeight;
+            });
+
+            // Touch for look
+            let touchStartX = 0, touchStartY = 0;
+            document.addEventListener('touchstart', e => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            });
+            document.addEventListener('touchmove', e => {
+                const deltaX = (e.touches[0].clientX - touchStartX) * 0.002;
+                const deltaY = (e.touches[0].clientY - touchStartY) * 0.002;
+                camera.rotation.y -= deltaX;
+                camera.rotation.x -= deltaY;
+                camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            });
+
+            // Mobile place/break: tap for break, long press for place?
+            // For simplicity, use double tap for place
+            let tapCount = 0;
+            document.addEventListener('touchend', () => {
+                tapCount++;
+                setTimeout(() => tapCount = 0, 300);
+                mouse.x = 0; mouse.y = 0;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(scene.children);
+                if (intersects.length > 0) {
+                    const intersect = intersects[0];
+                    if (tapCount === 1) {
+                        const pos = intersect.point.clone().sub(intersect.face.normal.multiplyScalar(0.5)).floor();
+                        removeBlock(pos.x, pos.y, pos.z);
+                    } else if (tapCount === 2) {
+                        const pos = intersect.point.clone().add(intersect.face.normal.multiplyScalar(0.5)).floor();
+                        addBlock(pos.x, pos.y, pos.z, 'stone');
                     }
-                    idx.push(base,base+1,base+2, base,base+2,base+3);
-                    vert+=4;
                 }
             });
         }
-        if(vert===0) return;
-        geom.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
-        geom.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
-        geom.setAttribute('blockId',new THREE.Float32BufferAttribute(matIdx,1));
-        geom.setIndex(idx);
-        geom.computeVertexNormals();
 
-        // one material per block type
-        const mats=[];
-        for(let i=1;i<TOTAL;i++){
-            const t=tex[i]||tex[B.STONE];
-            const m=new THREE.MeshLambertMaterial({map:t,transparent:i===B.WATER,alphaTest:0.1});
-            mats.push(m);
+        // Collision check
+        function isColliding(newPos) {
+            const corners = [
+                new THREE.Vector3(-player.width/2, 0, -player.width/2),
+                new THREE.Vector3(player.width/2, 0, -player.width/2),
+                new THREE.Vector3(-player.width/2, 0, player.width/2),
+                new THREE.Vector3(player.width/2, 0, player.width/2)
+            ];
+            for (let yOffset = 0; yOffset <= player.height; yOffset += blockSize) {
+                for (const corner of corners) {
+                    const checkPos = newPos.clone().add(corner).add(new THREE.Vector3(0, yOffset, 0));
+                    const blockX = Math.floor(checkPos.x / blockSize);
+                    const blockY = Math.floor(checkPos.y / blockSize);
+                    const blockZ = Math.floor(checkPos.z / blockSize);
+                    if (blocks[`${blockX},${blockY},${blockZ}`]) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
-        const mesh=new THREE.Mesh(geom,mats);
-        this.mesh=mesh;
-        scene.add(mesh);
-    }
-}
 
-/* ---------- Generation ---------- */
-function gen(cx,cy,cz){
-    const ch=new Chunk(cx,cy,cz);
-    for(let x=0;x<CS;x++)for(let z=0;z<CS;z++){
-        const wx=cx*CS+x, wz=cz*CS+z;
-        const h=Math.floor(SEA+3*Math.sin(wx*0.05)+2*Math.cos(wz*0.07));
-        for(let y=0;y<CS;y++){
-            const wy=cy*CS+y;
-            if(wy<h-3) ch.set(x,y,z,B.STONE);
-            else if(wy<h) ch.set(x,y,z,B.GRASS);
-            else if(wy===h && Math.random()<0.12) ch.set(x,y,z,B.WOOD);
-            else if(wy>h && wy<h+4 && Math.random()<0.3) ch.set(x,y,z,B.LEAVES);
-            else if(wy<=SEA) ch.set(x,y,z,B.WATER);
+        // Animate loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Movement
+            const direction = new THREE.Vector3();
+            const front = new THREE.Vector3();
+            camera.getWorldDirection(front);
+            front.y = 0;
+            front.normalize();
+            const right = new THREE.Vector3().crossVectors(front, new THREE.Vector3(0,1,0)).normalize();
+
+            if (keys['w']) direction.add(front);
+            if (keys['s']) direction.sub(front);
+            if (keys['a']) direction.sub(right);
+            if (keys['d']) direction.add(right);
+
+            if (direction.length() > 0) {
+                direction.normalize().multiplyScalar(player.speed);
+                const newPosX = player.position.clone().add(new THREE.Vector3(direction.x, 0, 0));
+                if (!isColliding(newPosX)) player.position.x += direction.x;
+                const newPosZ = player.position.clone().add(new THREE.Vector3(0, 0, direction.z));
+                if (!isColliding(newPosZ)) player.position.z += direction.z;
+            }
+
+            // Gravity and jump
+            player.velocity.y += player.gravity;
+            const newPosY = player.position.clone().add(new THREE.Vector3(0, player.velocity.y, 0));
+            if (!isColliding(newPosY)) {
+                player.position.y += player.velocity.y;
+                player.onGround = false;
+            } else {
+                player.velocity.y = 0;
+                player.onGround = true;
+                if (keys[' ']) player.velocity.y = player.jumpHeight;
+            }
+
+            // Respawn if fall into void
+            if (player.position.y < -10) {
+                player.position.set(0, 5, 0);
+                player.velocity.set(0, 0, 0);
+            }
+
+            // Update camera
+            camera.position.copy(player.position);
+            camera.position.y += player.height - 0.5;
+
+            renderer.render(scene, camera);
         }
-    }
-    if(Math.random()<0.2){
-        const bx=Math.floor(Math.random()*CS), by=Math.floor(Math.random()*CS), bz=Math.floor(Math.random()*CS);
-        ch.set(bx,by,bz,B.COLOR+Math.floor(Math.random()*16));
-    }
-    if(cx===0&&cy===0&&cz===0) ch.set(8,SEA+2,8,B.ZEFABLOCK);
-    chunks.set(key(cx,cy,cz),ch);
-    ch.build();
-}
 
-/* ---------- Chunk loading ---------- */
-function updateChunks(){
-    const cx=Math.floor(cam.position.x/CS), cy=Math.floor(cam.position.y/CS), cz=Math.floor(cam.position.z/CS);
-    const keep=new Set();
-    for(let dx=-RD;dx<=RD;dx++)for(let dy=-RD;dy<=RD;dy++)for(let dz=-RD;dz<=RD;dz++){
-        const k=key(cx+dx,cy+dy,cz+dz); keep.add(k);
-        if(!chunks.has(k)) gen(cx+dx,cy+dy,cz+dz);
-    }
-    for(const k of chunks.keys()) if(!keep.has(k)){
-        const ch=chunks.get(k); if(ch.mesh)scene.remove(ch.mesh); chunks.delete(k);
-    }
-}
-
-/* ---------- Raycast ---------- */
-const ray=new THREE.Raycaster();
-const mouse=new THREE.Vector2();
-function target(){
-    ray.setFromCamera(mouse,cam);
-    const hits=ray.intersectObjects(scene.children,true);
-    if(!hits.length) return null;
-    const p=hits[0].point.clone().add(hits[0].face.normal.clone().multiplyScalar(0.001));
-    const bx=Math.floor(p.x),by=Math.floor(p.y),bz=Math.floor(p.z);
-    const cx=Math.floor(bx/CS),cy=Math.floor(by/CS),cz=Math.floor(bz/CS);
-    const ch=chunks.get(key(cx,cy,cz)); if(!ch) return null;
-    const lx=((bx%CS)+CS)%CS, ly=((by%CS)+CS)%CS, lz=((bz%CS)+CS)%CS;
-    return {ch,lx,ly,lz,wx:bx,wy:by,wz:bz};
-}
-function place(){ const t=target(); if(!t) return; t.ch.set(t.lx,t.ly,t.lz,sel); rebuildAround(t.ch,t.lx,t.ly,t.lz); }
-function breakB(){ const t=target(); if(!t) return; t.ch.set(t.lx,t.ly,t.lz,B.AIR); rebuildAround(t.ch,t.lx,t.ly,t.lz); }
-function rebuildAround(ch,x,y,z){
-    ch.build();
-    const dirs=[[-1,0,0],[1,0,0],[0,-1,0],[0,1,0],[0,0,-1],[0,0,1]];
-    dirs.forEach(d=>{
-        const nx=x+d[0],ny=y+d[1],nz=z+d[2];
-        const cx=ch.cx+(nx<0?-1:(nx>=CS?1:0));
-        const cy=ch.cy+(ny<0?-1:(ny>=CS?1:0));
-        const cz=ch.cz+(nz<0?-1:(nz>=CS?1:0));
-        const nb=chunks.get(key(cx,cy,cz));
-        if(nb) nb.build();
-    });
-}
-
-/* ---------- Input ---------- */
-let left=false,right=false;
-ren.domElement.addEventListener('mousedown',e=>{if(e.button===0)left=true;else if(e.button===2)right=true;});
-ren.domElement.addEventListener('mouseup',e=>{if(e.button===0)left=false;else if(e.button===2)right=false;});
-ren.domElement.addEventListener('contextmenu',e=>e.preventDefault());
-
-if(mobile){
-    ren.domElement.addEventListener('touchstart',e=>{
-        const t=e.touches[0];
-        mouse.x=(t.clientX/innerWidth)*2-1;
-        mouse.y=-(t.clientY/innerHeight)*2+1;
-        if(e.touches.length===1) left=true;
-        else if(e.touches.length===2) right=true;
-    });
-    ren.domElement.addEventListener('touchend',()=>{left=right=false;});
-}
-
-/* ---------- Save / Load (IndexedDB) ---------- */
-let db=null;
-const req=indexedDB.open('ZefaCraft',1);
-req.onupgradeneeded=e=>{db=e.target.result;db.createObjectStore('w');};
-req.onsuccess=e=>{db=e.target.result;};
-function save(){ if(!db) return alert('DB not ready');
-    const tx=db.transaction('w','readwrite'); const s=tx.objectStore('w');
-    const data={}; chunks.forEach((c,k)=>{data[k]=Array.from(c.data);});
-    s.put(data,'world'); tx.oncomplete=()=>alert('Saved');
-}
-function load(){ if(!db) return alert('DB not ready');
-    const tx=db.transaction('w','readonly'); const s=tx.objectStore('w');
-    const r=s.get('world'); r.onsuccess=e=>{
-        const d=e.target.result; if(!d) return alert('No save');
-        chunks.forEach(c=>{if(c.mesh)scene.remove(c.mesh);}); chunks.clear();
-        Object.entries(d).forEach(([k,a])=>{
-            const [cx,cy,cz]=k.split('_').map(Number);
-            const ch=new Chunk(cx,cy,cz); ch.data=new Uint8Array(a);
-            chunks.set(k,ch); ch.build();
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
-        updateChunks(); alert('Loaded');
-    };
-}
-document.getElementById('save').onclick=save;
-document.getElementById('load').onclick=load;
 
-/* ---------- Game loop ---------- */
-const clock=new THREE.Clock();
-function loop(){
-    requestAnimationFrame(loop);
-    const dt=clock.getDelta();
-    const speed=8*dt;
-
-    // movement
-    const dir=new THREE.Vector3();
-    if(mobile){
-        const mv=window._joyMove||{x:0,y:0};
-        dir.set(mv.x,0,-mv.y).normalize().multiplyScalar(speed);
-        const lk=window._joyLook||{x:0,y:0};
-        look.x+=lk.x*0.003; look.y=Math.max(-Math.PI/2,Math.min(Math.PI/2,look.y-lk.y*0.003));
-        cam.rotation.set(look.y,look.x,0);
-    }else{
-        const pc=window._pcCtrl;
-        if(pc && pc.isLocked){
-            const fwd=pc.getDirection(new THREE.Vector3());
-            const right=new THREE.Vector3().crossVectors(cam.up,fwd).normalize();
-            dir.add(fwd.clone().multiplyScalar(move.f*speed));
-            dir.add(right.clone().multiplyScalar(move.r*speed));
-        }
-    }
-    cam.position.add(dir);
-
-    // block interaction
-    if(left){place();left=false;}
-    if(right){breakB();right=false;}
-
-    updateChunks();
-    ren.render(scene,cam);
-}
-loop();
-
-/* ---------- Keyboard (PC) ---------- */
-if(!mobile){
-    const keys={};
-    window.addEventListener('keydown',e=>{keys[e.code]=true;});
-    window.addEventListener('keyup',e=>{keys[e.code]=false;});
-    setInterval(()=>{
-        move.f= (keys['KeyW']?1:0) - (keys['KeyS']?1:0);
-        move.r= (keys['KeyD']?1:0) - (keys['KeyA']?1:0);
-    },16);
-}
-
-/* ---------- Init ---------- */
-cam.position.set(16,15,16);
-updateChunks();
-</script>
+        // Start
+        loadWorld();
+        animate();
+    </script>
 </body>
 </html>
