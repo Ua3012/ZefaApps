@@ -1134,8 +1134,8 @@
             playerControls.yaw.rotation.y -= movementX * MOUSE_SENSITIVITY;
            
             // Pitch (up/down) - rotate the pitch object
-            playerControls.pitch.rotation.x -= movementY * MOUSE_SENSITIVITY;
-            playerControls.pitch.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, playerControls.pitch.rotation.x));
+            // playerControls.pitch.rotation.x -= movementY * MOUSE_SENSITIVITY;
+            // playerControls.pitch.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, playerControls.pitch.rotation.x));
         }
         function initTouchControls() {
             // Joystick
