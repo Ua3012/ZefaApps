@@ -1,472 +1,127 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ZefaCraft</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>ZefaCraft (Minecraft-like)</title>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            background-color: #000;
-            color: #fff;
-            overflow: hidden; /* Hide scrollbars */
-        }
-        #game-canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-            cursor: pointer;
-        }
-        /* Crosshair */
-        #crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 24px;
-            color: white;
-            text-shadow: 0 0 2px #000;
-            pointer-events: none;
-            z-index: 10;
-        }
-        /* Hotbar */
-        #hotbar {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 4px;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 4px;
-            border-radius: 8px;
-            z-index: 10;
-        }
-        .hotbar-item {
-            width: 48px;
-            height: 48px;
-            border: 2px solid #555;
-            border-radius: 4px;
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 10px;
-            color: white;
-            text-shadow: 0 0 2px #000;
-            cursor: pointer;
-            image-rendering: pixelated;
-        }
-        .hotbar-item.selected {
-            border-color: #fff;
-            box-shadow: 0 0 8px #fff;
-        }
-        /* Mobile Controls */
-        #mobile-controls {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 20;
-        }
-        /* Joystick */
-        #joystick-area {
-            position: absolute;
-            bottom: 40px;
-            left: 40px;
-            width: 120px;
-            height: 120px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            pointer-events: auto;
-        }
-        #joystick-thumb {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 60px;
-            height: 60px;
-            transform: translate(-50%, -50%);
-            background-color: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-        }
-        /* Action Buttons */
-        #action-buttons {
-            position: absolute;
-            bottom: 40px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            pointer-events: auto;
-        }
-        .action-button {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.3);
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            user-select: none;
-        }
-        /* Look Area */
-        #look-area {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 50%;
-            height: 100%;
-            pointer-events: auto;
-            /* background-color: rgba(255, 0, 0, 0.1); */ /* For debugging */
-        }
-        /* Save/Load Buttons (Container, now hidden) */
-        #save-load-controls {
-            display: none; /* Buttons are now in the menu */
-        }
-        .control-button {
-            padding: 8px 16px;
-            background-color: rgba(0, 122, 255, 0.7);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .control-button:hover {
-            background-color: rgba(0, 122, 255, 1);
-        }
-        /* Menu Button */
-        #menu-button {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 30;
-        }
-        /* --- Modals --- */
-        .modal-backdrop {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            z-index: 99;
-            display: none; /* Hidden by default */
-        }
-        .modal-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(30, 30, 30, 0.95);
-            color: white;
-            padding: 24px;
-            border-radius: 12px;
-            z-index: 100;
-            border: 1px solid #555;
-            text-align: center;
-        }
-        /* Menu Modal */
-        #menu-modal .modal-content {
-            width: 300px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        #menu-modal h2 {
-            margin: 0 0 16px 0;
-            font-size: 1.5rem;
-        }
-        /* Message/Loading Modal */
-        #message-modal {
-            display: none; /* Uses modal-content style */
-        }
-        /* Confirm Modal */
-        #confirm-modal {
-            display: none; /* Uses modal-content style */
-        }
-        #confirm-modal p {
-            margin: 0 0 20px 0;
-        }
-        .confirm-button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            margin: 0 10px;
-        }
-        #confirm-yes {
-            background-color: #dc2626; /* red-600 */
-            color: white;
-        }
-        #confirm-yes:hover {
-            background-color: #b91c1c; /* red-700 */
-        }
-        #confirm-no {
-            background-color: #6b7280; /* gray-500 */
-            color: white;
-        }
-        #confirm-no:hover {
-            background-color: #4b5563; /* gray-600 */
-        }
-        /* --- Inventory --- */
-        #inventory-modal .modal-content {
-            width: 80%;
-            max-width: 800px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        #inventory-modal h2 {
-            margin: 0 0 16px 0;
-            font-size: 1.5rem;
-        }
-        #inventory-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
-            gap: 8px;
-            background-color: rgba(0, 0, 0, 0.3);
-            padding: 8px;
-            border-radius: 8px;
-            min-height: 200px;
-            max-height: 50vh;
-            overflow-y: auto;
-        }
-        .inventory-item {
-            width: 52px;
-            height: 52px;
-            border: 2px solid #777;
-            border-radius: 4px;
-            background-size: cover;
-            background-position: center;
-            cursor: pointer;
-            image-rendering: pixelated;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 10px;
-            color: white;
-            text-shadow: 0 0 2px #000;
-        }
-        .inventory-item:hover {
-            border-color: #fff;
-        }
-        #inventory-hotbar-container {
-            margin-top: 24px;
-        }
-        #inventory-hotbar {
-            display: flex;
-            justify-content: center;
-            gap: 4px;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 4px;
-            border-radius: 8px;
-        }
-        /* Hand (for holding item) */
-        #inventory-hand {
-            position: absolute;
-            width: 52px;
-            height: 52px;
-            border: 2px solid #fff;
-            border-radius: 4px;
-            background-size: cover;
-            background-position: center;
-            image-rendering: pixelated;
-            pointer-events: none; /* So it doesn't block clicks */
-            z-index: 200;
-            display: none; /* Hidden by default */
-            transform: translate(-50%, -50%); /* Center on cursor */
-            font-weight: bold;
-            font-size: 10px;
-            color: white;
-            text-shadow: 0 0 2px #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        /*! tailwindcss v3.4.0 | MIT License | https://tailwindcss.com */
+        *,::before,::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::before,::after{--tw-content:''}html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:Inter,system-ui,sans-serif;font-feature-settings:normal;font-variation-settings:normal}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,[type=button],[type=reset],[type=submit]{-webkit-appearance:button;appearance:none;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;appearance:none;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;appearance:none;font:inherit}summary{display:list-item}blockquote,dl,dd,h1,h2,h3,h4,h5,h6,hr,figure,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}ol,ul,menu{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}button,[role=button]{cursor:pointer}:disabled{cursor:default}img,svg,video,canvas,audio,iframe,embed,object{display:block}img,video{max-width:100%;height:auto}[hidden]{display:none}
+        .container{width:100%}@media (min-width:640px){.container{max-width:640px}}@media (min-width:768px){.container{max-width:768px}}@media (min-width:1024px){.container{max-width:1024px}}@media (min-width:1280px){.container{max-width:1280px}}@media (min-width:1536px){.container{max-width:1536px}}
+        body{font-family:'Inter',sans-serif;margin:0;background-color:#000;color:#fff;overflow:hidden}#game-canvas{display:block;width:100vw;height:100vh;cursor:pointer}#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;color:white;text-shadow:0 0 2px #000;pointer-events:none;z-index:10}#hotbar{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background-color:rgba(0,0,0,0.5);padding:4px;border-radius:8px;z-index:10}.hotbar-item{width:48px;height:48px;border:2px solid #555;border-radius:4px;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000;cursor:pointer;image-rendering:pixelated}.hotbar-item.selected{border-color:#fff;box-shadow:0 0 8px #fff}#mobile-controls{position:absolute;bottom:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20}#joystick-area{position:absolute;bottom:40px;left:40px;width:120px;height:120px;background-color:rgba(255,255,255,0.1);border-radius:50%;pointer-events:auto}#joystick-thumb{position:absolute;top:50%;left:50%;width:60px;height:60px;transform:translate(-50%,-50%);background-color:rgba(255,255,255,0.3);border-radius:50%;transition:transform .05s ease-out}#action-buttons{position:absolute;bottom:40px;right:20px;display:flex;flex-direction:column;gap:16px;pointer-events:auto}.action-button{width:64px;height:64px;border-radius:50%;background-color:rgba(255,255,255,0.3);color:white;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,0.5);user-select:none}#look-area{position:absolute;top:0;right:0;width:50%;height:100%;pointer-events:auto}.control-button{padding:8px 16px;background-color:rgba(0,122,255,0.7);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600}.control-button:hover{background-color:rgba(0,122,255,1)}#top-controls{position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:30}.modal-backdrop{position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.7);z-index:99;display:none}.modal-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background-color:rgba(30,30,30,0.95);color:white;padding:24px;border-radius:12px;z-index:100;border:1px solid #555;text-align:center}#menu-modal .modal-content{width:300px;display:flex;flex-direction:column;gap:16px}#menu-modal h2{margin:0 0 16px 0;font-size:1.5rem}#message-modal{display:none}#confirm-modal{display:none}#confirm-modal p{margin:0 0 20px 0}.confirm-button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:600;margin:0 10px}#confirm-yes{background-color:#dc2626;color:white}#confirm-yes:hover{background-color:#b91c1c}#confirm-no{background-color:#6b7280;color:white}#confirm-no:hover{background-color:#4b5563}#inventory-modal .modal-content{width:80%;max-width:800px;max-height:80vh;overflow-y:auto}#inventory-modal h2{margin:0 0 16px 0;font-size:1.5rem}#inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px;background-color:rgba(0,0,0,0.3);padding:8px;border-radius:8px;min-height:200px;max-height:50vh;overflow-y:auto}.inventory-item{width:52px;height:52px;border:2px solid #777;border-radius:4px;background-size:cover;background-position:center;cursor:pointer;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000}.inventory-item:hover{border-color:#fff}#inventory-hotbar-container{margin-top:24px}#inventory-hotbar{display:flex;justify-content:center;gap:4px;background-color:rgba(0,0,0,0.5);padding:4px;border-radius:8px}#inventory-hand{position:absolute;width:52px;height:52px;border:2px solid #fff;border-radius:4px;background-size:cover;background-position:center;image-rendering:pixelated;pointer-events:none;z-index:200;display:none;transform:translate(-50%,-50%);font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000;display:flex;align-items:center;justify-content:center}#debug-info{position:absolute;top:10px;left:10px;background-color:rgba(0,0,0,0.5);padding:8px;border-radius:4px;font-family:monospace;font-size:12px;color:white;z-index:1000;display:none}
     </style>
 </head>
 <body>
     <canvas id="game-canvas"></canvas>
     <div id="crosshair">+</div>
-    <!-- Hotbar -->
     <div id="hotbar"></div>
-    <!-- Mobile UI -->
     <div id="mobile-controls">
-        <div id="joystick-area">
-            <div id="joystick-thumb"></div>
-        </div>
+        <div id="joystick-area"><div id="joystick-thumb"></div></div>
         <div id="look-area"></div>
         <div id="action-buttons">
-            <div id="jump-button" class="action-button">JUMP</div>
-            <div id="place-button" class="action-button">PLACE</div>
-            <div id="break-button" class="action-button">BREAK</div>
+            <div id="place-button" class="action-button">+</div>
+            <div id="break-button" class="action-button">Х</div>
+            <div id="jump-button" class="action-button">↑</div>
+            <div id="crouch-button" class="action-button">↓</div>
         </div>
     </div>
-    <!-- Menu Button -->
-    <div id="menu-button-container">
-        <button id="menu-button" class="control-button">Menu</button>
+    <div id="top-controls">
+        <button id="menu-button" class="control-button">Меню</button>
+        <button id="inventory-button" class="control-button">Інвентар</button>
     </div>
-    <!-- Message Modal -->
-    <div id="message-modal" class="modal-content">
-        <p>Loading ZefaCraft...</p>
-    </div>
-    <!-- Confirm Modal -->
+    <div id="message-modal" class="modal-content"><p>Загрузка Зєфакрафта... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)</p></div>
     <div id="confirm-modal" class="modal-content">
-        <p id="confirm-text">Are you sure?</p>
-        <div>
-            <button id="confirm-yes" class="confirm-button">Yes</button>
-            <button id="confirm-no" class="confirm-button">No</button>
-        </div>
+        <p id="confirm-text">Чо?</p>
+        <div><button id="confirm-yes" class="confirm-button">Так</button><button id="confirm-no" class="confirm-button">Ні</button></div>
     </div>
-    <!-- Menu Modal -->
     <div id="menu-modal" class="modal-backdrop">
         <div class="modal-content">
-            <h2>ZefaCraft Menu</h2>
-            <button id="resume-button" class="control-button">Resume Game</button>
-            <button id="save-button" class="control-button">Save World</button>
-            <button id="load-button" class="control-button">Load World</button>
-            <button id="reset-button" class="control-button">New World</button>
+            <h2>Меню Зєфакрафт</h2>
+            <button id="resume-button" class="control-button">Продовжить ігру</button>
+            <button id="save-button" class="control-button">Зберегти мір</button>
+            <button id="load-button" class="control-button">Загрузіть мір</button>
+            <button id="reset-button" class="control-button">Новий мір</button>
         </div>
     </div>
-    <!-- Inventory Modal -->
     <div id="inventory-modal" class="modal-backdrop">
         <div class="modal-content">
-            <h2>Inventory</h2>
-            <div id="inventory-grid">
-                <!-- Items will be populated by JS -->
-            </div>
-            <div id="inventory-hotbar-container">
-                <h3>Hotbar</h3>
-                <div id="inventory-hotbar">
-                    <!-- Hotbar slots will be populated by JS -->
-                </div>
-            </div>
+            <h2>Інвєнтар</h2>
+            <div id="inventory-grid"></div>
+            <div id="inventory-hotbar-container"><h3>Хот бар</h3><div id="inventory-hotbar"></div></div>
         </div>
     </div>
-    <!-- Inventory Hand -->
     <div id="inventory-hand"></div>
-    <!-- Import three.js -->
+    <div id="debug-info"></div>
+
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
-            }
-        }
+        { "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js" } }
     </script>
     <script type="module">
         import * as THREE from 'three';
-        // --- Constants ---
-        const WORLD_WIDTH = 16;
-        const WORLD_HEIGHT = 8;
-        const WORLD_DEPTH = 16;
-        const VOID_Y = -10;
-        const RESPAWN_Y = WORLD_HEIGHT + 2;
-        const PLAYER_HEIGHT = 1.8;
+
+        const WORLD_WIDTH = 32, WORLD_HEIGHT = 32, WORLD_DEPTH = 32;
+        const VOID_Y = -20, RESPAWN_Y = WORLD_HEIGHT + 5;
+        const PLAYER_HEIGHT = 1.8, PLAYER_HEIGHT_CROUCH = 1.2;
         const PLAYER_RADIUS = 0.3;
-        const PLAYER_SPEED = 5.0;
-        const PLAYER_JUMP_FORCE = 7.0;
-        const GRAVITY = -20.0;
-        const MOUSE_SENSITIVITY = 0.002;
-        const TOUCH_SENSITIVITY = 0.003;
+        const PLAYER_EYE_HEIGHT = 1.62, PLAYER_EYE_HEIGHT_CROUCH = 1.0;
+        const PLAYER_SPEED = 5.0, PLAYER_SPEED_CROUCH = 2.5, PLAYER_JUMP_FORCE = 7.0, GRAVITY = -20.0;
+        const MOUSE_SENSITIVITY = 0.002, TOUCH_SENSITIVITY = 0.003;
         const ZEFABLOCK_TEXTURE_URL = 'zefablock.png';
-        // --- Block Definitions ---
+
         const BLOCKS = {
-            AIR: 0,
-            GRASS: 1,
-            STONE: 2,
-            WOOD: 3,
-            LEAVES: 4,
-            WATER: 5,
-            ZEFABLOCK: 6,
-            // 16 Color Blocks
-            WHITE: 7, RED: 8, ORANGE: 9, YELLOW: 10,
-            LIME: 11, GREEN: 12, CYAN: 13, BLUE: 14,
-            MAGENTA: 15, PURPLE: 16, BROWN: 17, GRAY: 18,
-            LIGHT_GRAY: 19, BLACK: 20, PINK: 21,
-            // 16 Color Glass
-            WHITE_GLASS: 22, RED_GLASS: 23, ORANGE_GLASS: 24, YELLOW_GLASS: 25,
-            LIME_GLASS: 26, GREEN_GLASS: 27, CYAN_GLASS: 28, BLUE_GLASS: 29,
-            MAGENTA_GLASS: 30, PURPLE_GLASS: 31, BROWN_GLASS: 32, GRAY_GLASS: 33,
-            LIGHT_GRAY_GLASS: 34, BLACK_GLASS: 35, PINK_GLASS: 36,
-            // 1 Clear Glass
-            GLASS: 37,
+            AIR: 0, GRASS: 1, STONE: 2, WOOD: 3, LEAVES: 4, WATER: 5, ZEFABLOCK: 6,
+            WHITE: 7, RED: 8, ORANGE: 9, YELLOW: 10, LIME: 11, GREEN: 12, CYAN: 13, BLUE: 14,
+            MAGENTA: 15, PURPLE: 16, BROWN: 17, GRAY: 18, LIGHT_GRAY: 19, BLACK: 20, PINK: 21,
+            WHITE_GLASS: 22, RED_GLASS: 23, ORANGE_GLASS: 24, YELLOW_GLASS: 25, LIME_GLASS: 26, GREEN_GLASS: 27,
+            CYAN_GLASS: 28, BLUE_GLASS: 29, MAGENTA_GLASS: 30, PURPLE_GLASS: 31, BROWN_GLASS: 32, GRAY_GLASS: 33,
+            LIGHT_GRAY_GLASS: 34, BLACK_GLASS: 35, PINK_GLASS: 36, GLASS: 37,
         };
+
         const BLOCK_TYPES = {
-            [BLOCKS.AIR]: { name: 'Air', transparent: true },
-            [BLOCKS.GRASS]: { name: 'Grass', color: 0x44aa44, topColor: 0x55dd55, sideColor: 0x9b7653 },
-            [BLOCKS.STONE]: { name: 'Stone', color: 0x888888 },
-            [BLOCKS.WOOD]: { name: 'Wood', color: 0x856a4f, topColor: 0xaf8e70, sideColor: 0x856a4f },
-            [BLOCKS.LEAVES]: { name: 'Leaves', color: 0x22aa22, transparent: true, opacity: 0.8 },
-            [BLOCKS.WATER]: { name: 'Water', color: 0x4444ff, transparent: true, opacity: 0.6 },
-            [BLOCKS.ZEFABLOCK]: { name: 'ZefaBlock', customTexture: true },
-            [BLOCKS.WHITE]: { name: 'White', color: 0xffffff },
-            [BLOCKS.RED]: { name: 'Red', color: 0xff0000 },
-            [BLOCKS.ORANGE]: { name: 'Orange', color: 0xffa500 },
-            [BLOCKS.YELLOW]: { name: 'Yellow', color: 0xffff00 },
-            [BLOCKS.LIME]: { name: 'Lime', color: 0x00ff00 },
-            [BLOCKS.GREEN]: { name: 'Green', color: 0x008000 },
-            [BLOCKS.CYAN]: { name: 'Cyan', color: 0x00ffff },
-            [BLOCKS.BLUE]: { name: 'Blue', color: 0x0000ff },
-            [BLOCKS.MAGENTA]: { name: 'Magenta', color: 0xff00ff },
-            [BLOCKS.PURPLE]: { name: 'Purple', color: 0x800080 },
-            [BLOCKS.BROWN]: { name: 'Brown', color: 0x964B00 },
-            [BLOCKS.GRAY]: { name: 'Gray', color: 0x808080 },
-            [BLOCKS.LIGHT_GRAY]: { name: 'Light Gray', color: 0xd3d3d3 },
-            [BLOCKS.BLACK]: { name: 'Black', color: 0x000000 },
-            [BLOCKS.PINK]: { name: 'Pink', color: 0xffc0cb },
-            // 16 Color Glass
-            [BLOCKS.WHITE_GLASS]: { name: 'White Glass', color: 0xffffff, transparent: true, opacity: 0.3 },
-            [BLOCKS.RED_GLASS]: { name: 'Red Glass', color: 0xff0000, transparent: true, opacity: 0.3 },
-            [BLOCKS.ORANGE_GLASS]: { name: 'Orange Glass', color: 0xffa500, transparent: true, opacity: 0.3 },
-            [BLOCKS.YELLOW_GLASS]: { name: 'Yellow Glass', color: 0xffff00, transparent: true, opacity: 0.3 },
-            [BLOCKS.LIME_GLASS]: { name: 'Lime Glass', color: 0x00ff00, transparent: true, opacity: 0.3 },
-            [BLOCKS.GREEN_GLASS]: { name: 'Green Glass', color: 0x008000, transparent: true, opacity: 0.3 },
-            [BLOCKS.CYAN_GLASS]: { name: 'Cyan Glass', color: 0x00ffff, transparent: true, opacity: 0.3 },
-            [BLOCKS.BLUE_GLASS]: { name: 'Blue Glass', color: 0x0000ff, transparent: true, opacity: 0.3 },
-            [BLOCKS.MAGENTA_GLASS]: { name: 'Magenta Glass', color: 0xff00ff, transparent: true, opacity: 0.3 },
-            [BLOCKS.PURPLE_GLASS]: { name: 'Purple Glass', color: 0x800080, transparent: true, opacity: 0.3 },
-            [BLOCKS.BROWN_GLASS]: { name: 'Brown Glass', color: 0x964B00, transparent: true, opacity: 0.3 },
-            [BLOCKS.GRAY_GLASS]: { name: 'Gray Glass', color: 0x808080, transparent: true, opacity: 0.3 },
-            [BLOCKS.LIGHT_GRAY_GLASS]: { name: 'Light Gray Glass', color: 0xd3d3d3, transparent: true, opacity: 0.3 },
-            [BLOCKS.BLACK_GLASS]: { name: 'Black Glass', color: 0x333333, transparent: true, opacity: 0.3 }, // Not pure black
-            [BLOCKS.PINK_GLASS]: { name: 'Pink Glass', color: 0xffc0cb, transparent: true, opacity: 0.3 },
-            // 1 Clear Glass
-            [BLOCKS.GLASS]: { name: 'Glass', color: 0xeeeeff, transparent: true, opacity: 0.25 },
+            [BLOCKS.AIR]: { name: 'Повітря', transparent: true },
+            [BLOCKS.GRASS]: { name: 'Трава (іді патрогай)', color: 0x44aa44, topColor: 0x55dd55, sideColor: 0x9b7653 },
+            [BLOCKS.STONE]: { name: 'Камєнь', color: 0x888888 },
+            [BLOCKS.WOOD]: { name: 'Дерево', color: 0x856a4f, topColor: 0xaf8e70, sideColor: 0x856a4f },
+            [BLOCKS.LEAVES]: { name: 'Листя', color: 0x22aa22, transparent: true, opacity: 0.8 },
+            [BLOCKS.WATER]: { name: 'Вода', color: 0x4444ff, transparent: true, opacity: 0.6 },
+            [BLOCKS.ZEFABLOCK]: { name: 'Зєфаблок', customTexture: true },
+            [BLOCKS.WHITE]: { name: 'Бєлий', color: 0xffffff }, [BLOCKS.RED]: { name: 'Червоний', color: 0xff0000 },
+            [BLOCKS.ORANGE]: { name: 'Помаранчевий', color: 0xffa500 }, [BLOCKS.YELLOW]: { name: 'Жовтий', color: 0xffff00 },
+            [BLOCKS.LIME]: { name: 'Лайм', color: 0x00ff00 }, [BLOCKS.GREEN]: { name: 'Зельоний', color: 0x008000 },
+            [BLOCKS.CYAN]: { name: 'Блакитний', color: 0x00ffff }, [BLOCKS.BLUE]: { name: 'Синій', color: 0x0000ff },
+            [BLOCKS.MAGENTA]: { name: 'Маджента', color: 0xff00ff }, [BLOCKS.PURPLE]: { name: 'Фіалєтавий', color: 0x800080 },
+            [BLOCKS.BROWN]: { name: 'Коричневий', color: 0x964B00 }, [BLOCKS.GRAY]: { name: 'Сірий', color: 0x808080 },
+            [BLOCKS.LIGHT_GRAY]: { name: 'Свєтла-сірий', color: 0xd3d3d3 }, [BLOCKS.BLACK]: { name: 'Чорний', color: 0x000000 },
+            [BLOCKS.PINK]: { name: 'Розавий', color: 0xffc0cb },
+            [BLOCKS.WHITE_GLASS]: { name: 'Біле стікло', color: 0xffffff, transparent: true, opacity: 0.3 },
+            [BLOCKS.RED_GLASS]: { name: 'Червоне стікло', color: 0xff0000, transparent: true, opacity: 0.3 },
+            [BLOCKS.ORANGE_GLASS]: { name: 'Помаранчеве стікло', color: 0xffa500, transparent: true, opacity: 0.3 },
+            [BLOCKS.YELLOW_GLASS]: { name: 'Жовте стікло', color: 0xffff00, transparent: true, opacity: 0.3 },
+            [BLOCKS.LIME_GLASS]: { name: 'Лаймове стікло', color: 0x00ff00, transparent: true, opacity: 0.3 },
+            [BLOCKS.GREEN_GLASS]: { name: 'Зелене стікло', color: 0x008000, transparent: true, opacity: 0.3 },
+            [BLOCKS.CYAN_GLASS]: { name: 'Блакитне стікло', color: 0x00ffff, transparent: true, opacity: 0.3 },
+            [BLOCKS.BLUE_GLASS]: { name: 'Синє стікло', color: 0x0000ff, transparent: true, opacity: 0.3 },
+            [BLOCKS.MAGENTA_GLASS]: { name: 'Маджента стікло', color: 0xff00ff, transparent: true, opacity: 0.3 },
+            [BLOCKS.PURPLE_GLASS]: { name: 'Фіолетове стікло', color: 0x800080, transparent: true, opacity: 0.3 },
+            [BLOCKS.BROWN_GLASS]: { name: 'Коричневе стікло', color: 0x964B00, transparent: true, opacity: 0.3 },
+            [BLOCKS.GRAY_GLASS]: { name: 'Сіре стікло', color: 0x808080, transparent: true, opacity: 0.3 },
+            [BLOCKS.LIGHT_GRAY_GLASS]: { name: 'Свєтла-сіре стікло', color: 0xd3d3d3, transparent: true, opacity: 0.3 },
+            [BLOCKS.BLACK_GLASS]: { name: 'Чорне стікло', color: 0x333333, transparent: true, opacity: 0.3 },
+            [BLOCKS.PINK_GLASS]: { name: 'Розаває стікло', color: 0xffc0cb, transparent: true, opacity: 0.3 },
+            [BLOCKS.GLASS]: { name: 'Стікло', color: 0xeeeeff, transparent: true, opacity: 0.25 },
         };
-       
-        // --- Globals ---
+
         let scene, camera, renderer, clock, raycaster;
         let player, playerVelocity, playerOnGround, playerControls;
-        let world; // Uint8Array
-        let instancedMeshes = {};
-        let blockMaterials = {};
-        let hotbarItems = [
-            BLOCKS.GRASS, BLOCKS.STONE, BLOCKS.WOOD, BLOCKS.ZEFABLOCK,
-            BLOCKS.GLASS, BLOCKS.WHITE_GLASS, BLOCKS.RED, BLOCKS.BLUE,
-            BLOCKS.WHITE
-        ];
+        let world, instancedMeshes = {}, blockMaterials = {};
+        let hotbarItems = [BLOCKS.GRASS, BLOCKS.STONE, BLOCKS.WOOD, BLOCKS.ZEFABLOCK, BLOCKS.GLASS, BLOCKS.WHITE_GLASS, BLOCKS.RED, BLOCKS.BLUE, BLOCKS.WHITE];
         let selectedBlockId = hotbarItems[0];
         let isTouchDevice = 'ontouchstart' in window;
-        // UI & State
-        let isMenuOpen = false;
-        let isInventoryOpen = false;
-        let heldInventoryBlock = null; // blockId
-        let lockIntentional = false; // Flag to manage pointer lock state
-        // UI Elements
+        let isMenuOpen = false, isInventoryOpen = false, heldInventoryBlock = null;
+        let debugMode = false, freeCamMode = false;
+        let playerMesh;
+        let isCrouching = false;
+
         const canvas = document.getElementById('game-canvas');
         const hotbarEl = document.getElementById('hotbar');
         const mobileControlsEl = document.getElementById('mobile-controls');
@@ -476,11 +131,11 @@
         const jumpButton = document.getElementById('jump-button');
         const placeButton = document.getElementById('place-button');
         const breakButton = document.getElementById('break-button');
-       
+        const crouchButton = document.getElementById('crouch-button');
         const messageModal = document.getElementById('message-modal');
         const crosshair = document.getElementById('crosshair');
-       
         const menuButton = document.getElementById('menu-button');
+        const inventoryButton = document.getElementById('inventory-button');
         const menuModal = document.getElementById('menu-modal');
         const resumeButton = document.getElementById('resume-button');
         const saveButton = document.getElementById('save-button');
@@ -494,179 +149,123 @@
         const inventoryGrid = document.getElementById('inventory-grid');
         const inventoryHotbar = document.getElementById('inventory-hotbar');
         const inventoryHand = document.getElementById('inventory-hand');
-        // Input State
+        const debugInfo = document.getElementById('debug-info');
+
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveJump = false;
         let breakAction = false, placeAction = false;
         let joystickDelta = { x: 0, y: 0 };
         let lookDelta = { x: 0, y: 0 };
         let lastTouch = { x: 0, y: 0 };
         let lookTouchId = null;
-        // --- Init ---
+        let joystickTouchId = null;
+
         function init() {
-            showMessage("Loading ZefaCraft...");
-            // Scene
+            showMessage("Завантаження ZefaCraft...");
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87CEEB);
             scene.fog = new THREE.Fog(0x87CEEB, 10, WORLD_WIDTH * 1.5);
-            // Camera
+
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-           
-            // Player (as a simple object to track)
-            player = {
-                mesh: new THREE.Object3D(), // This will just be a position holder for the camera
-            };
+
+            player = { mesh: new THREE.Object3D() };
             playerVelocity = new THREE.Vector3();
             playerOnGround = false;
-           
+
             playerControls = {
-                // Manually control camera pitch and yaw
-                pitch: new THREE.Object3D(),
-                yaw: player.mesh
+                yaw: new THREE.Object3D(),
+                pitch: new THREE.Object3D()
             };
             playerControls.pitch.add(camera);
             playerControls.yaw.add(playerControls.pitch);
-            scene.add(playerControls.yaw);
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            player.mesh.add(playerControls.yaw);
+            scene.add(player.mesh);
+
+            const playerGeometry = new THREE.BoxGeometry(PLAYER_RADIUS * 2, PLAYER_HEIGHT, PLAYER_RADIUS * 2);
+            const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+            playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+            playerMesh.position.y = PLAYER_HEIGHT / 2;
+            player.mesh.add(playerMesh);
+            playerMesh.visible = false;
+
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-            directionalLight.position.set(1, 1, 0.5).normalize();
-            scene.add(directionalLight);
-            // Utilities
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirLight.position.set(1, 1, 0.5).normalize();
+            scene.add(dirLight);
+
             clock = new THREE.Clock();
             raycaster = new THREE.Raycaster();
-            // World
             world = new Uint8Array(WORLD_WIDTH * WORLD_HEIGHT * WORLD_DEPTH);
-           
-            // Materials
+
             createMaterials();
-            // World Meshes (Instanced)
             createInstancedMeshes();
-            // Load world or generate new
-            loadWorld(); // This will generate if no save exists
-            // Controls
+            loadWorld();
             initControls();
-           
-            // UI
             initUI();
-            // Start loop
-            animate();
-           
-            // Respawn player
             respawn();
-            // Hide loading modal
+            animate();
             hideMessage();
         }
-        // --- UI ---
+
         function initUI() {
-            // Hotbar
-            updateHotbarUI(); // Creates main hotbar
-            // Inventory
+            updateHotbarUI();
             populateInventoryGrid();
-            updateInventoryHotbarUI(); // Creates inventory hotbar
-            // Mobile/PC Controls Visibility
+            updateInventoryHotbarUI();
+
             if (isTouchDevice) {
                 mobileControlsEl.style.display = 'block';
-                crosshair.style.display = 'none'; // Use buttons instead of center-screen
+                crosshair.style.display = 'none';
             } else {
                 mobileControlsEl.style.display = 'none';
                 crosshair.style.display = 'block';
             }
-            // Menu Button Listeners
+
             menuButton.addEventListener('click', toggleMenu);
+            inventoryButton.addEventListener('click', toggleInventory);
             resumeButton.addEventListener('click', closeAllModals);
-            // Save/Load
-            saveButton.addEventListener('click', () => {
-                saveWorld();
-                showMessage("World Saved!", 1500);
-            });
-            loadButton.addEventListener('click', () => {
-                closeAllModals();
-                showMessage("Loading World...");
-                loadWorld();
-                respawn(); // Move player to spawn after load
-                hideMessage(500);
-            });
-            resetButton.addEventListener('click', () => {
-                // Use custom modal instead of confirm()
-                confirmText.textContent = "Are you sure you want to delete this world and start a new one?";
-                confirmModal.style.display = 'block';
-                menuModal.style.display = 'none'; // Hide menu, show confirm
-            });
-            // New Modal Listeners
-            confirmNo.addEventListener('click', () => {
-                confirmModal.style.display = 'none';
-                toggleMenu(); // Re-open menu
-            });
-            confirmYes.addEventListener('click', () => {
-                confirmModal.style.display = 'none';
-                showMessage("Generating New World...");
-                // This setTimeout ensures the "Generating" message renders before the heavy work
-                setTimeout(() => {
-                    generateWorld();
-                    updateWorldMesh();
-                    saveWorld();
-                    respawn();
-                    hideMessage(500);
-                }, 50);
-            });
-            // Inventory Hand Follows Mouse
-            document.addEventListener('mousemove', (event) => {
-                if (isInventoryOpen) {
-                    inventoryHand.style.left = event.clientX + 'px';
-                    inventoryHand.style.top = event.clientY + 'px';
-                }
-            });
+            saveButton.addEventListener('click', () => { saveWorld(); showMessage("Світ збережено!", 1500); });
+            loadButton.addEventListener('click', () => { closeAllModals(); showMessage("Завантаження світу..."); loadWorld(); respawn(); hideMessage(500); });
+            resetButton.addEventListener('click', () => { confirmText.textContent = "Ви впевнені, що хочете видалити цей світ?"; confirmModal.style.display = 'block'; menuModal.style.display = 'none'; });
+            confirmNo.addEventListener('click', () => { confirmModal.style.display = 'none'; toggleMenu(); });
+            confirmYes.addEventListener('click', () => { confirmModal.style.display = 'none'; showMessage("Генерація нового світу..."); setTimeout(() => { generateWorld(); updateWorldMesh(); saveWorld(); respawn(); hideMessage(500); }, 50); });
+            document.addEventListener('mousemove', (event) => { if (isInventoryOpen) { inventoryHand.style.left = event.clientX + 'px'; inventoryHand.style.top = event.clientY + 'px'; } });
         }
+
         function createHotbarItem(blockId) {
             const item = document.createElement('div');
             item.className = 'hotbar-item';
-           
             const blockType = BLOCK_TYPES[blockId];
-            if (blockType) {
-                if (blockType.customTexture) {
-                    item.style.backgroundImage = `url(${ZEFABLOCK_TEXTURE_URL})`;
-                } else if (blockType.topColor) {
-                    item.style.backgroundColor = `#${blockType.topColor.toString(16).padStart(6, '0')}`;
-                } else {
-                    item.style.backgroundColor = `#${(blockType.color || 0xcccccc).toString(16).padStart(6, '0')}`;
-                }
-                item.textContent = blockType.name.substring(0, 3).toUpperCase();
+            if (blockType.customTexture) {
+                item.style.backgroundImage = `url(${ZEFABLOCK_TEXTURE_URL})`;
+            } else if (blockType.topColor) {
+                item.style.backgroundColor = `#${blockType.topColor.toString(16).padStart(6, '0')}`;
             } else {
-                // Empty slot
-                item.style.backgroundColor = "rgba(0,0,0,0.2)";
-                item.textContent = "";
+                item.style.backgroundColor = `#${(blockType.color || 0xcccccc).toString(16).padStart(6, '0')}`;
             }
+            item.textContent = blockType.name.substring(0, 3).toUpperCase();
             return item;
         }
+
         function updateHotbarUI() {
             hotbarEl.innerHTML = '';
             hotbarItems.forEach((blockId, index) => {
                 const item = createHotbarItem(blockId);
-                if (blockId === selectedBlockId) {
-                    item.classList.add('selected');
-                }
-               
-                item.addEventListener('click', () => {
-                    selectedBlockId = blockId;
-                    updateHotbarUI();
-                });
+                if (blockId === selectedBlockId) item.classList.add('selected');
+                item.addEventListener('click', () => { selectedBlockId = blockId; updateHotbarUI(); });
                 hotbarEl.appendChild(item);
             });
         }
+
         function populateInventoryGrid() {
             inventoryGrid.innerHTML = '';
             for (const blockId in BLOCK_TYPES) {
                 if (blockId == BLOCKS.AIR) continue;
-               
                 const block = BLOCK_TYPES[blockId];
                 const item = document.createElement('div');
                 item.className = 'inventory-item';
-               
                 if (block.customTexture) {
                     item.style.backgroundImage = `url(${ZEFABLOCK_TEXTURE_URL})`;
                 } else if (block.topColor) {
@@ -676,29 +275,24 @@
                 }
                 item.textContent = block.name.substring(0, 3).toUpperCase();
                 item.title = block.name;
-                item.addEventListener('click', () => {
-                    handleInventoryClick(blockId);
-                });
-               
+                item.addEventListener('click', () => handleInventoryClick(blockId));
                 inventoryGrid.appendChild(item);
             }
         }
+
         function updateInventoryHotbarUI() {
             inventoryHotbar.innerHTML = '';
             for (let i = 0; i < 9; i++) {
                 const blockId = hotbarItems[i];
                 const item = createHotbarItem(blockId);
                 item.classList.add('inventory-hotbar-slot');
-               
-                item.addEventListener('click', () => {
-                    handleInventoryHotbarClick(i);
-                });
+                item.addEventListener('click', () => handleInventoryHotbarClick(i));
                 inventoryHotbar.appendChild(item);
             }
         }
+
         function handleInventoryClick(blockId) {
             heldInventoryBlock = parseInt(blockId);
-           
             const blockType = BLOCK_TYPES[blockId];
             if (blockType.customTexture) {
                 inventoryHand.style.backgroundImage = `url(${ZEFABLOCK_TEXTURE_URL})`;
@@ -713,207 +307,159 @@
             inventoryHand.textContent = blockType.name.substring(0, 3).toUpperCase();
             inventoryHand.style.display = 'flex';
         }
+
         function handleInventoryHotbarClick(slotIndex) {
             if (heldInventoryBlock !== null) {
                 hotbarItems[slotIndex] = heldInventoryBlock;
                 heldInventoryBlock = null;
                 inventoryHand.style.display = 'none';
-               
-                updateHotbarUI(); // Update main game hotbar
-                updateInventoryHotbarUI(); // Update inventory's hotbar
+                updateHotbarUI();
+                updateInventoryHotbarUI();
             }
         }
+
         function showMessage(text, duration = null) {
             messageModal.textContent = text;
             messageModal.style.display = 'block';
-            if (duration) {
-                hideMessage(duration);
-            }
+            if (duration) setTimeout(hideMessage, duration);
         }
-        function hideMessage(delay = 0) {
-            setTimeout(() => {
-                messageModal.style.display = 'none';
-            }, delay);
-        }
+
+        function hideMessage() { messageModal.style.display = 'none'; }
+
         function toggleMenu() {
             isMenuOpen = !isMenuOpen;
-            isInventoryOpen = false; // Close inventory
+            isInventoryOpen = false;
             inventoryModal.style.display = 'none';
             menuModal.style.display = isMenuOpen ? 'block' : 'none';
-            if (isMenuOpen) {
-                lockIntentional = false; // We intend to unlock
-                document.exitPointerLock();
-            }
-            // REMOVED: else { canvas.requestPointerLock(); }
+            if (isMenuOpen) document.exitPointerLock();
         }
+
         function toggleInventory() {
             isInventoryOpen = !isInventoryOpen;
-            isMenuOpen = false; // Close menu
+            isMenuOpen = false;
             menuModal.style.display = 'none';
             inventoryModal.style.display = isInventoryOpen ? 'block' : 'none';
             if (isInventoryOpen) {
-                // Reset inventory state
                 heldInventoryBlock = null;
                 inventoryHand.style.display = 'none';
-                updateInventoryHotbarUI(); // Refresh
-                lockIntentional = false; // We intend to unlock
+                updateInventoryHotbarUI();
                 document.exitPointerLock();
             }
-            // REMOVED: else { canvas.requestPointerLock(); }
         }
-       
+
         function closeAllModals() {
-            if (isMenuOpen) isMenuOpen = false;
-            if (isInventoryOpen) isInventoryOpen = false;
-           
-            menuModal.style.display = 'none';
-            inventoryModal.style.display = 'none';
-            if (confirmModal.style.display === 'block') {
-                confirmModal.style.display = 'none';
-            }
-           
-            lockIntentional = true; // We intend to lock
+            isMenuOpen = false; isInventoryOpen = false;
+            menuModal.style.display = 'none'; inventoryModal.style.display = 'none'; confirmModal.style.display = 'none';
             canvas.requestPointerLock();
         }
-        // --- Textures & Materials ---
+
+        function toggleDebugMode() {
+            debugMode = !debugMode;
+            debugInfo.style.display = debugMode ? 'block' : 'none';
+        }
+
+        function toggleFreeCamMode() {
+            freeCamMode = !freeCamMode;
+            playerMesh.visible = freeCamMode;
+
+            if (freeCamMode) {
+                playerControls.yaw.remove(playerControls.pitch);
+                scene.add(playerControls.pitch);
+                const worldPos = new THREE.Vector3();
+                camera.getWorldPosition(worldPos);
+                camera.position.copy(worldPos);
+                camera.rotation.copy(playerControls.pitch.rotation);
+                playerControls.pitch.rotation.set(0, 0, 0);
+            } else {
+                scene.remove(playerControls.pitch);
+                playerControls.yaw.add(playerControls.pitch);
+                camera.position.set(0, PLAYER_EYE_HEIGHT, 0);
+                playerControls.pitch.rotation.x = 0;
+            }
+        }
+
         function createMaterials() {
             const loader = new THREE.TextureLoader();
             const zefaTexture = loader.load(ZEFABLOCK_TEXTURE_URL);
             zefaTexture.magFilter = THREE.NearestFilter;
             zefaTexture.minFilter = THREE.NearestFilter;
-           
+
             for (const blockId in BLOCK_TYPES) {
                 const block = BLOCK_TYPES[blockId];
-                if (block.transparent) continue; // Handled by instanced mesh creation
+                if (block.transparent) continue;
                 if (block.customTexture) {
                     blockMaterials[blockId] = new THREE.MeshLambertMaterial({ map: zefaTexture });
                 } else if (block.topColor) {
-                    // Multi-material (Grass, Wood)
                     blockMaterials[blockId] = [
-                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }), // right
-                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }), // left
-                        new THREE.MeshLambertMaterial({ color: block.topColor || block.color }), // top
-                        new THREE.MeshLambertMaterial({ color: block.color }), // bottom
-                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }), // front
-                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }), // back
+                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }),
+                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }),
+                        new THREE.MeshLambertMaterial({ color: block.topColor || block.color }),
+                        new THREE.MeshLambertMaterial({ color: block.color }),
+                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }),
+                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }),
                     ];
                 } else {
                     blockMaterials[blockId] = new THREE.MeshLambertMaterial({ color: block.color || 0xff00ff });
                 }
             }
-            // Special transparent materials
-            blockMaterials[BLOCKS.LEAVES] = new THREE.MeshLambertMaterial({
-                color: BLOCK_TYPES[BLOCKS.LEAVES].color,
-                transparent: true,
-                opacity: BLOCK_TYPES[BLOCKS.LEAVES].opacity,
-                alphaTest: 0.1, // Discard pixels that are mostly transparent
-                side: THREE.DoubleSide,
-            });
-            blockMaterials[BLOCKS.WATER] = new THREE.MeshLambertMaterial({
-                color: BLOCK_TYPES[BLOCKS.WATER].color,
-                transparent: true,
-                opacity: BLOCK_TYPES[BLOCKS.WATER].opacity,
-                side: THREE.DoubleSide,
-            });
-            // Dynamically create glass materials
+
+            blockMaterials[BLOCKS.LEAVES] = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[BLOCKS.LEAVES].color, transparent: true, opacity: BLOCK_TYPES[BLOCKS.LEAVES].opacity, alphaTest: 0.1, side: THREE.DoubleSide });
+            blockMaterials[BLOCKS.WATER] = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[BLOCKS.WATER].color, transparent: true, opacity: BLOCK_TYPES[BLOCKS.WATER].opacity, side: THREE.DoubleSide });
+
             for (let i = 0; i < 16; i++) {
                 const blockId = BLOCKS.WHITE_GLASS + i;
                 const block = BLOCK_TYPES[blockId];
                 if (block) {
-                    blockMaterials[blockId] = new THREE.MeshLambertMaterial({
-                        color: block.color,
-                        transparent: true,
-                        opacity: block.opacity,
-                        side: THREE.DoubleSide,
-                    });
+                    blockMaterials[blockId] = new THREE.MeshLambertMaterial({ color: block.color, transparent: true, opacity: block.opacity, side: THREE.DoubleSide });
                 }
             }
-            // Add Clear Glass
-            blockMaterials[BLOCKS.GLASS] = new THREE.MeshLambertMaterial({
-                color: BLOCK_TYPES[BLOCKS.GLASS].color,
-                transparent: true,
-                opacity: BLOCK_TYPES[BLOCKS.GLASS].opacity,
-                side: THREE.DoubleSide,
-            });
+            blockMaterials[BLOCKS.GLASS] = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[BLOCKS.GLASS].color, transparent: true, opacity: BLOCK_TYPES[BLOCKS.GLASS].opacity, side: THREE.DoubleSide });
         }
-        // --- Instanced Meshes ---
+
         function createInstancedMeshes() {
             const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
             const maxBlocks = WORLD_WIDTH * WORLD_HEIGHT * WORLD_DEPTH;
             for (const blockId in BLOCK_TYPES) {
                 if (blockId == BLOCKS.AIR) continue;
-               
-                const block = BLOCK_TYPES[blockId];
-                let material = blockMaterials[blockId];
-                // Handle transparent blocks needing their own material instances
-                if (block.transparent) {
-                    material = blockMaterials[blockId];
-                }
-               
-                const mesh = new THREE.InstancedMesh(blockGeometry, material, maxBlocks);
+                const mesh = new THREE.InstancedMesh(blockGeometry, blockMaterials[blockId], maxBlocks);
                 mesh.count = 0;
                 scene.add(mesh);
                 instancedMeshes[blockId] = mesh;
             }
         }
-        // --- World ---
+
         function getBlock(x, y, z) {
-            x = Math.floor(x);
-            y = Math.floor(y);
-            z = Math.floor(z);
-            if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT || z < 0 || z >= WORLD_DEPTH) {
-                return BLOCKS.AIR;
-            }
+            x = Math.floor(x); y = Math.floor(y); z = Math.floor(z);
+            if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT || z < 0 || z >= WORLD_DEPTH) return BLOCKS.AIR;
             return world[y * WORLD_WIDTH * WORLD_DEPTH + z * WORLD_WIDTH + x];
         }
+
         function setBlock(x, y, z, blockId) {
-            x = Math.floor(x);
-            y = Math.floor(y);
-            z = Math.floor(z);
-            if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT || z < 0 || z >= WORLD_DEPTH) {
-                return;
-            }
+            x = Math.floor(x); y = Math.floor(y); z = Math.floor(z);
+            if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT || z < 0 || z >= WORLD_DEPTH) return;
             world[y * WORLD_WIDTH * WORLD_DEPTH + z * WORLD_WIDTH + x] = blockId;
-           
-            // This is the simplest, but most expensive way to update.
-            // For a small world, it's acceptable.
             updateWorldMesh();
         }
-        // Create a Set of non-solid block IDs for faster physics checks
-        const NON_SOLID_BLOCKS = new Set([
-            BLOCKS.AIR,
-            BLOCKS.WATER,
-            BLOCKS.LEAVES,
-            // All glass blocks have been REMOVED from this set, making them SOLID.
-        ]);
-        function isBlockSolid(blockId) {
-            return !NON_SOLID_BLOCKS.has(blockId);
-        }
+
+        const NON_SOLID_BLOCKS = new Set([BLOCKS.AIR, BLOCKS.WATER, BLOCKS.LEAVES]);
+        function isBlockSolid(blockId) { return !NON_SOLID_BLOCKS.has(blockId); }
+
         function generateWorld() {
             for (let x = 0; x < WORLD_WIDTH; x++) {
                 for (let z = 0; z < WORLD_DEPTH; z++) {
                     for (let y = 0; y < WORLD_HEIGHT; y++) {
-                        let blockId;
-                        if (y < WORLD_HEIGHT / 2 - 1) {
-                            blockId = BLOCKS.STONE;
-                        } else if (y < WORLD_HEIGHT / 2) {
-                            blockId = BLOCKS.GRASS;
-                        } else {
-                            blockId = BLOCKS.AIR;
-                        }
-                        // Use raw array access for initial generation for speed
+                        let blockId = BLOCKS.AIR;
+                        if (y < WORLD_HEIGHT / 2 - 1) blockId = BLOCKS.STONE;
+                        else if (y < WORLD_HEIGHT / 2) blockId = BLOCKS.GRASS;
                         world[y * WORLD_WIDTH * WORLD_DEPTH + z * WORLD_WIDTH + x] = blockId;
                     }
                 }
             }
-            // Do one single mesh update at the end
             updateWorldMesh();
         }
+
         function updateWorldMesh() {
-            // Reset all mesh counts
-            for (const blockId in instancedMeshes) {
-                instancedMeshes[blockId].count = 0;
-            }
+            for (const blockId in instancedMeshes) instancedMeshes[blockId].count = 0;
             const dummy = new THREE.Object3D();
             const counts = {};
             for (let y = 0; y < WORLD_HEIGHT; y++) {
@@ -921,587 +467,494 @@
                     for (let x = 0; x < WORLD_WIDTH; x++) {
                         const blockId = getBlock(x, y, z);
                         if (blockId === BLOCKS.AIR) continue;
-                       
-                        const block = BLOCK_TYPES[blockId];
-                       
-                        // Occlusion culling
                         let isVisible = false;
-                       
-                        const checkNeighbors = [
-                            [x+1, y, z], [x-1, y, z], [x, y+1, z],
-                            [x, y-1, z], [x, y, z+1], [x, y, z-1]
-                        ];
-                       
-                        for (const [nx, ny, nz] of checkNeighbors) {
-                            const neighborId = getBlock(nx, ny, nz);
-                            const neighborType = BLOCK_TYPES[neighborId];
-                           
-                            if (neighborId === BLOCKS.AIR || (neighborType && neighborType.transparent && neighborId !== blockId)) {
-                                isVisible = true;
-                                break;
-                            }
+                        const neighbors = [[x+1,y,z],[x-1,y,z],[x,y+1,z],[x,y-1,z],[x,y,z+1],[x,y,z-1]];
+                        for (const [nx,ny,nz] of neighbors) {
+                            const nId = getBlock(nx,ny,nz);
+                            const nType = BLOCK_TYPES[nId];
+                            if (nId === BLOCKS.AIR || (nType && nType.transparent && nId !== blockId)) { isVisible = true; break; }
                         }
-                       
-                        // Special case for transparent blocks: always draw them if they are next to a different block type
-                        // (This is a simplified-but-decent rule for glass/water)
-                        if (!isVisible && block.transparent) {
-                            for (const [nx, ny, nz] of checkNeighbors) {
-                                if (getBlock(nx, ny, nz) !== blockId) {
-                                    isVisible = true;
-                                    break;
-                                }
-                            }
+                        if (!isVisible && BLOCK_TYPES[blockId].transparent) {
+                            for (const [nx,ny,nz] of neighbors) if (getBlock(nx,ny,nz) !== blockId) { isVisible = true; break; }
                         }
-                       
                         if (!isVisible) continue;
                         const mesh = instancedMeshes[blockId];
                         if (!mesh) continue;
                         if (!counts[blockId]) counts[blockId] = 0;
-                        const index = counts[blockId];
-                        dummy.position.set(x, y, z);
+                        dummy.position.set(x + 0.5, y + 0.5, z + 0.5);
                         dummy.updateMatrix();
-                        mesh.setMatrixAt(index, dummy.matrix);
-                       
-                        counts[blockId]++;
+                        mesh.setMatrixAt(counts[blockId]++, dummy.matrix);
                     }
                 }
             }
-            // Apply final counts and update matrices
             for (const blockId in instancedMeshes) {
                 instancedMeshes[blockId].count = counts[blockId] || 0;
                 instancedMeshes[blockId].instanceMatrix.needsUpdate = true;
             }
         }
+
         function saveWorld() {
-            try {
-                // Convert Uint8Array to regular array for JSON stringification
-                const worldToSave = Array.from(world);
-                localStorage.setItem('zefacraft_world', JSON.stringify(worldToSave));
-            } catch (e) {
-                console.error("Failed to save world:", e);
-                showMessage("Error: Could not save world. Storage might be full.", 2000);
-            }
+            try { localStorage.setItem('zefacraft_world', JSON.stringify(Array.from(world))); }
+            catch (e) { console.error("Ашибка какайта:", e); showMessage("Ашибка: хз шо тут", 2000); }
         }
+
         function loadWorld() {
-            const savedWorld = localStorage.getItem('zefacraft_world');
-            if (savedWorld) {
+            const saved = localStorage.getItem('zefacraft_world');
+            if (saved) {
                 try {
-                    // Parse and convert back to Uint8Array
-                    const loadedArray = JSON.parse(savedWorld);
-                    if (loadedArray.length === world.length) {
-                        world.set(loadedArray);
+                    const loaded = JSON.parse(saved);
+                    if (Array.isArray(loaded) && loaded.length === world.length) {
+                        world.set(loaded);
                     } else {
-                        console.warn("Saved world has different size! Generating new one.");
-                        generateWorld(); // Generate new if size mismatch
+                        console.warn("Невірний размір сахранєнія. ОПРЛДВІРЛАРВІЛОРОЛПРРПОВРОПРВРПОВРАОРПОВОРОПРОВРО.");
+                        generateWorld();
                     }
-                    updateWorldMesh();
                 } catch (e) {
-                    console.error("Failed to load world:", e);
-                    generateWorld(); // Generate new if load fails
+                    console.error("Ашибка:", e);
+                    generateWorld();
                 }
             } else {
-                generateWorld(); // Generate new if no save
+                generateWorld();
             }
+            updateWorldMesh();
         }
+
         function respawn() {
             player.mesh.position.set(WORLD_WIDTH / 2, RESPAWN_Y, WORLD_DEPTH / 2);
             playerVelocity.set(0, 0, 0);
-           
-            // Reset camera orientation
-            playerControls.pitch.rotation.x = 0;
             playerControls.yaw.rotation.y = 0;
+            playerControls.pitch.rotation.x = 0;
+            camera.position.set(0, PLAYER_EYE_HEIGHT, 0);
+            isCrouching = false;
+            updatePlayerHeight();
         }
-        // --- Controls ---
+
+        function updatePlayerHeight() {
+            const targetHeight = isCrouching ? PLAYER_HEIGHT_CROUCH : PLAYER_HEIGHT;
+            const targetEye = isCrouching ? PLAYER_EYE_HEIGHT_CROUCH : PLAYER_EYE_HEIGHT;
+            playerMesh.scale.y = targetHeight / PLAYER_HEIGHT;
+            playerMesh.position.y = targetHeight / 2;
+            camera.position.y = targetEye;
+        }
+
         function initControls() {
-            if (isTouchDevice) {
-                initTouchControls();
-            } else {
-                initPointerLock();
-                initKeydown();
-                initMouse();
-            }
-            // Window Resize
+            if (isTouchDevice) initTouchControls();
+            else { initPointerLock(); initKeydown(); initMouse(); }
             window.addEventListener('resize', onWindowResize);
         }
+
         function initPointerLock() {
-            canvas.addEventListener('click', () => {
-                if (!isMenuOpen && !isInventoryOpen) {
-                    lockIntentional = true; // We intend to lock
-                    canvas.requestPointerLock();
-                }
-            });
+            canvas.addEventListener('click', () => { if (!isMenuOpen && !isInventoryOpen && !document.pointerLockElement) canvas.requestPointerLock(); });
             document.addEventListener('pointerlockchange', () => {
                 if (document.pointerLockElement === canvas) {
                     crosshair.style.display = 'block';
-                    // Hook mouse move
                     document.addEventListener('mousemove', onMouseMove);
-                    lockIntentional = false; // Lock is successful, reset flag
                 } else {
-                    // Unhook mouse move
                     document.removeEventListener('mousemove', onMouseMove);
-                    // Show menu/pause
                     crosshair.style.display = 'none';
-                   
-                    // Only open menu if the lock was lost UNINTENTIONALLY
-                    if (!isMenuOpen && !isInventoryOpen && !lockIntentional) {
-                        toggleMenu(); // Open menu if lock is lost unexpectedly
-                    }
-                    lockIntentional = false; // Reset flag after handling
                 }
             });
         }
-       
+
         function initKeydown() {
-            document.addEventListener('keydown', (event) => {
-                // Close modals with Escape
-                if (event.code === 'Escape') {
-                    if (isInventoryOpen) {
-                        toggleInventory(); // Closes it
-                        lockIntentional = true; // We intend to lock
-                        canvas.requestPointerLock(); // Request lock (user gesture)
-                    } else if (isMenuOpen) {
-                        toggleMenu(); // Closes it
-                        lockIntentional = true; // We intend to lock
-                        canvas.requestPointerLock(); // Request lock (user gesture)
-                    }
-                    return;
-                }
-               
-                // Open Inventory
-                if (event.code === 'KeyE') {
-                    toggleInventory(); // Toggles it
-                    if (!isInventoryOpen) {
-                        // We just closed it
-                        lockIntentional = true; // We intend to lock
-                        canvas.requestPointerLock(); // Request lock (user gesture)
-                    }
-                    return;
-                }
-               
-                // Don't move if a modal is open
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'F3') toggleDebugMode();
+                if (e.code === 'KeyC' && debugMode) toggleFreeCamMode();
+                if (e.code === 'Escape') { if (isInventoryOpen) toggleInventory(); else if (isMenuOpen) toggleMenu(); else if (document.pointerLockElement) document.exitPointerLock(); return; }
+                if (e.code === 'KeyE') { toggleInventory(); return; }
                 if (isMenuOpen || isInventoryOpen) return;
-                switch (event.code) {
+                switch (e.code) {
                     case 'KeyW': moveForward = true; break;
                     case 'KeyS': moveBackward = true; break;
                     case 'KeyA': moveLeft = true; break;
                     case 'KeyD': moveRight = true; break;
                     case 'Space': moveJump = true; break;
+                    case 'ShiftLeft': case 'ShiftRight': isCrouching = true; updatePlayerHeight(); break;
                 }
-                // Hotbar selection
-                if (event.code.startsWith('Digit')) {
-                    const index = parseInt(event.code.substring(5)) - 1; // "Digit1" -> 0
-                    if (index >= 0 && index < hotbarItems.length) {
-                        selectedBlockId = hotbarItems[index];
-                        updateHotbarUI();
-                    }
+                if (e.code.startsWith('Digit')) {
+                    const i = parseInt(e.code[5]) - 1;
+                    if (i >= 0 && i < hotbarItems.length) { selectedBlockId = hotbarItems[i]; updateHotbarUI(); }
                 }
             });
-            document.addEventListener('keyup', (event) => {
-                switch (event.code) {
+            document.addEventListener('keyup', (e) => {
+                switch (e.code) {
                     case 'KeyW': moveForward = false; break;
                     case 'KeyS': moveBackward = false; break;
                     case 'KeyA': moveLeft = false; break;
                     case 'KeyD': moveRight = false; break;
                     case 'Space': moveJump = false; break;
+                    case 'ShiftLeft': case 'ShiftRight': isCrouching = false; updatePlayerHeight(); break;
                 }
             });
         }
+
         function initMouse() {
-             canvas.addEventListener('mousedown', (event) => {
+            canvas.addEventListener('mousedown', (e) => {
                 if (document.pointerLockElement !== canvas || isMenuOpen || isInventoryOpen) return;
-                // event.button: 0=left, 1=middle, 2=right
-                if (event.button === 0) {
-                    breakAction = true;
-                } else if (event.button === 2) {
-                    placeAction = true;
-                }
+                if (e.button === 0) breakAction = true; else if (e.button === 2) placeAction = true;
             });
-            // Note: We use mouseup on document to catch releases even if pointer moves off canvas
-            document.addEventListener('mouseup', (event) => {
-                if (event.button === 0) {
-                    breakAction = false;
-                } else if (event.button === 2) {
-                    placeAction = false;
-                }
+            document.addEventListener('mouseup', (e) => {
+                if (e.button === 0) breakAction = false; else if (e.button === 2) placeAction = false;
             });
         }
-       
-        function onMouseMove(event) {
+
+        function onMouseMove(e) {
             if (document.pointerLockElement !== canvas) return;
-            const movementX = event.movementX || 0;
-            const movementY = event.movementY || 0;
-            // Yaw (left/right) - rotate the player mesh
-            playerControls.yaw.rotation.y -= movementX * MOUSE_SENSITIVITY;
-           
-            // Pitch (up/down) - rotate the pitch object
-            // playerControls.pitch.rotation.x -= movementY * MOUSE_SENSITIVITY;
-            // playerControls.pitch.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, playerControls.pitch.rotation.x));
+            const mx = e.movementX * MOUSE_SENSITIVITY;
+            const my = e.movementY * MOUSE_SENSITIVITY;
+            if (freeCamMode) {
+                camera.rotation.y -= mx;
+                camera.rotation.x -= my;
+                camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+            } else {
+                playerControls.yaw.rotation.y -= mx;
+                playerControls.pitch.rotation.x -= my;
+                playerControls.pitch.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, playerControls.pitch.rotation.x));
+            }
         }
+
         function initTouchControls() {
-            // Joystick
             joystickArea.addEventListener('touchstart', handleJoystickStart, { passive: false });
             joystickArea.addEventListener('touchmove', handleJoystickMove, { passive: false });
-            joystickArea.addEventListener('touchend', handleJoystickEnd);
-            // Look
+            joystickArea.addEventListener('touchend', handleJoystickEnd, { passive: false });
             lookArea.addEventListener('touchstart', handleLookStart, { passive: false });
             lookArea.addEventListener('touchmove', handleLookMove, { passive: false });
-            lookArea.addEventListener('touchend', handleLookEnd);
-            // Buttons
+            lookArea.addEventListener('touchend', handleLookEnd, { passive: false });
             jumpButton.addEventListener('touchstart', (e) => { e.preventDefault(); moveJump = true; });
-            jumpButton.addEventListener('touchend', () => { moveJump = false; });
-           
+            jumpButton.addEventListener('touchend', () => moveJump = false);
             placeButton.addEventListener('touchstart', (e) => { e.preventDefault(); placeAction = true; });
-            placeButton.addEventListener('touchend', () => { placeAction = false; });
-           
+            placeButton.addEventListener('touchend', () => placeAction = false);
             breakButton.addEventListener('touchstart', (e) => { e.preventDefault(); breakAction = true; });
-            breakButton.addEventListener('touchend', () => { breakAction = false; });
+            breakButton.addEventListener('touchend', () => breakAction = false);
+            crouchButton.addEventListener('touchstart', (e) => { e.preventDefault(); isCrouching = true; updatePlayerHeight(); });
+            crouchButton.addEventListener('touchend', () => { isCrouching = false; updatePlayerHeight(); });
         }
-       
+
         function handleJoystickStart(e) {
             e.preventDefault();
+            if (joystickTouchId !== null) return;
+            if (e.changedTouches.length === 0) return;
+            const touch = e.changedTouches[0];
+            joystickTouchId = touch.identifier;
             handleJoystickMove(e);
         }
+
         function handleJoystickMove(e) {
             e.preventDefault();
-            if (e.touches.length === 0) return;
-            const touch = e.touches[0];
-            const rect = joystickArea.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-           
-            let dx = touch.clientX - centerX;
-            let dy = touch.clientY - centerY;
-           
-            const maxDist = rect.width / 2 - joystickThumb.width / 2;
-            const dist = Math.min(maxDist, Math.hypot(dx, dy));
-            const angle = Math.atan2(dy, dx);
-           
-            joystickDelta.x = (dist / maxDist) * Math.cos(angle);
-            joystickDelta.y = (dist / maxDist) * Math.sin(angle);
-           
-            joystickThumb.style.transform = `translate(${joystickDelta.x * maxDist}px, ${joystickDelta.y * maxDist}px)`;
-           
-            // Map to game controls (invert Y)
-            moveForward = -joystickDelta.y > 0.2;
-            moveBackward = -joystickDelta.y < -0.2;
-            moveLeft = joystickDelta.x < -0.2;
-            moveRight = joystickDelta.x > 0.2;
-        }
-        function handleJoystickEnd() {
-            joystickThumb.style.transform = 'translate(0px, 0px)';
-            joystickDelta = { x: 0, y: 0 };
-            moveForward = false; moveBackward = false; moveLeft = false; moveRight = false;
-        }
-        function handleLookStart(e) {
-            e.preventDefault();
-            if (lookTouchId === null && e.changedTouches.length > 0) {
-                const touch = e.changedTouches[0];
-                lookTouchId = touch.identifier;
-                lastTouch.x = touch.clientX;
-                lastTouch.y = touch.clientY;
-            }
-        }
-        function handleLookMove(e) {
-            e.preventDefault();
-            if (lookTouchId === null) return;
-           
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                if (touch.identifier === lookTouchId) {
-                    const dx = touch.clientX - lastTouch.x;
-                    const dy = touch.clientY - lastTouch.y;
-                   
-                    lookDelta.x = dx;
-                    lookDelta.y = dy;
-                    lastTouch.x = touch.clientX;
-                    lastTouch.y = touch.clientY;
-                    return; // Found our touch
-                }
-            }
-        }
-        function handleLookEnd(e) {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                if (touch.identifier === lookTouchId) {
-                    lookTouchId = null;
-                    lookDelta.x = 0;
-                    lookDelta.y = 0;
+            if (joystickTouchId === null) return;
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                if (touch.identifier === joystickTouchId) {
+                    const rect = joystickArea.getBoundingClientRect();
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+                    let dx = touch.clientX - cx;
+                    let dy = touch.clientY - cy;
+                    const maxDist = rect.width / 2 - 30;
+                    const dist = Math.min(maxDist, Math.hypot(dx, dy));
+                    const angle = Math.atan2(dy, dx);
+                    joystickDelta.x = (dist / maxDist) * Math.cos(angle);
+                    joystickDelta.y = (dist / maxDist) * Math.sin(angle);
+                    joystickThumb.style.transform = `translate(${joystickDelta.x * maxDist}px, ${joystickDelta.y * maxDist}px)`;
+                    moveForward = -joystickDelta.y > 0.3;
+                    moveBackward = -joystickDelta.y < -0.3;
+                    moveLeft = joystickDelta.x < -0.3;
+                    moveRight = joystickDelta.x > 0.3;
                     return;
                 }
             }
         }
+
+        function handleJoystickEnd(e) {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === joystickTouchId) {
+                    joystickTouchId = null;
+                    joystickThumb.style.transform = 'translate(-50%, -50%)';
+                    joystickDelta = { x: 0, y: 0 };
+                    moveForward = moveBackward = moveLeft = moveRight = false;
+                    return;
+                }
+            }
+        }
+
+        function handleLookStart(e) {
+            e.preventDefault();
+            if (lookTouchId !== null || joystickTouchId === null) return;
+            if (e.changedTouches.length === 0) return;
+            const touch = e.changedTouches[0];
+            lookTouchId = touch.identifier;
+            lastTouch = { x: touch.clientX, y: touch.clientY };
+        }
+
+        function handleLookMove(e) {
+            e.preventDefault();
+            if (lookTouchId === null) return;
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                if (touch.identifier === lookTouchId) {
+                    lookDelta.x = touch.clientX - lastTouch.x;
+                    lookDelta.y = touch.clientY - lastTouch.y;
+                    lastTouch = { x: touch.clientX, y: touch.clientY };
+                    return;
+                }
+            }
+        }
+
+        function handleLookEnd(e) {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === lookTouchId) {
+                    lookTouchId = null;
+                    lookDelta = { x: 0, y: 0 };
+                    return;
+                }
+            }
+        }
+
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
-        // --- Game Loop ---
+
         function animate() {
             requestAnimationFrame(animate);
-            // Pause game if menu or inventory is open
-            if (isMenuOpen || isInventoryOpen) {
-                renderer.render(scene, camera); // Still render one frame
-                return;
-            }
-            const delta = Math.min(0.05, clock.getDelta()); // Cap delta
+            if (isMenuOpen || isInventoryOpen) { renderer.render(scene, camera); return; }
+            const delta = Math.min(0.05, clock.getDelta());
             handleInput(delta);
             updatePhysics(delta);
             handleBlockActions();
+            updateDebugInfo();
             renderer.render(scene, camera);
         }
-        // --- Input Handling ---
+
+        function updateDebugInfo() {
+            if (!debugMode) return;
+            const pos = player.mesh.position;
+            const camPos = new THREE.Vector3(); camera.getWorldPosition(camPos);
+            debugInfo.innerHTML = `
+                ТИ!!! 🫵🤣: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})<br>
+                Камера: (${camPos.x.toFixed(2)}, ${camPos.y.toFixed(2)}, ${camPos.z.toFixed(2)})<br>
+                Прісіданіє: ${isCrouching ? 'Да' : 'Нєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєє'}<br>
+                ФрікАм: ${freeCamMode ? 'УВІМК' : 'ВИМК'}<br>
+                ЕФПЕЕС: ${(1 / clock.getDelta()).toFixed(0)}
+            `;
+        }
+
         function handleInput(delta) {
-            // This function is now safe because animate() checks for modals
-           
-            // --- Look (Touch) ---
             if (isTouchDevice && lookTouchId !== null) {
-                playerControls.yaw.rotation.y -= lookDelta.x * TOUCH_SENSITIVITY;
-                playerControls.pitch.rotation.x -= lookDelta.y * TOUCH_SENSITIVITY;
-                playerControls.pitch.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, playerControls.pitch.rotation.x));
-               
-                // Reset delta after applying
-                lookDelta.x = 0;
-                lookDelta.y = 0;
+                if (freeCamMode) {
+                    camera.rotation.y -= lookDelta.x * TOUCH_SENSITIVITY;
+                    camera.rotation.x -= lookDelta.y * TOUCH_SENSITIVITY;
+                    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+                } else {
+                    playerControls.yaw.rotation.y -= lookDelta.x * TOUCH_SENSITIVITY;
+                    playerControls.pitch.rotation.x -= lookDelta.y * TOUCH_SENSITIVITY;
+                    playerControls.pitch.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, playerControls.pitch.rotation.x));
+                }
+                lookDelta.x = lookDelta.y = 0;
             }
-            // --- Movement ---
-            const moveDirection = new THREE.Vector3();
-            if (moveForward) moveDirection.z = -1;
-            if (moveBackward) moveDirection.z = 1;
-            if (moveLeft) moveDirection.x = -1;
-            if (moveRight) moveDirection.x = 1;
-           
-            moveDirection.normalize(); // Ensure consistent speed
-           
-            // Apply movement relative to camera direction (yaw)
-            moveDirection.applyEuler(playerControls.yaw.rotation);
-            playerVelocity.x = moveDirection.x * PLAYER_SPEED;
-            playerVelocity.z = moveDirection.z * PLAYER_SPEED;
-           
-            // --- Jump ---
-            if (moveJump && playerOnGround) {
-                playerVelocity.y = PLAYER_JUMP_FORCE;
-                playerOnGround = false;
-                moveJump = false; // Consume jump press
+
+            if (freeCamMode) {
+                const dir = new THREE.Vector3();
+                if (moveForward) dir.z = -1; if (moveBackward) dir.z = 1;
+                if (moveLeft) dir.x = -1; if (moveRight) dir.x = 1;
+                dir.normalize().applyEuler(new THREE.Euler(0, camera.rotation.y, 0));
+                camera.position.x += dir.x * PLAYER_SPEED * delta;
+                camera.position.z += dir.z * PLAYER_SPEED * delta;
+                if (moveJump) camera.position.y += PLAYER_SPEED * delta;
+                if (moveBackward && !moveForward) camera.position.y -= PLAYER_SPEED * delta;
+            } else {
+                const dir = new THREE.Vector3();
+                if (moveForward) dir.z = -1; if (moveBackward) dir.z = 1;
+                if (moveLeft) dir.x = -1; if (moveRight) dir.x = 1;
+                dir.normalize().applyEuler(playerControls.yaw.rotation);
+                const speed = isCrouching ? PLAYER_SPEED_CROUCH : PLAYER_SPEED;
+                playerVelocity.x = dir.x * speed;
+                playerVelocity.z = dir.z * speed;
+                if (moveJump && playerOnGround) { playerVelocity.y = PLAYER_JUMP_FORCE; playerOnGround = false; moveJump = false; }
             }
         }
-        // --- Block Actions (Place/Break) ---
+
         function handleBlockActions() {
             if (!breakAction && !placeAction) return;
-            // Set ray from camera
-            if (isTouchDevice) {
-                // For touch, raycast from center screen (like PC)
-                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            } else {
-                if (document.pointerLockElement !== canvas) {
-                    // Don't do anything if not in pointer lock on PC
-                    breakAction = false;
-                    placeAction = false;
-                    return;
-                }
-                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            }
-            // Check intersections with all instanced meshes
-            const allMeshes = Object.values(instancedMeshes);
-            const intersects = raycaster.intersectObjects(allMeshes);
+
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(Object.values(instancedMeshes));
+
+            const checkPlayerCollision = (nx, ny, nz) => {
+                const px = player.mesh.position.x;
+                const pz = player.mesh.position.z;
+                const currentHeight = isCrouching ? PLAYER_HEIGHT_CROUCH : PLAYER_HEIGHT;
+                const yMin = Math.floor(player.mesh.position.y);
+                const yMax = Math.floor(player.mesh.position.y + currentHeight - 0.01);
+                const minX = Math.floor(px - PLAYER_RADIUS);
+                const maxX = Math.floor(px + PLAYER_RADIUS);
+                const minZ = Math.floor(pz - PLAYER_RADIUS);
+                const maxZ = Math.floor(pz + PLAYER_RADIUS);
+
+                return (nx >= minX && nx <= maxX) &&
+                       (ny >= yMin && ny <= yMax) &&
+                       (nz >= minZ && nz <= maxZ);
+            };
+
             if (intersects.length > 0) {
-                let closestIntersection = null;
-                // Find the closest non-transparent block
-                for (const intersection of intersects) {
-                    // Check if object is transparent
-                    const material = intersection.object.material;
-                    const isTransparent = Array.isArray(material) ? false : material.transparent; // Simplify check
-                    if (!isTransparent || intersection.distance < 3) { // Allow breaking transparent blocks if close
-                        closestIntersection = intersection;
-                        break;
-                    }
+                let intersection = null;
+                for (const inter of intersects) {
+                    const mat = inter.object.material;
+                    const transparent = Array.isArray(mat) ? false : mat.transparent;
+                    if (!transparent || inter.distance < 3) { intersection = inter; break; }
                 }
-                if (!closestIntersection) { // No valid target found
-                     breakAction = false;
-                     placeAction = false;
-                     return;
-                }
-                const intersection = closestIntersection;
-               
-                // Find which block instance was hit
+                if (!intersection) { breakAction = placeAction = false; return; }
+
                 const instanceId = intersection.instanceId;
                 const mesh = intersection.object;
-                const matrix = new THREE.Matrix4();
-                mesh.getMatrixAt(instanceId, matrix);
-                const blockPos = new THREE.Vector3().setFromMatrixPosition(matrix);
-               
-                // Get the normal of the face that was hit
+                const matrix = new THREE.Matrix4(); mesh.getMatrixAt(instanceId, matrix);
+                const blockPos = new THREE.Vector3().setFromMatrixPosition(matrix).sub(new THREE.Vector3(0.5, 0.5, 0.5));
                 const normal = intersection.face.normal.clone();
-                // Transform normal by instance matrix (rotation part)
                 const normalMatrix = new THREE.Matrix3().getNormalMatrix(matrix);
                 normal.applyMatrix3(normalMatrix).normalize();
+
+                const ix = Math.floor(blockPos.x), iy = Math.floor(blockPos.y), iz = Math.floor(blockPos.z);
+
                 if (breakAction) {
-                    setBlock(blockPos.x, blockPos.y, blockPos.z, BLOCKS.AIR);
+                    setBlock(ix, iy, iz, BLOCKS.AIR);
                 } else if (placeAction) {
-                    // Calculate position of new block
-                    const newBlockPos = blockPos.clone().add(normal);
-                   
-                    // Check if player is in the way
-                    const playerBlockX = Math.floor(player.mesh.position.x);
-                    const playerBlockYFoot = Math.floor(player.mesh.position.y);
-                    const playerBlockYHead = Math.floor(player.mesh.position.y + PLAYER_HEIGHT - 0.1);
-                    const playerBlockZ = Math.floor(player.mesh.position.z);
-                   
-                    const newX = Math.floor(newBlockPos.x);
-                    const newY = Math.floor(newBlockPos.y);
-                    const newZ = Math.floor(newBlockPos.z);
-                   
-                    if ( (newX === playerBlockX && newY === playerBlockYFoot && newZ === playerBlockZ) ||
-                         (newX === playerBlockX && newY === playerBlockYHead && newZ === playerBlockZ) )
-                    {
-                        // Don't place block, player is in the way
-                    } else {
-                        setBlock(newBlockPos.x, newBlockPos.y, newBlockPos.z, selectedBlockId);
+                    const newPos = blockPos.clone().add(normal);
+                    const nx = Math.floor(newPos.x), ny = Math.floor(newPos.y), nz = Math.floor(newPos.z);
+
+                    if (getBlock(nx, ny, nz) !== BLOCKS.AIR) {
+                        placeAction = false;
+                        return;
+                    }
+                    
+                    if (!checkPlayerCollision(nx, ny, nz)) {
+                         setBlock(nx, ny, nz, selectedBlockId);
+                    }
+                }
+
+            } else if (placeAction) {
+                
+                const MAX_PLACE_DISTANCE = 4.5;
+                const placePos = new THREE.Vector3();
+                camera.getWorldPosition(placePos);
+                
+                const placeDir = new THREE.Vector3();
+                camera.getWorldDirection(placeDir);
+                
+                placePos.add(placeDir.multiplyScalar(MAX_PLACE_DISTANCE));
+
+                const nx = Math.floor(placePos.x);
+                const ny = Math.floor(placePos.y);
+                const nz = Math.floor(placePos.z);
+
+                if (getBlock(nx, ny, nz) === BLOCKS.AIR) {
+                    if (!checkPlayerCollision(nx, ny, nz)) {
+                         setBlock(nx, ny, nz, selectedBlockId);
                     }
                 }
             }
-            // Consume actions
-            breakAction = false;
-            placeAction = false;
+
+            breakAction = placeAction = false;
         }
-        // --- Physics ---
+
         function updatePhysics(delta) {
-            // Apply gravity
+            if (freeCamMode) return;
+
             playerVelocity.y += GRAVITY * delta;
-           
-            // Store old position
-            const oldPos = player.mesh.position.clone();
-           
-            // --- Move Y (Vertical) ---
-            player.mesh.position.y += playerVelocity.y * delta;
+
+            const px = player.mesh.position.x;
+            const pz = player.mesh.position.z;
+            const minX = Math.floor(px - PLAYER_RADIUS);
+            const maxX = Math.floor(px + PLAYER_RADIUS);
+            const minZ = Math.floor(pz - PLAYER_RADIUS);
+            const maxZ = Math.floor(pz + PLAYER_RADIUS);
+
             playerOnGround = false;
-           
-            // Vertical collision
-            if (playerVelocity.y <= 0) { // Check for ground
-                const playerFeetY = player.mesh.position.y;
-                const playerMinX = player.mesh.position.x - PLAYER_RADIUS;
-                const playerMaxX = player.mesh.position.x + PLAYER_RADIUS;
-                const playerMinZ = player.mesh.position.z - PLAYER_RADIUS;
-                const playerMaxZ = player.mesh.position.z + PLAYER_RADIUS;
-                const checkMinX = Math.floor(playerMinX);
-                const checkMaxX = Math.floor(playerMaxX);
-                const checkMinZ = Math.floor(playerMinZ);
-                const checkMaxZ = Math.floor(playerMaxZ);
-                const checkY = Math.floor(playerFeetY);
-                let groundY = -Infinity;
-               
-                for (let x = checkMinX; x <= checkMaxX; x++) {
-                    for (let z = checkMinZ; z <= checkMaxZ; z++) {
-                        if (isBlockSolid(getBlock(x, checkY, z))) {
-                            groundY = Math.max(groundY, checkY + 1);
-                        }
-                    }
-                }
-               
-                if (groundY > -Infinity && playerFeetY < groundY) {
-                    player.mesh.position.y = groundY;
-                    playerVelocity.y = 0;
-                    playerOnGround = true;
-                }
-            } else { // Check for ceiling
-                const playerHeadY = player.mesh.position.y + PLAYER_HEIGHT;
-                const playerMinX = player.mesh.position.x - PLAYER_RADIUS;
-                const playerMaxX = player.mesh.position.x + PLAYER_RADIUS;
-                const playerMinZ = player.mesh.position.z - PLAYER_RADIUS;
-                const playerMaxZ = player.mesh.position.z + PLAYER_RADIUS;
-                const checkMinX = Math.floor(playerMinX);
-                const checkMaxX = Math.floor(playerMaxX);
-                const checkMinZ = Math.floor(playerMinZ);
-                const checkMaxZ = Math.floor(playerMaxZ);
-                const checkY = Math.floor(playerHeadY);
-                let ceilingY = Infinity;
-               
-                for (let x = checkMinX; x <= checkMaxX; x++) {
-                    for (let z = checkMinZ; z <= checkMaxZ; z++) {
-                        if (isBlockSolid(getBlock(x, checkY, z))) {
-                            ceilingY = Math.min(ceilingY, checkY);
-                        }
-                    }
-                }
-                if (ceilingY < Infinity && playerHeadY > ceilingY) {
-                    player.mesh.position.y = ceilingY - PLAYER_HEIGHT;
-                    playerVelocity.y = 0;
-                }
-            }
-           
-            // --- Move X ---
-            player.mesh.position.x += playerVelocity.x * delta;
-           
-            // X-Collision
-            const playerFeetY = player.mesh.position.y;
-            const playerHeadY = player.mesh.position.y + PLAYER_HEIGHT - 0.1; // -0.1 to avoid snagging
-            const playerMinZ = player.mesh.position.z - PLAYER_RADIUS;
-            const playerMaxZ = player.mesh.position.z + PLAYER_RADIUS;
-            const checkMinY = Math.floor(playerFeetY);
-            const checkMaxY = Math.floor(playerHeadY);
-            const checkMinZ = Math.floor(playerMinZ);
-            const checkMaxZ = Math.floor(playerMaxZ);
-            if (playerVelocity.x > 0) { // Moving right
-                const checkX = Math.floor(player.mesh.position.x + PLAYER_RADIUS);
-                for (let y = checkMinY; y <= checkMaxY; y++) {
-                    for (let z = checkMinZ; z <= checkMaxZ; z++) {
-                        if (isBlockSolid(getBlock(checkX, y, z))) {
-                            player.mesh.position.x = checkX - PLAYER_RADIUS - 0.001;
-                            playerVelocity.x = 0;
-                            break;
-                        }
-                    }
-                }
-            } else if (playerVelocity.x < 0) { // Moving left
-                const checkX = Math.floor(player.mesh.position.x - PLAYER_RADIUS);
-                for (let y = checkMinY; y <= checkMaxY; y++) {
-                    for (let z = checkMinZ; z <= checkMaxZ; z++) {
-                        if (isBlockSolid(getBlock(checkX, y, z))) {
-                            player.mesh.position.x = checkX + 1 + PLAYER_RADIUS + 0.001;
-                            playerVelocity.x = 0;
-                            break;
-                        }
+
+            const currentHeight = isCrouching ? PLAYER_HEIGHT_CROUCH : PLAYER_HEIGHT;
+            const newY = player.mesh.position.y + playerVelocity.y * delta;
+            const feetY = newY;
+            const floorY = Math.floor(feetY);
+            let groundLevel = -Infinity;
+            for (let x = minX; x <= maxX; x++) {
+                for (let z = minZ; z <= maxZ; z++) {
+                    if (isBlockSolid(getBlock(x, floorY, z))) {
+                        groundLevel = Math.max(groundLevel, floorY + 1);
                     }
                 }
             }
-            // --- Move Z ---
-            player.mesh.position.z += playerVelocity.z * delta;
-           
-            // Z-Collision
-            const playerMinX = player.mesh.position.x - PLAYER_RADIUS;
-            const playerMaxX = player.mesh.position.x + PLAYER_RADIUS;
-            const checkMinX = Math.floor(playerMinX);
-            const checkMaxX = Math.floor(playerMaxX);
-           
-            if (playerVelocity.z > 0) { // Moving backward
-                const checkZ = Math.floor(player.mesh.position.z + PLAYER_RADIUS);
-                for (let y = checkMinY; y <= checkMaxY; y++) {
-                    for (let x = checkMinX; x <= checkMaxX; x++) {
-                        if (isBlockSolid(getBlock(x, y, checkZ))) {
-                            player.mesh.position.z = checkZ - PLAYER_RADIUS - 0.001;
-                            playerVelocity.z = 0;
-                            break;
-                        }
-                    }
-                }
-            } else if (playerVelocity.z < 0) { // Moving forward
-                const checkZ = Math.floor(player.mesh.position.z - PLAYER_RADIUS);
-                for (let y = checkMinY; y <= checkMaxY; y++) {
-                    for (let x = checkMinX; x <= checkMaxX; x++) {
-                        if (isBlockSolid(getBlock(x, y, checkZ))) {
-                            player.mesh.position.z = checkZ + 1 + PLAYER_RADIUS + 0.001;
-                            playerVelocity.z = 0;
-                            break;
-                        }
+            if (groundLevel > -Infinity && feetY <= groundLevel + 0.001) {
+                player.mesh.position.y = groundLevel;
+                playerVelocity.y = 0;
+                playerOnGround = true;
+            } else {
+                player.mesh.position.y = newY;
+            }
+
+            const headY = player.mesh.position.y + currentHeight;
+            const ceilY = Math.floor(headY);
+            let ceilingLevel = Infinity;
+            for (let x = minX; x <= maxX; x++) {
+                for (let z = minZ; z <= maxZ; z++) {
+                    if (isBlockSolid(getBlock(x, ceilY, z))) {
+                        ceilingLevel = Math.min(ceilingLevel, ceilY);
                     }
                 }
             }
-           
-            // Check for void
-            if (player.mesh.position.y < VOID_Y) {
-                respawn();
+            if (ceilingLevel < Infinity && headY >= ceilingLevel - 0.001) {
+                player.mesh.position.y = ceilingLevel - currentHeight;
+                if (playerVelocity.y > 0) playerVelocity.y = 0;
             }
+
+            const newX = player.mesh.position.x + playerVelocity.x * delta;
+            const newZ = player.mesh.position.z + playerVelocity.z * delta;
+
+            player.mesh.position.x = newX;
+            const feetCheckY = player.mesh.position.y;
+            const headCheckY = player.mesh.position.y + currentHeight - 0.01;
+            const yMin = Math.floor(feetCheckY);
+            const yMax = Math.floor(headCheckY);
+
+            if (playerVelocity.x > 0) {
+                const checkX = Math.floor(newX + PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let z = minZ; z <= maxZ; z++) {
+                    if (isBlockSolid(getBlock(checkX, y, z))) {
+                        player.mesh.position.x = checkX - PLAYER_RADIUS - 0.001;
+                        playerVelocity.x = 0;
+                    }
+                }
+            } else if (playerVelocity.x < 0) {
+                const checkX = Math.floor(newX - PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let z = minZ; z <= maxZ; z++) {
+                    if (isBlockSolid(getBlock(checkX, y, z))) {
+                        player.mesh.position.x = checkX + 1 + PLAYER_RADIUS + 0.001;
+                        playerVelocity.x = 0;
+                    }
+                }
+            }
+
+            player.mesh.position.z = newZ;
+            if (playerVelocity.z > 0) {
+                const checkZ = Math.floor(newZ + PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let x = minX; x <= maxX; x++) {
+                    if (isBlockSolid(getBlock(x, y, checkZ))) {
+                        player.mesh.position.z = checkZ - PLAYER_RADIUS - 0.001;
+                        playerVelocity.z = 0;
+                    }
+                }
+            } else if (playerVelocity.z < 0) {
+                const checkZ = Math.floor(newZ - PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let x = minX; x <= maxX; x++) {
+                    if (isBlockSolid(getBlock(x, y, checkZ))) {
+                        player.mesh.position.z = checkZ + 1 + PLAYER_RADIUS + 0.001;
+                        playerVelocity.z = 0;
+                    }
+                }
+            }
+
+            if (player.mesh.position.y < VOID_Y) respawn();
         }
-        // --- Start ---
+
         init();
     </script>
 </body>
