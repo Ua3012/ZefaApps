@@ -1,62 +1,64 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang='uk'>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
     <title>ZefaCraft (Minecraft-like)</title>
     <style>
         /*! tailwindcss v3.4.0 | MIT License | https://tailwindcss.com */
         *,::before,::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::before,::after{--tw-content:''}html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:Inter,system-ui,sans-serif;font-feature-settings:normal;font-variation-settings:normal}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,[type=button],[type=reset],[type=submit]{-webkit-appearance:button;appearance:none;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;appearance:none;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;appearance:none;font:inherit}summary{display:list-item}blockquote,dl,dd,h1,h2,h3,h4,h5,h6,hr,figure,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}ol,ul,menu{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}button,[role=button]{cursor:pointer}:disabled{cursor:default}img,svg,video,canvas,audio,iframe,embed,object{display:block}img,video{max-width:100%;height:auto}[hidden]{display:none}
         .container{width:100%}@media (min-width:640px){.container{max-width:640px}}@media (min-width:768px){.container{max-width:768px}}@media (min-width:1024px){.container{max-width:1024px}}@media (min-width:1280px){.container{max-width:1280px}}@media (min-width:1536px){.container{max-width:1536px}}
-        body{font-family:'Inter',sans-serif;margin:0;background-color:#000;color:#fff;overflow:hidden}#game-canvas{display:block;width:100vw;height:100vh;cursor:pointer}#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;color:white;text-shadow:0 0 2px #000;pointer-events:none;z-index:10}#hotbar{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background-color:rgba(0,0,0,0.5);padding:4px;border-radius:8px;z-index:10}.hotbar-item{width:48px;height:48px;border:2px solid #555;border-radius:4px;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000;cursor:pointer;image-rendering:pixelated}.hotbar-item.selected{border-color:#fff;box-shadow:0 0 8px #fff}#mobile-controls{position:absolute;bottom:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20}#joystick-area{position:absolute;bottom:40px;left:40px;width:120px;height:120px;background-color:rgba(255,255,255,0.1);border-radius:50%;pointer-events:auto}#joystick-thumb{position:absolute;top:50%;left:50%;width:60px;height:60px;transform:translate(-50%,-50%);background-color:rgba(255,255,255,0.3);border-radius:50%;transition:transform .05s ease-out}#action-buttons{position:absolute;bottom:40px;right:20px;display:flex;flex-direction:column;gap:16px;pointer-events:auto}.action-button{width:64px;height:64px;border-radius:50%;background-color:rgba(255,255,255,0.3);color:white;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,0.5);user-select:none}#look-area{position:absolute;top:0;right:0;width:50%;height:100%;pointer-events:auto}.control-button{padding:8px 16px;background-color:rgba(0,122,255,0.7);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600}.control-button:hover{background-color:rgba(0,122,255,1)}#top-controls{position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:30}.modal-backdrop{position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.7);z-index:99;display:none}.modal-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background-color:rgba(30,30,30,0.95);color:white;padding:24px;border-radius:12px;z-index:100;border:1px solid #555;text-align:center}#menu-modal .modal-content{width:300px;display:flex;flex-direction:column;gap:16px}#menu-modal h2{margin:0 0 16px 0;font-size:1.5rem}#message-modal{display:none}#confirm-modal{display:none}#confirm-modal p{margin:0 0 20px 0}.confirm-button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:600;margin:0 10px}#confirm-yes{background-color:#dc2626;color:white}#confirm-yes:hover{background-color:#b91c1c}#confirm-no{background-color:#6b7280;color:white}#confirm-no:hover{background-color:#4b5563}#inventory-modal .modal-content{width:80%;max-width:800px;max-height:80vh;overflow-y:auto}#inventory-modal h2{margin:0 0 16px 0;font-size:1.5rem}#inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px;background-color:rgba(0,0,0,0.3);padding:8px;border-radius:8px;min-height:200px;max-height:50vh;overflow-y:auto}.inventory-item{width:52px;height:52px;border:2px solid #777;border-radius:4px;background-size:cover;background-position:center;cursor:pointer;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000}.inventory-item:hover{border-color:#fff}#inventory-hotbar-container{margin-top:24px}#inventory-hotbar{display:flex;justify-content:center;gap:4px;background-color:rgba(0,0,0,0.5);padding:4px;border-radius:8px}#inventory-hand{position:absolute;width:52px;height:52px;border:2px solid #fff;border-radius:4px;background-size:cover;background-position:center;image-rendering:pixelated;pointer-events:none;z-index:200;display:none;transform:translate(-50%,-50%);font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000;display:flex;align-items:center;justify-content:center}#debug-info{position:absolute;top:10px;left:10px;background-color:rgba(0,0,0,0.5);padding:8px;border-radius:4px;font-family:monospace;font-size:12px;color:white;z-index:1000;display:none}
+        body{font-family:'Inter',sans-serif;margin:0;background-color:#000;color:#fff;overflow:hidden}#game-canvas{display:block;width:100vw;height:100vh;cursor:pointer}#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;color:white;text-shadow:0 0 2px #000;pointer-events:none;z-index:10;display:block}#hotbar{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background-color:rgba(0,0,0,0.5);padding:4px;border-radius:8px;z-index:10}.hotbar-item{width:48px;height:48px;border:2px solid #555;border-radius:4px;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000;cursor:pointer;image-rendering:pixelated}.hotbar-item.selected{border-color:#fff;box-shadow:0 0 8px #fff}#mobile-controls{position:absolute;bottom:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20}#joystick-area{position:absolute;bottom:40px;left:40px;width:120px;height:120px;background-color:rgba(255,255,255,0.1);border-radius:50%;pointer-events:auto}#joystick-thumb{position:absolute;top:50%;left:50%;width:60px;height:60px;transform:translate(-50%,-50%);background-color:rgba(255,255,255,0.3);border-radius:50%;transition:transform .05s ease-out}#action-buttons{position:absolute;bottom:40px;right:20px;display:flex;flex-direction:column;gap:16px;pointer-events:auto}.action-button{width:64px;height:64px;border-radius:50%;background-color:rgba(255,255,255,0.3);color:white;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,0.5);user-select:none}#look-area{position:absolute;top:0;right:0;width:50%;height:100%;pointer-events:auto}.control-button{padding:8px 16px;background-color:rgba(0,122,255,0.7);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600}.control-button:hover{background-color:rgba(0,122,255,1)}#top-controls{position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:30}.modal-backdrop{position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.7);z-index:99;display:none}.modal-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background-color:rgba(30,30,30,0.95);color:white;padding:24px;border-radius:12px;z-index:100;border:1px solid #555;text-align:center}#menu-modal .modal-content{width:300px;display:flex;flex-direction:column;gap:16px}#menu-modal h2{margin:0 0 16px 0;font-size:1.5rem}#message-modal{display:none}#confirm-modal{display:none}#confirm-modal p{margin:0 0 20px 0}.confirm-button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:600;margin:0 10px}#confirm-yes{background-color:#dc2626;color:white}#confirm-yes:hover{background-color:#b91c1c}#confirm-no{background-color:#6b7280;color:white}#confirm-no:hover{background-color:#4b5563}#inventory-modal .modal-content{width:80%;max-width:800px;max-height:80vh;overflow-y:auto;position:relative}#inventory-modal h2{margin:0 0 16px 0;font-size:1.5rem}#inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px;background-color:rgba(0,0,0,0.3);padding:8px;border-radius:8px;min-height:200px;max-height:50vh;overflow-y:auto}.inventory-item{width:52px;height:52px;border:2px solid #777;border-radius:4px;background-size:cover;background-position:center;cursor:pointer;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000}.inventory-item:hover{border-color:#fff}#inventory-hotbar-container{margin-top:24px}#inventory-hotbar{display:flex;justify-content:center;gap:4px;background-color:rgba(0,0,0,0.5);padding:4px;border-radius:8px}#inventory-hand{position:absolute;width:52px;height:52px;border:2px solid #fff;border-radius:4px;background-size:cover;background-position:center;image-rendering:pixelated;pointer-events:none;z-index:200;display:none;transform:translate(-50%,-50%);font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000;display:flex;align-items:center;justify-content:center}.modal-close-button{position:absolute;top:10px;right:10px;width:30px;height:30px;background-color:#dc2626;color:white;border:none;border-radius:50%;font-size:18px;line-height:1;cursor:pointer;font-weight:bold;display:flex;align-items:center;justify-content:center}.modal-close-button:hover{background-color:#b91c1c}#debug-info{position:absolute;top:10px;left:10px;background-color:rgba(0,0,0,0.5);padding:8px;border-radius:4px;font-family:monospace;font-size:12px;color:white;z-index:1000;display:none}
     </style>
 </head>
 <body>
-    <canvas id="game-canvas"></canvas>
-    <div id="crosshair">+</div>
-    <div id="hotbar"></div>
-    <div id="mobile-controls">
-        <div id="joystick-area"><div id="joystick-thumb"></div></div>
-        <div id="look-area"></div>
-        <div id="action-buttons">
-            <div id="place-button" class="action-button">+</div>
-            <div id="break-button" class="action-button">Х</div>
-            <div id="jump-button" class="action-button">↑</div>
-            <div id="crouch-button" class="action-button">↓</div>
+    <canvas id='game-canvas'></canvas>
+    <div id='crosshair'>+</div>
+    <div id='hotbar'></div>
+    <div id='mobile-controls'>
+        <div id='joystick-area'><div id='joystick-thumb'></div></div>
+        <div id='look-area'></div>
+        <div id='action-buttons'>
+            <div id='place-button' class='action-button'>+</div>
+            <div id='break-button' class='action-button'>Х</div>
+            <div id='jump-button' class='action-button'>↑</div>
+            <div id='crouch-button' class='action-button'>↓</div>
         </div>
     </div>
-    <div id="top-controls">
-        <button id="menu-button" class="control-button">Меню</button>
-        <button id="inventory-button" class="control-button">Інвентар</button>
+    <div id='top-controls'>
+        <button id='menu-button' class='control-button'>Меню</button>
+        <button id='inventory-button' class='control-button'>Інвентар</button>
     </div>
-    <div id="message-modal" class="modal-content"><p>Загрузка Зєфакрафта... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)</p></div>
-    <div id="confirm-modal" class="modal-content">
-        <p id="confirm-text">Чо?</p>
-        <div><button id="confirm-yes" class="confirm-button">Так</button><button id="confirm-no" class="confirm-button">Ні</button></div>
+    <div id='message-modal' class='modal-content'><p>Загрузка Зєфакрафта... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)</p></div>
+    <div id='confirm-modal' class='modal-content'>
+        <p id='confirm-text'>Чо?</p>
+        <div><button id='confirm-yes' class='confirm-button'>Так</button><button id='confirm-no' class='confirm-button'>Ні</button></div>
     </div>
-    <div id="menu-modal" class="modal-backdrop">
-        <div class="modal-content">
+    <div id='menu-modal' class='modal-backdrop'>
+        <div class='modal-content'>
             <h2>Меню Зєфакрафт</h2>
-            <button id="resume-button" class="control-button">Продовжить ігру</button>
-            <button id="save-button" class="control-button">Зберегти мір</button>
-            <button id="load-button" class="control-button">Загрузіть мір</button>
-            <button id="reset-button" class="control-button">Новий мір</button>
+            <button id='resume-button' class='control-button'>Продовжить ігру</button>
+            <button id='save-button' class='control-button'>Зберегти мір</button>
+            <button id='load-button' class='control-button'>Загрузіть мір</button>
+            <button id='reset-button' class='control-button'>Новий мір</button>
+            <button id='back-to-menu-button' class='control-button'>Повернутися до ZefaGaryMenu</button>
         </div>
     </div>
-    <div id="inventory-modal" class="modal-backdrop">
-        <div class="modal-content">
+    <div id='inventory-modal' class='modal-backdrop'>
+        <div class='modal-content'>
             <h2>Інвєнтар</h2>
-            <div id="inventory-grid"></div>
-            <div id="inventory-hotbar-container"><h3>Хот бар</h3><div id="inventory-hotbar"></div></div>
+            <button id='inventory-close-button' class='modal-close-button'>X</button>
+            <div id='inventory-grid'></div>
+            <div id='inventory-hotbar-container'><h3>Хот бар</h3><div id='inventory-hotbar'></div></div>
         </div>
     </div>
-    <div id="inventory-hand"></div>
-    <div id="debug-info"></div>
+    <div id='inventory-hand'></div>
+    <div id='debug-info'></div>
 
-    <script type="importmap">
-        { "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js" } }
+    <script type='importmap'>
+        { 'imports': { 'three': 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js' } }
     </script>
-    <script type="module">
+    <script type='module'>
         import * as THREE from 'three';
 
         const WORLD_WIDTH = 32, WORLD_HEIGHT = 32, WORLD_DEPTH = 32;
@@ -141,6 +143,7 @@
         const saveButton = document.getElementById('save-button');
         const loadButton = document.getElementById('load-button');
         const resetButton = document.getElementById('reset-button');
+        const backToMenuButton = document.getElementById('back-to-menu-button');
         const confirmModal = document.getElementById('confirm-modal');
         const confirmText = document.getElementById('confirm-text');
         const confirmYes = document.getElementById('confirm-yes');
@@ -149,6 +152,7 @@
         const inventoryGrid = document.getElementById('inventory-grid');
         const inventoryHotbar = document.getElementById('inventory-hotbar');
         const inventoryHand = document.getElementById('inventory-hand');
+        const inventoryCloseButton = document.getElementById('inventory-close-button');
         const debugInfo = document.getElementById('debug-info');
 
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveJump = false;
@@ -160,7 +164,7 @@
         let joystickTouchId = null;
 
         function init() {
-            showMessage("Завантаження ZefaCraft...");
+            showMessage('Завантаження ZefaCraft...');
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87CEEB);
             scene.fog = new THREE.Fog(0x87CEEB, 10, WORLD_WIDTH * 1.5);
@@ -217,7 +221,7 @@
 
             if (isTouchDevice) {
                 mobileControlsEl.style.display = 'block';
-                crosshair.style.display = 'none';
+                crosshair.style.display = 'block';
             } else {
                 mobileControlsEl.style.display = 'none';
                 crosshair.style.display = 'block';
@@ -225,12 +229,14 @@
 
             menuButton.addEventListener('click', toggleMenu);
             inventoryButton.addEventListener('click', toggleInventory);
+            inventoryCloseButton.addEventListener('click', toggleInventory);
             resumeButton.addEventListener('click', closeAllModals);
-            saveButton.addEventListener('click', () => { saveWorld(); showMessage("Світ збережено!", 1500); });
-            loadButton.addEventListener('click', () => { closeAllModals(); showMessage("Завантаження світу..."); loadWorld(); respawn(); hideMessage(500); });
-            resetButton.addEventListener('click', () => { confirmText.textContent = "Ви впевнені, що хочете видалити цей світ?"; confirmModal.style.display = 'block'; menuModal.style.display = 'none'; });
+            saveButton.addEventListener('click', () => { saveWorld(); showMessage('Світ збережено!', 1500); });
+            loadButton.addEventListener('click', () => { closeAllModals(); showMessage('Завантаження світу...'); loadWorld(); respawn(); hideMessage(500); });
+            resetButton.addEventListener('click', () => { confirmText.textContent = 'Ви впевнені, що хочете видалити цей світ?'; confirmModal.style.display = 'block'; menuModal.style.display = 'none'; });
+            backToMenuButton.addEventListener('click', () => { window.location.href = 'zefagarymenu.html'; });
             confirmNo.addEventListener('click', () => { confirmModal.style.display = 'none'; toggleMenu(); });
-            confirmYes.addEventListener('click', () => { confirmModal.style.display = 'none'; showMessage("Генерація нового світу..."); setTimeout(() => { generateWorld(); updateWorldMesh(); saveWorld(); respawn(); hideMessage(500); }, 50); });
+            confirmYes.addEventListener('click', () => { confirmModal.style.display = 'none'; showMessage('Генерація нового світу...'); setTimeout(() => { generateWorld(); updateWorldMesh(); saveWorld(); respawn(); hideMessage(500); }, 50); });
             document.addEventListener('mousemove', (event) => { if (isInventoryOpen) { inventoryHand.style.left = event.clientX + 'px'; inventoryHand.style.top = event.clientY + 'px'; } });
         }
 
@@ -344,6 +350,8 @@
                 inventoryHand.style.display = 'none';
                 updateInventoryHotbarUI();
                 document.exitPointerLock();
+            } else {
+                canvas.requestPointerLock();
             }
         }
 
@@ -495,7 +503,7 @@
 
         function saveWorld() {
             try { localStorage.setItem('zefacraft_world', JSON.stringify(Array.from(world))); }
-            catch (e) { console.error("Ашибка какайта:", e); showMessage("Ашибка: хз шо тут", 2000); }
+            catch (e) { console.error('Ашибка какайта:', e); showMessage('Ашибка: хз шо тут', 2000); }
         }
 
         function loadWorld() {
@@ -506,11 +514,11 @@
                     if (Array.isArray(loaded) && loaded.length === world.length) {
                         world.set(loaded);
                     } else {
-                        console.warn("Невірний размір сахранєнія. ОПРЛДВІРЛАРВІЛОРОЛПРРПОВРОПРВРПОВРАОРПОВОРОПРОВРО.");
+                        console.warn('Невірний размір сахранєнія. ОПРЛДВІРЛАРВІЛОРОЛПРРПОВРОПРВРПОВРАОРПОВОРОПРОВРО.');
                         generateWorld();
                     }
                 } catch (e) {
-                    console.error("Ашибка:", e);
+                    console.error('Ашибка:', e);
                     generateWorld();
                 }
             } else {
@@ -551,7 +559,7 @@
                     document.addEventListener('mousemove', onMouseMove);
                 } else {
                     document.removeEventListener('mousemove', onMouseMove);
-                    crosshair.style.display = 'none';
+                    crosshair.style.display = 'block';
                 }
             });
         }
@@ -679,11 +687,16 @@
 
         function handleLookStart(e) {
             e.preventDefault();
-            if (lookTouchId !== null || joystickTouchId === null) return;
-            if (e.changedTouches.length === 0) return;
-            const touch = e.changedTouches[0];
-            lookTouchId = touch.identifier;
-            lastTouch = { x: touch.clientX, y: touch.clientY };
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const rect = lookArea.getBoundingClientRect();
+                if (touch.clientX > rect.left && touch.clientY > rect.top && touch.clientX < rect.right && touch.clientY < rect.bottom && touch.identifier !== joystickTouchId) {
+                    if (lookTouchId !== null) return;
+                    lookTouchId = touch.identifier;
+                    lastTouch = { x: touch.clientX, y: touch.clientY };
+                    return;
+                }
+            }
         }
 
         function handleLookMove(e) {
