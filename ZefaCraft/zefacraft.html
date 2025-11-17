@@ -41,7 +41,7 @@
             <button id='save-button' class='control-button'>Зберегти мір</button>
             <button id='load-button' class='control-button'>Загрузіть мір</button>
             <button id='reset-button' class='control-button'>Новий мір</button>
-            <button id='back-to-menu-button' class='control-button'>Повернутися до ZefaGaryMenu</button>
+            <button id='back-to-menu-button' class='control-button'>Уйті</button>
         </div>
     </div>
     <div id='inventory-modal' class='modal-backdrop'>
@@ -161,7 +161,7 @@
         let joystickTouchId = null;
 
         function init() {
-            showMessage('Завантаження ZefaCraft...');
+            showMessage('Загрузка Зєфакрафта... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)');
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87CEEB);
             scene.fog = new THREE.Fog(0x87CEEB, 10, WORLD_WIDTH * 1.5);
@@ -228,12 +228,12 @@
             inventoryButton.addEventListener('click', toggleInventory);
             inventoryCloseButton.addEventListener('click', toggleInventory);
             resumeButton.addEventListener('click', closeAllModals);
-            saveButton.addEventListener('click', () => { saveWorld(); showMessage('Світ збережено!', 1500); });
-            loadButton.addEventListener('click', () => { closeAllModals(); showMessage('Завантаження світу...'); loadWorld(); respawn(); hideMessage(500); });
-            resetButton.addEventListener('click', () => { confirmText.textContent = 'Ви впевнені, що хочете видалити цей світ?'; confirmModal.style.display = 'block'; menuModal.style.display = 'none'; });
-            backToMenuButton.addEventListener('click', () => { window.location.href = 'zefagarymenu.html'; });
+            saveButton.addEventListener('click', () => { saveWorld(); showMessage('Мір збережено!', 1500); });
+            loadButton.addEventListener('click', () => { closeAllModals(); showMessage('Завантаження міра... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)'); loadWorld(); respawn(); hideMessage(500); });
+            resetButton.addEventListener('click', () => { confirmText.textContent = 'Чо?'; confirmModal.style.display = 'block'; menuModal.style.display = 'none'; });
+            backToMenuButton.addEventListener('click', () => { window.location.href = 'main/zefagarymenu.html'; });
             confirmNo.addEventListener('click', () => { confirmModal.style.display = 'none'; toggleMenu(); });
-            confirmYes.addEventListener('click', () => { confirmModal.style.display = 'none'; showMessage('Генерація нового світу...'); setTimeout(() => { generateWorld(); updateWorldMesh(); saveWorld(); respawn(); hideMessage(500); }, 50); });
+            confirmYes.addEventListener('click', () => { confirmModal.style.display = 'none'; showMessage('Генерація новава міра... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)'); setTimeout(() => { generateWorld(); updateWorldMesh(); saveWorld(); respawn(); hideMessage(500); }, 50); });
             document.addEventListener('mousemove', (event) => { if (isInventoryOpen) { inventoryHand.style.left = event.clientX + 'px'; inventoryHand.style.top = event.clientY + 'px'; } });
         }
 
