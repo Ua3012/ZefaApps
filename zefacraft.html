@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang='uk'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+    <title>Зєфакрафт</title>
+    <style>
+        /*! tailwindcss v3.4.0 | MIT License | https://tailwindcss.com */
+        *,::before,::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::before,::after{--tw-content:''}html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:Inter,system-ui,sans-serif;font-feature-settings:normal;font-variation-settings:normal}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,[type=button],[type=reset],[type=submit]{-webkit-appearance:button;appearance:none;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;appearance:none;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;appearance:none;font:inherit}summary{display:list-item}blockquote,dl,dd,h1,h2,h3,h4,h5,h6,hr,figure,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}ol,ul,menu{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}button,[role=button]{cursor:pointer}:disabled{cursor:default}img,svg,video,canvas,audio,iframe,embed,object{display:block}img,video{max-width:100%;height:auto}[hidden]{display:none}
+        .container{width:100%}@media (min-width:640px){.container{max-width:640px}}@media (min-width:768px){.container{max-width:768px}}@media (min-width:1024px){.container{max-width:1024px}}@media (min-width:1280px){.container{max-width:1280px}}@media (min-width:1536px){.container{max-width:1536px}}
+        body{font-family:'Inter',sans-serif;margin:0;background-color:#000;color:#fff;overflow:hidden}#game-canvas{display:block;width:100vw;height:100vh;cursor:pointer}#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;color:white;text-shadow:0 0 2px #000;pointer-events:none;z-index:10;display:block}#hotbar{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background-color:rgba(0,0,0,0.5);padding:4px;border-radius:8px;z-index:10}.hotbar-item{width:48px;height:48px;border:2px solid #555;border-radius:4px;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000;cursor:pointer;image-rendering:pixelated}.hotbar-item.selected{border-color:#fff;box-shadow:0 0 8px #fff}#mobile-controls{position:absolute;bottom:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20}#joystick-area{position:absolute;bottom:40px;left:40px;width:120px;height:120px;background-color:rgba(255,255,255,0.1);border-radius:50%;pointer-events:auto}#joystick-thumb{position:absolute;top:50%;left:50%;width:60px;height:60px;transform:translate(-50%,-50%);background-color:rgba(255,255,255,0.3);border-radius:50%;transition:transform .05s ease-out}#action-buttons{position:absolute;bottom:40px;right:20px;display:flex;flex-direction:column;gap:16px;pointer-events:auto}.action-button{width:64px;height:64px;border-radius:50%;background-color:rgba(255,255,255,0.3);color:white;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,0.5);user-select:none}#look-area{position:absolute;top:0;right:0;width:50%;height:100%;pointer-events:auto}.control-button{padding:8px 16px;background-color:rgba(0,122,255,0.7);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600}.control-button:hover{background-color:rgba(0,122,255,1)}#top-controls{position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:30}.modal-backdrop{position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.7);z-index:99;display:none}.modal-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background-color:rgba(30,30,30,0.95);color:white;padding:24px;border-radius:12px;z-index:100;border:1px solid #555;text-align:center}#menu-modal .modal-content{width:300px;display:flex;flex-direction:column;gap:16px}#menu-modal h2{margin:0 0 16px 0;font-size:1.5rem}#message-modal{display:none}#confirm-modal{display:none}#confirm-modal p{margin:0 0 20px 0}.confirm-button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:600;margin:0 10px}#confirm-yes{background-color:#dc2626;color:white}#confirm-yes:hover{background-color:#b91c1c}#confirm-no{background-color:#6b7280;color:white}#confirm-no:hover{background-color:#4b5563}#inventory-modal .modal-content{width:80%;max-width:800px;max-height:80vh;overflow-y:auto;position:relative}#inventory-modal h2{margin:0 0 16px 0;font-size:1.5rem}#inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px;background-color:rgba(0,0,0,0.3);padding:8px;border-radius:8px;min-height:200px;max-height:50vh;overflow-y:auto}.inventory-item{width:52px;height:52px;border:2px solid #777;border-radius:4px;background-size:cover;background-position:center;cursor:pointer;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000}.inventory-item:hover{border-color:#fff}#inventory-hotbar-container{margin-top:24px}#inventory-hotbar{display:flex;justify-content:center;gap:4px;background-color:rgba(0,0,0,0.5);padding:4px;border-radius:8px}#inventory-hand{position:absolute;width:52px;height:52px;border:2px solid #fff;border-radius:4px;background-size:cover;background-position:center;image-rendering:pixelated;pointer-events:none;z-index:200;display:none;transform:translate(-50%,-50%);font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000;display:flex;align-items:center;justify-content:center}.modal-close-button{position:absolute;top:10px;right:10px;width:30px;height:30px;background-color:#dc2626;color:white;border:none;border-radius:50%;font-size:18px;line-height:1;cursor:pointer;font-weight:bold;display:flex;align-items:center;justify-content:center}.modal-close-button:hover{background-color:#b91c1c}#debug-info{position:absolute;top:10px;left:10px;background-color:rgba(0,0,0,0.5);padding:8px;border-radius:4px;font-family:monospace;font-size:12px;color:white;z-index:1000;display:none}
+    </style>
+</head>
+<body>
+    <canvas id='game-canvas'></canvas>
+    <div id='crosshair'>+</div>
+    <div id='hotbar'></div>
+    <div id='mobile-controls'>
+        <div id='joystick-area'><div id='joystick-thumb'></div></div>
+        <div id='look-area'></div>
+        <div id='action-buttons'>
+            <div id='place-button' class='action-button'>+</div>
+            <div id='break-button' class='action-button'>Х</div>
+            <div id='jump-button' class='action-button'>↑</div>
+            <div id='crouch-button' class='action-button'>↓</div>
+        </div>
+    </div>
+    <div id='top-controls'>
+        <button id='menu-button' class='control-button'>Меню</button>
+        <button id='inventory-button' class='control-button'>Інвєнтар</button>
+    </div>
+    <div id='message-modal' class='modal-content'><p>Загрузка Зєфакрафта... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)</p></div>
+    <div id='confirm-modal' class='modal-content'>
+        <p id='confirm-text'>Чо?</p>
+        <div><button id='confirm-yes' class='confirm-button'>Да</button><button id='confirm-no' class='confirm-button'>Нєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєє</button></div>
+    </div>
+    <div id='menu-modal' class='modal-backdrop'>
+        <div class='modal-content'>
+            <h2>Меню Зєфакрафт</h2>
+            <button id='resume-button' class='control-button'>Продовжить ігру</button>
+            <button id='save-button' class='control-button'>Зберегти мір</button>
+            <button id='load-button' class='control-button'>Загрузіть мір</button>
+            <button id='reset-button' class='control-button'>Новий мір</button>
+            <button id='back-to-menu-button' class='control-button'>Уйті</button>
+        </div>
+    </div>
+    <div id='inventory-modal' class='modal-backdrop'>
+        <div class='modal-content'>
+            <h2>Інвєнтар</h2>
+            <button id='inventory-close-button' class='modal-close-button'>X</button>
+            <div id='inventory-grid'></div>
+            <div id='inventory-hotbar-container'><h3>Хот бар</h3><div id='inventory-hotbar'></div></div>
+        </div>
+    </div>
+    <div id='inventory-hand'></div>
+    <div id='debug-info'></div>
+
+    <script type='module'>
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+
+        const WORLD_WIDTH = 128, WORLD_HEIGHT = 32, WORLD_DEPTH = 128;
+        const VOID_Y = -20, RESPAWN_Y = WORLD_HEIGHT + 5;
+        const PLAYER_HEIGHT = 1.8, PLAYER_HEIGHT_CROUCH = 1.2;
+        const PLAYER_RADIUS = 0.3;
+        const PLAYER_EYE_HEIGHT = 1.62, PLAYER_EYE_HEIGHT_CROUCH = 1.0;
+        const PLAYER_SPEED = 5.0, PLAYER_SPEED_CROUCH = 2.5, PLAYER_JUMP_FORCE = 7.0, GRAVITY = -20.0;
+        const MOUSE_SENSITIVITY = 0.002, TOUCH_SENSITIVITY = 0.003;
+        const ZEFABLOCK_TEXTURE_URL = 'zefablock.png';
+
+        const BLOCKS = {
+            AIR: 0, GRASS: 1, STONE: 2, WOOD: 3, LEAVES: 4, WATER: 5, ZEFABLOCK: 6,
+            WHITE: 7, RED: 8, ORANGE: 9, YELLOW: 10, LIME: 11, GREEN: 12, CYAN: 13, BLUE: 14,
+            MAGENTA: 15, PURPLE: 16, BROWN: 17, GRAY: 18, LIGHT_GRAY: 19, BLACK: 20, PINK: 21,
+            WHITE_GLASS: 22, RED_GLASS: 23, ORANGE_GLASS: 24, YELLOW_GLASS: 25, LIME_GLASS: 26, GREEN_GLASS: 27,
+            CYAN_GLASS: 28, BLUE_GLASS: 29, MAGENTA_GLASS: 30, PURPLE_GLASS: 31, BROWN_GLASS: 32, GRAY_GLASS: 33,
+            LIGHT_GRAY_GLASS: 34, BLACK_GLASS: 35, PINK_GLASS: 36, GLASS: 37,
+        };
+
+        const BLOCK_TYPES = {
+            [BLOCKS.AIR]: { name: 'Повітря', transparent: true },
+            [BLOCKS.GRASS]: { name: 'Трава (іді патрогай)', color: 0x44aa44, topColor: 0x55dd55, sideColor: 0x9b7653 },
+            [BLOCKS.STONE]: { name: 'Камєнь', color: 0x888888 },
+            [BLOCKS.WOOD]: { name: 'Дерево', color: 0x856a4f, topColor: 0xaf8e70, sideColor: 0x856a4f },
+            [BLOCKS.LEAVES]: { name: 'Листя', color: 0x22aa22, transparent: true, opacity: 0.8 },
+            [BLOCKS.WATER]: { name: 'Вода', color: 0x4444ff, transparent: true, opacity: 0.6 },
+            [BLOCKS.ZEFABLOCK]: { name: 'Зєфаблок', customTexture: true },
+            [BLOCKS.WHITE]: { name: 'Бєлий', color: 0xffffff }, [BLOCKS.RED]: { name: 'Червоний', color: 0xff0000 },
+            [BLOCKS.ORANGE]: { name: 'Помаранчевий', color: 0xffa500 }, [BLOCKS.YELLOW]: { name: 'Жовтий', color: 0xffff00 },
+            [BLOCKS.LIME]: { name: 'Лайм', color: 0x00ff00 }, [BLOCKS.GREEN]: { name: 'Зельоний', color: 0x008000 },
+            [BLOCKS.CYAN]: { name: 'Блакитний', color: 0x00ffff }, [BLOCKS.BLUE]: { name: 'Синій', color: 0x0000ff },
+            [BLOCKS.MAGENTA]: { name: 'Маджента', color: 0xff00ff }, [BLOCKS.PURPLE]: { name: 'Фіалєтавий', color: 0x800080 },
+            [BLOCKS.BROWN]: { name: 'Коричневий', color: 0x964B00 }, [BLOCKS.GRAY]: { name: 'Сірий', color: 0x808080 },
+            [BLOCKS.LIGHT_GRAY]: { name: 'Свєтла-сірий', color: 0xd3d3d3 }, [BLOCKS.BLACK]: { name: 'Чорний', color: 0x000000 },
+            [BLOCKS.PINK]: { name: 'Розавий', color: 0xffc0cb },
+            [BLOCKS.WHITE_GLASS]: { name: 'Біле стікло', color: 0xffffff, transparent: true, opacity: 0.3 },
+            [BLOCKS.RED_GLASS]: { name: 'Червоне стікло', color: 0xff0000, transparent: true, opacity: 0.3 },
+            [BLOCKS.ORANGE_GLASS]: { name: 'Помаранчеве стікло', color: 0xffa500, transparent: true, opacity: 0.3 },
+            [BLOCKS.YELLOW_GLASS]: { name: 'Жовте стікло', color: 0xffff00, transparent: true, opacity: 0.3 },
+            [BLOCKS.LIME_GLASS]: { name: 'Лаймове стікло', color: 0x00ff00, transparent: true, opacity: 0.3 },
+            [BLOCKS.GREEN_GLASS]: { name: 'Зелене стікло', color: 0x008000, transparent: true, opacity: 0.3 },
+            [BLOCKS.CYAN_GLASS]: { name: 'Блакитне стікло', color: 0x00ffff, transparent: true, opacity: 0.3 },
+            [BLOCKS.BLUE_GLASS]: { name: 'Синє стікло', color: 0x0000ff, transparent: true, opacity: 0.3 },
+            [BLOCKS.MAGENTA_GLASS]: { name: 'Маджента стікло', color: 0xff00ff, transparent: true, opacity: 0.3 },
+            [BLOCKS.PURPLE_GLASS]: { name: 'Фіолетове стікло', color: 0x800080, transparent: true, opacity: 0.3 },
+            [BLOCKS.BROWN_GLASS]: { name: 'Коричневе стікло', color: 0x964B00, transparent: true, opacity: 0.3 },
+            [BLOCKS.GRAY_GLASS]: { name: 'Сіре стікло', color: 0x808080, transparent: true, opacity: 0.3 },
+            [BLOCKS.LIGHT_GRAY_GLASS]: { name: 'Свєтла-сіре стікло', color: 0xd3d3d3, transparent: true, opacity: 0.3 },
+            [BLOCKS.BLACK_GLASS]: { name: 'Чорне стікло', color: 0x333333, transparent: true, opacity: 0.3 },
+            [BLOCKS.PINK_GLASS]: { name: 'Розаває стікло', color: 0xffc0cb, transparent: true, opacity: 0.3 },
+            [BLOCKS.GLASS]: { name: 'Стікло', color: 0xeeeeff, transparent: true, opacity: 0.25 },
+        };
+
+        let scene, camera, renderer, clock, raycaster;
+        let player, playerVelocity, playerOnGround, playerControls;
+        let world, instancedMeshes = {}, blockMaterials = {};
+        let hotbarItems = [BLOCKS.GRASS, BLOCKS.STONE, BLOCKS.WOOD, BLOCKS.ZEFABLOCK, BLOCKS.GLASS, BLOCKS.WHITE_GLASS, BLOCKS.RED, BLOCKS.BLUE, BLOCKS.YELLOW];
+        let selectedBlockId = hotbarItems[0];
+        let isTouchDevice = 'ontouchstart' in window;
+        let isMenuOpen = false, isInventoryOpen = false, heldInventoryBlock = null;
+        let debugMode = false, freeCamMode = false;
+        let playerMesh;
+        let isCrouching = false;
+
+        const canvas = document.getElementById('game-canvas');
+        const hotbarEl = document.getElementById('hotbar');
+        const mobileControlsEl = document.getElementById('mobile-controls');
+        const joystickArea = document.getElementById('joystick-area');
+        const joystickThumb = document.getElementById('joystick-thumb');
+        const lookArea = document.getElementById('look-area');
+        const jumpButton = document.getElementById('jump-button');
+        const placeButton = document.getElementById('place-button');
+        const breakButton = document.getElementById('break-button');
+        const crouchButton = document.getElementById('crouch-button');
+        const messageModal = document.getElementById('message-modal');
+        const crosshair = document.getElementById('crosshair');
+        const menuButton = document.getElementById('menu-button');
+        const inventoryButton = document.getElementById('inventory-button');
+        const menuModal = document.getElementById('menu-modal');
+        const resumeButton = document.getElementById('resume-button');
+        const saveButton = document.getElementById('save-button');
+        const loadButton = document.getElementById('load-button');
+        const resetButton = document.getElementById('reset-button');
+        const backToMenuButton = document.getElementById('back-to-menu-button');
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmText = document.getElementById('confirm-text');
+        const confirmYes = document.getElementById('confirm-yes');
+        const confirmNo = document.getElementById('confirm-no');
+        const inventoryModal = document.getElementById('inventory-modal');
+        const inventoryGrid = document.getElementById('inventory-grid');
+        const inventoryHotbar = document.getElementById('inventory-hotbar');
+        const inventoryHand = document.getElementById('inventory-hand');
+        const inventoryCloseButton = document.getElementById('inventory-close-button');
+        const debugInfo = document.getElementById('debug-info');
+
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveJump = false;
+        let breakAction = false, placeAction = false;
+        let joystickDelta = { x: 0, y: 0 };
+        let lookDelta = { x: 0, y: 0 };
+        let lastTouch = { x: 0, y: 0 };
+        let lookTouchId = null;
+        let joystickTouchId = null;
+
+        function init() {
+            showMessage('Загрузка Зєфакрафта... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 10, WORLD_WIDTH * 1.5);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            player = { mesh: new THREE.Object3D() };
+            playerVelocity = new THREE.Vector3();
+            playerOnGround = false;
+
+            playerControls = {
+                yaw: new THREE.Object3D(),
+                pitch: new THREE.Object3D()
+            };
+            playerControls.pitch.add(camera);
+            playerControls.yaw.add(playerControls.pitch);
+            player.mesh.add(playerControls.yaw);
+            scene.add(player.mesh);
+
+            const playerGeometry = new THREE.BoxGeometry(PLAYER_RADIUS * 2, PLAYER_HEIGHT, PLAYER_RADIUS * 2);
+            const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+            playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+            playerMesh.position.y = PLAYER_HEIGHT / 2;
+            player.mesh.add(playerMesh);
+            playerMesh.visible = false;
+
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirLight.position.set(1, 1, 0.5).normalize();
+            scene.add(dirLight);
+
+            clock = new THREE.Clock();
+            raycaster = new THREE.Raycaster();
+            world = new Uint8Array(WORLD_WIDTH * WORLD_HEIGHT * WORLD_DEPTH);
+
+            createMaterials();
+            createInstancedMeshes();
+            loadWorld();
+            initControls();
+            initUI();
+            respawn();
+            animate();
+            hideMessage();
+        }
+
+        function initUI() {
+            updateHotbarUI();
+            populateInventoryGrid();
+            updateInventoryHotbarUI();
+
+            if (isTouchDevice) {
+                mobileControlsEl.style.display = 'block';
+                crosshair.style.display = 'block';
+            } else {
+                mobileControlsEl.style.display = 'none';
+                crosshair.style.display = 'block';
+            }
+
+            menuButton.addEventListener('click', toggleMenu);
+            inventoryButton.addEventListener('click', toggleInventory);
+            inventoryCloseButton.addEventListener('click', toggleInventory);
+            resumeButton.addEventListener('click', closeAllModals);
+            saveButton.addEventListener('click', () => { saveWorld(); showMessage('Мір збережено!', 1500); });
+            loadButton.addEventListener('click', () => { closeAllModals(); showMessage('Завантаження міра... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)'); loadWorld(); respawn(); hideMessage(500); });
+            resetButton.addEventListener('click', () => { confirmText.textContent = 'Чо?'; confirmModal.style.display = 'block'; menuModal.style.display = 'none'; });
+            backToMenuButton.addEventListener('click', () => { window.location.href = 'zefagarymenu.html'; });
+            confirmNo.addEventListener('click', () => { confirmModal.style.display = 'none'; toggleMenu(); });
+            confirmYes.addEventListener('click', () => { confirmModal.style.display = 'none'; showMessage('Генерація новава міра... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)'); setTimeout(() => { generateWorld(); updateWorldMesh(); saveWorld(); respawn(); hideMessage(500); }, 50); });
+            document.addEventListener('mousemove', (event) => { if (isInventoryOpen) { inventoryHand.style.left = event.clientX + 'px'; inventoryHand.style.top = event.clientY + 'px'; } });
+        }
+
+        function createHotbarItem(blockId) {
+            const item = document.createElement('div');
+            item.className = 'hotbar-item';
+            const blockType = BLOCK_TYPES[blockId];
+            if (blockType.customTexture) {
+                item.style.backgroundImage = `url(${ZEFABLOCK_TEXTURE_URL})`;
+            } else if (blockType.topColor) {
+                item.style.backgroundColor = `#${blockType.topColor.toString(16).padStart(6, '0')}`;
+            } else {
+                item.style.backgroundColor = `#${(blockType.color || 0xcccccc).toString(16).padStart(6, '0')}`;
+            }
+            item.textContent = blockType.name.substring(0, 3).toUpperCase();
+            return item;
+        }
+
+        function updateHotbarUI() {
+            hotbarEl.innerHTML = '';
+            hotbarItems.forEach((blockId, index) => {
+                const item = createHotbarItem(blockId);
+                if (blockId === selectedBlockId) item.classList.add('selected');
+                item.addEventListener('click', () => { selectedBlockId = blockId; updateHotbarUI(); });
+                hotbarEl.appendChild(item);
+            });
+        }
+
+        function populateInventoryGrid() {
+            inventoryGrid.innerHTML = '';
+            for (const blockId in BLOCK_TYPES) {
+                if (blockId == BLOCKS.AIR) continue;
+                const block = BLOCK_TYPES[blockId];
+                const item = document.createElement('div');
+                item.className = 'inventory-item';
+                if (block.customTexture) {
+                    item.style.backgroundImage = `url(${ZEFABLOCK_TEXTURE_URL})`;
+                } else if (block.topColor) {
+                    item.style.backgroundColor = `#${block.topColor.toString(16).padStart(6, '0')}`;
+                } else {
+                    item.style.backgroundColor = `#${(block.color || 0xcccccc).toString(16).padStart(6, '0')}`;
+                }
+                item.textContent = block.name.substring(0, 3).toUpperCase();
+                item.title = block.name;
+                item.addEventListener('click', () => handleInventoryClick(blockId));
+                inventoryGrid.appendChild(item);
+            }
+        }
+
+        function updateInventoryHotbarUI() {
+            inventoryHotbar.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const blockId = hotbarItems[i];
+                const item = createHotbarItem(blockId);
+                item.classList.add('inventory-hotbar-slot');
+                item.addEventListener('click', () => handleInventoryHotbarClick(i));
+                inventoryHotbar.appendChild(item);
+            }
+        }
+
+        function handleInventoryClick(blockId) {
+            heldInventoryBlock = parseInt(blockId);
+            const blockType = BLOCK_TYPES[blockId];
+            if (blockType.customTexture) {
+                inventoryHand.style.backgroundImage = `url(${ZEFABLOCK_TEXTURE_URL})`;
+                inventoryHand.style.backgroundColor = 'transparent';
+            } else if (blockType.topColor) {
+                inventoryHand.style.backgroundColor = `#${blockType.topColor.toString(16).padStart(6, '0')}`;
+                inventoryHand.style.backgroundImage = 'none';
+            } else {
+                inventoryHand.style.backgroundColor = `#${(blockType.color || 0xcccccc).toString(16).padStart(6, '0')}`;
+                inventoryHand.style.backgroundImage = 'none';
+            }
+            inventoryHand.textContent = blockType.name.substring(0, 3).toUpperCase();
+            inventoryHand.style.display = 'flex';
+        }
+
+        function handleInventoryHotbarClick(slotIndex) {
+            if (heldInventoryBlock !== null) {
+                hotbarItems[slotIndex] = heldInventoryBlock;
+                heldInventoryBlock = null;
+                inventoryHand.style.display = 'none';
+                updateHotbarUI();
+                updateInventoryHotbarUI();
+            }
+        }
+
+        function showMessage(text, duration = null) {
+            messageModal.textContent = text;
+            messageModal.style.display = 'block';
+            if (duration) setTimeout(hideMessage, duration);
+        }
+
+        function hideMessage() { messageModal.style.display = 'none'; }
+
+        function toggleMenu() {
+            isMenuOpen = !isMenuOpen;
+            isInventoryOpen = false;
+            inventoryModal.style.display = 'none';
+            menuModal.style.display = isMenuOpen ? 'block' : 'none';
+            if (isMenuOpen) document.exitPointerLock();
+        }
+
+        function toggleInventory() {
+            isInventoryOpen = !isInventoryOpen;
+            isMenuOpen = false;
+            menuModal.style.display = 'none';
+            inventoryModal.style.display = isInventoryOpen ? 'block' : 'none';
+            if (isInventoryOpen) {
+                heldInventoryBlock = null;
+                inventoryHand.style.display = 'none';
+                updateInventoryHotbarUI();
+                document.exitPointerLock();
+            } else {
+                canvas.requestPointerLock();
+            }
+        }
+
+        function closeAllModals() {
+            isMenuOpen = false; isInventoryOpen = false;
+            menuModal.style.display = 'none'; inventoryModal.style.display = 'none'; confirmModal.style.display = 'none';
+            canvas.requestPointerLock();
+        }
+
+        function toggleDebugMode() {
+            debugMode = !debugMode;
+            debugInfo.style.display = debugMode ? 'block' : 'none';
+        }
+
+        function toggleFreeCamMode() {
+            freeCamMode = !freeCamMode;
+            playerMesh.visible = freeCamMode;
+
+            if (freeCamMode) {
+                playerControls.yaw.remove(playerControls.pitch);
+                scene.add(playerControls.pitch);
+                const worldPos = new THREE.Vector3();
+                camera.getWorldPosition(worldPos);
+                camera.position.copy(worldPos);
+                camera.rotation.copy(playerControls.pitch.rotation);
+                playerControls.pitch.rotation.set(0, 0, 0);
+            } else {
+                scene.remove(playerControls.pitch);
+                playerControls.yaw.add(playerControls.pitch);
+                camera.position.set(0, PLAYER_EYE_HEIGHT, 0);
+                playerControls.pitch.rotation.x = 0;
+            }
+        }
+
+        function createMaterials() {
+            const loader = new THREE.TextureLoader();
+            const zefaTexture = loader.load(ZEFABLOCK_TEXTURE_URL);
+            zefaTexture.magFilter = THREE.NearestFilter;
+            zefaTexture.minFilter = THREE.NearestFilter;
+
+            for (const blockId in BLOCK_TYPES) {
+                const block = BLOCK_TYPES[blockId];
+                if (block.transparent) continue;
+                if (block.customTexture) {
+                    blockMaterials[blockId] = new THREE.MeshLambertMaterial({ map: zefaTexture });
+                } else if (block.topColor) {
+                    blockMaterials[blockId] = [
+                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }),
+                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }),
+                        new THREE.MeshLambertMaterial({ color: block.topColor || block.color }),
+                        new THREE.MeshLambertMaterial({ color: block.color }),
+                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }),
+                        new THREE.MeshLambertMaterial({ color: block.sideColor || block.color }),
+                    ];
+                } else {
+                    blockMaterials[blockId] = new THREE.MeshLambertMaterial({ color: block.color || 0xff00ff });
+                }
+            }
+
+            blockMaterials[BLOCKS.LEAVES] = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[BLOCKS.LEAVES].color, transparent: true, opacity: BLOCK_TYPES[BLOCKS.LEAVES].opacity, alphaTest: 0.1, side: THREE.DoubleSide });
+            blockMaterials[BLOCKS.WATER] = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[BLOCKS.WATER].color, transparent: true, opacity: BLOCK_TYPES[BLOCKS.WATER].opacity, side: THREE.DoubleSide });
+
+            for (let i = 0; i < 16; i++) {
+                const blockId = BLOCKS.WHITE_GLASS + i;
+                const block = BLOCK_TYPES[blockId];
+                if (block) {
+                    blockMaterials[blockId] = new THREE.MeshLambertMaterial({ color: block.color, transparent: true, opacity: block.opacity, side: THREE.DoubleSide });
+                }
+            }
+            blockMaterials[BLOCKS.GLASS] = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[BLOCKS.GLASS].color, transparent: true, opacity: BLOCK_TYPES[BLOCKS.GLASS].opacity, side: THREE.DoubleSide });
+        }
+
+        function createInstancedMeshes() {
+            const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
+            const maxBlocks = WORLD_WIDTH * WORLD_HEIGHT * WORLD_DEPTH;
+            for (const blockId in BLOCK_TYPES) {
+                if (blockId == BLOCKS.AIR) continue;
+                const mesh = new THREE.InstancedMesh(blockGeometry, blockMaterials[blockId], maxBlocks);
+                mesh.count = 0;
+                scene.add(mesh);
+                instancedMeshes[blockId] = mesh;
+            }
+        }
+
+        function getBlock(x, y, z) {
+            x = Math.floor(x); y = Math.floor(y); z = Math.floor(z);
+            if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT || z < 0 || z >= WORLD_DEPTH) return BLOCKS.AIR;
+            return world[y * WORLD_WIDTH * WORLD_DEPTH + z * WORLD_WIDTH + x];
+        }
+
+        function setBlock(x, y, z, blockId) {
+            x = Math.floor(x); y = Math.floor(y); z = Math.floor(z);
+            if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT || z < 0 || z >= WORLD_DEPTH) return;
+            world[y * WORLD_WIDTH * WORLD_DEPTH + z * WORLD_WIDTH + x] = blockId;
+            updateWorldMesh();
+        }
+
+        const NON_SOLID_BLOCKS = new Set([BLOCKS.AIR, BLOCKS.WATER, BLOCKS.LEAVES]);
+        function isBlockSolid(blockId) { return !NON_SOLID_BLOCKS.has(blockId); }
+
+        function generateWorld() {
+            for (let x = 0; x < WORLD_WIDTH; x++) {
+                for (let z = 0; z < WORLD_DEPTH; z++) {
+                    for (let y = 0; y < WORLD_HEIGHT; y++) {
+                        let blockId = BLOCKS.AIR;
+                        if (y < WORLD_HEIGHT / 2 - 1) blockId = BLOCKS.STONE;
+                        else if (y < WORLD_HEIGHT / 2) blockId = BLOCKS.GRASS;
+                        world[y * WORLD_WIDTH * WORLD_DEPTH + z * WORLD_WIDTH + x] = blockId;
+                    }
+                }
+            }
+            updateWorldMesh();
+        }
+
+        function updateWorldMesh() {
+            for (const blockId in instancedMeshes) instancedMeshes[blockId].count = 0;
+            const dummy = new THREE.Object3D();
+            const counts = {};
+            for (let y = 0; y < WORLD_HEIGHT; y++) {
+                for (let z = 0; z < WORLD_DEPTH; z++) {
+                    for (let x = 0; x < WORLD_WIDTH; x++) {
+                        const blockId = getBlock(x, y, z);
+                        if (blockId === BLOCKS.AIR) continue;
+                        let isVisible = false;
+                        const neighbors = [[x+1,y,z],[x-1,y,z],[x,y+1,z],[x,y-1,z],[x,y,z+1],[x,y,z-1]];
+                        for (const [nx,ny,nz] of neighbors) {
+                            const nId = getBlock(nx,ny,nz);
+                            const nType = BLOCK_TYPES[nId];
+                            if (nId === BLOCKS.AIR || (nType && nType.transparent && nId !== blockId)) { isVisible = true; break; }
+                        }
+                        if (!isVisible && BLOCK_TYPES[blockId].transparent) {
+                            for (const [nx,ny,nz] of neighbors) if (getBlock(nx,ny,nz) !== blockId) { isVisible = true; break; }
+                        }
+                        if (!isVisible) continue;
+                        const mesh = instancedMeshes[blockId];
+                        if (!mesh) continue;
+                        if (!counts[blockId]) counts[blockId] = 0;
+                        dummy.position.set(x + 0.5, y + 0.5, z + 0.5);
+                        dummy.updateMatrix();
+                        mesh.setMatrixAt(counts[blockId]++, dummy.matrix);
+                    }
+                }
+            }
+            for (const blockId in instancedMeshes) {
+                instancedMeshes[blockId].count = counts[blockId] || 0;
+                instancedMeshes[blockId].instanceMatrix.needsUpdate = true;
+            }
+        }
+
+        function saveWorld() {
+            try { localStorage.setItem('zefacraft_world', JSON.stringify(Array.from(world))); }
+            catch (e) { console.error('Ашибка какайта:', e); showMessage('Ашибка: хз шо тут', 2000); }
+        }
+
+        function loadWorld() {
+            const saved = localStorage.getItem('zefacraft_world');
+            if (saved) {
+                try {
+                    const loaded = JSON.parse(saved);
+                    if (Array.isArray(loaded) && loaded.length === world.length) {
+                        world.set(loaded);
+                    } else {
+                        console.warn('Невірний размір сахранєнія. ОПРЛДВІРЛАРВІЛОРОЛПРРПОВРОПРВРПОВРАОРПОВОРОПРОВРО.');
+                        generateWorld();
+                    }
+                } catch (e) {
+                    console.error('Ашибка:', e);
+                    generateWorld();
+                }
+            } else {
+                generateWorld();
+            }
+            updateWorldMesh();
+        }
+
+        function respawn() {
+            player.mesh.position.set(WORLD_WIDTH / 2, RESPAWN_Y, WORLD_DEPTH / 2);
+            playerVelocity.set(0, 0, 0);
+            playerControls.yaw.rotation.y = 0;
+            playerControls.pitch.rotation.x = 0;
+            camera.position.set(0, PLAYER_EYE_HEIGHT, 0);
+            isCrouching = false;
+            updatePlayerHeight();
+        }
+
+        function updatePlayerHeight() {
+            const targetHeight = isCrouching ? PLAYER_HEIGHT_CROUCH : PLAYER_HEIGHT;
+            const targetEye = isCrouching ? PLAYER_EYE_HEIGHT_CROUCH : PLAYER_EYE_HEIGHT;
+            playerMesh.scale.y = targetHeight / PLAYER_HEIGHT;
+            playerMesh.position.y = targetHeight / 2;
+            camera.position.y = targetEye;
+        }
+
+        function initControls() {
+            if (isTouchDevice) initTouchControls();
+            else { initPointerLock(); initKeydown(); initMouse(); }
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function initPointerLock() {
+            canvas.addEventListener('click', () => { if (!isMenuOpen && !isInventoryOpen && !document.pointerLockElement) canvas.requestPointerLock(); });
+            document.addEventListener('pointerlockchange', () => {
+                if (document.pointerLockElement === canvas) {
+                    crosshair.style.display = 'block';
+                    document.addEventListener('mousemove', onMouseMove);
+                } else {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    crosshair.style.display = 'block';
+                }
+            });
+        }
+
+        function initKeydown() {
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'F3') toggleDebugMode();
+                if (e.code === 'KeyC' && debugMode) toggleFreeCamMode();
+                if (e.code === 'Escape') { if (isInventoryOpen) toggleInventory(); else if (isMenuOpen) toggleMenu(); else if (document.pointerLockElement) document.exitPointerLock(); return; }
+                if (e.code === 'KeyE') { toggleInventory(); return; }
+                if (isMenuOpen || isInventoryOpen) return;
+                switch (e.code) {
+                    case 'KeyW': moveForward = true; break;
+                    case 'KeyS': moveBackward = true; break;
+                    case 'KeyA': moveLeft = true; break;
+                    case 'KeyD': moveRight = true; break;
+                    case 'Space': moveJump = true; break;
+                    case 'ShiftLeft': case 'ShiftRight': isCrouching = true; updatePlayerHeight(); break;
+                }
+                if (e.code.startsWith('Digit')) {
+                    const i = parseInt(e.code[5]) - 1;
+                    if (i >= 0 && i < hotbarItems.length) { selectedBlockId = hotbarItems[i]; updateHotbarUI(); }
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                switch (e.code) {
+                    case 'KeyW': moveForward = false; break;
+                    case 'KeyS': moveBackward = false; break;
+                    case 'KeyA': moveLeft = false; break;
+                    case 'KeyD': moveRight = false; break;
+                    case 'Space': moveJump = false; break;
+                    case 'ShiftLeft': case 'ShiftRight': isCrouching = false; updatePlayerHeight(); break;
+                }
+            });
+        }
+
+        function initMouse() {
+            canvas.addEventListener('mousedown', (e) => {
+                if (document.pointerLockElement !== canvas || isMenuOpen || isInventoryOpen) return;
+                if (e.button === 0) breakAction = true; else if (e.button === 2) placeAction = true;
+            });
+            document.addEventListener('mouseup', (e) => {
+                if (e.button === 0) breakAction = false; else if (e.button === 2) placeAction = false;
+            });
+        }
+
+        function onMouseMove(e) {
+            if (document.pointerLockElement !== canvas) return;
+            const mx = e.movementX * MOUSE_SENSITIVITY;
+            const my = e.movementY * MOUSE_SENSITIVITY;
+            if (freeCamMode) {
+                camera.rotation.y -= mx;
+                camera.rotation.x -= my;
+                camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+            } else {
+                playerControls.yaw.rotation.y -= mx;
+                playerControls.pitch.rotation.x -= my;
+                playerControls.pitch.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, playerControls.pitch.rotation.x));
+            }
+        }
+
+        function initTouchControls() {
+            joystickArea.addEventListener('touchstart', handleJoystickStart, { passive: false });
+            joystickArea.addEventListener('touchmove', handleJoystickMove, { passive: false });
+            joystickArea.addEventListener('touchend', handleJoystickEnd, { passive: false });
+            lookArea.addEventListener('touchstart', handleLookStart, { passive: false });
+            lookArea.addEventListener('touchmove', handleLookMove, { passive: false });
+            lookArea.addEventListener('touchend', handleLookEnd, { passive: false });
+            jumpButton.addEventListener('touchstart', (e) => { e.preventDefault(); moveJump = true; });
+            jumpButton.addEventListener('touchend', () => moveJump = false);
+            placeButton.addEventListener('touchstart', (e) => { e.preventDefault(); placeAction = true; });
+            placeButton.addEventListener('touchend', () => placeAction = false);
+            breakButton.addEventListener('touchstart', (e) => { e.preventDefault(); breakAction = true; });
+            breakButton.addEventListener('touchend', () => breakAction = false);
+            crouchButton.addEventListener('touchstart', (e) => { e.preventDefault(); isCrouching = true; updatePlayerHeight(); });
+            crouchButton.addEventListener('touchend', () => { isCrouching = false; updatePlayerHeight(); });
+        }
+
+        function handleJoystickStart(e) {
+            e.preventDefault();
+            if (joystickTouchId !== null) return;
+            if (e.changedTouches.length === 0) return;
+            const touch = e.changedTouches[0];
+            joystickTouchId = touch.identifier;
+            handleJoystickMove(e);
+        }
+
+        function handleJoystickMove(e) {
+            e.preventDefault();
+            if (joystickTouchId === null) return;
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                if (touch.identifier === joystickTouchId) {
+                    const rect = joystickArea.getBoundingClientRect();
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+                    let dx = touch.clientX - cx;
+                    let dy = touch.clientY - cy;
+                    const maxDist = rect.width / 2 - 30;
+                    const dist = Math.min(maxDist, Math.hypot(dx, dy));
+                    const angle = Math.atan2(dy, dx);
+                    joystickDelta.x = (dist / maxDist) * Math.cos(angle);
+                    joystickDelta.y = (dist / maxDist) * Math.sin(angle);
+                    joystickThumb.style.transform = `translate(${joystickDelta.x * maxDist}px, ${joystickDelta.y * maxDist}px)`;
+                    moveForward = -joystickDelta.y > 0.3;
+                    moveBackward = -joystickDelta.y < -0.3;
+                    moveLeft = joystickDelta.x < -0.3;
+                    moveRight = joystickDelta.x > 0.3;
+                    return;
+                }
+            }
+        }
+
+        function handleJoystickEnd(e) {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === joystickTouchId) {
+                    joystickTouchId = null;
+                    joystickThumb.style.transform = 'translate(-50%, -50%)';
+                    joystickDelta = { x: 0, y: 0 };
+                    moveForward = moveBackward = moveLeft = moveRight = false;
+                    return;
+                }
+            }
+        }
+
+        function handleLookStart(e) {
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const rect = lookArea.getBoundingClientRect();
+                if (touch.clientX > rect.left && touch.clientY > rect.top && touch.clientX < rect.right && touch.clientY < rect.bottom && touch.identifier !== joystickTouchId) {
+                    if (lookTouchId !== null) return;
+                    lookTouchId = touch.identifier;
+                    lastTouch = { x: touch.clientX, y: touch.clientY };
+                    return;
+                }
+            }
+        }
+
+        function handleLookMove(e) {
+            e.preventDefault();
+            if (lookTouchId === null) return;
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                if (touch.identifier === lookTouchId) {
+                    lookDelta.x = touch.clientX - lastTouch.x;
+                    lookDelta.y = touch.clientY - lastTouch.y;
+                    lastTouch = { x: touch.clientX, y: touch.clientY };
+                    return;
+                }
+            }
+        }
+
+        function handleLookEnd(e) {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === lookTouchId) {
+                    lookTouchId = null;
+                    lookDelta = { x: 0, y: 0 };
+                    return;
+                }
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (isMenuOpen || isInventoryOpen) { renderer.render(scene, camera); return; }
+            const delta = Math.min(0.05, clock.getDelta());
+            handleInput(delta);
+            updatePhysics(delta);
+            handleBlockActions();
+            updateDebugInfo();
+            renderer.render(scene, camera);
+        }
+
+        function updateDebugInfo() {
+            if (!debugMode) return;
+            const pos = player.mesh.position;
+            const camPos = new THREE.Vector3(); camera.getWorldPosition(camPos);
+            debugInfo.innerHTML = `
+                ТИ!!! 🫵🤣: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})<br>
+                Камера: (${camPos.x.toFixed(2)}, ${camPos.y.toFixed(2)}, ${camPos.z.toFixed(2)})<br>
+                Прісіданіє: ${isCrouching ? 'Да' : 'Нєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєє'}<br>
+                ФрікАм: ${freeCamMode ? 'УВІМК' : 'ВИМК'}<br>
+                ЕФПЕЕС: ${(1 / clock.getDelta()).toFixed(0)}
+            `;
+        }
+
+        function handleInput(delta) {
+            if (isTouchDevice && lookTouchId !== null) {
+                if (freeCamMode) {
+                    camera.rotation.y -= lookDelta.x * TOUCH_SENSITIVITY;
+                    camera.rotation.x -= lookDelta.y * TOUCH_SENSITIVITY;
+                    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+                } else {
+                    playerControls.yaw.rotation.y -= lookDelta.x * TOUCH_SENSITIVITY;
+                    playerControls.pitch.rotation.x -= lookDelta.y * TOUCH_SENSITIVITY;
+                    playerControls.pitch.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, playerControls.pitch.rotation.x));
+                }
+                lookDelta.x = lookDelta.y = 0;
+            }
+
+            if (freeCamMode) {
+                const dir = new THREE.Vector3();
+                if (moveForward) dir.z = -1; if (moveBackward) dir.z = 1;
+                if (moveLeft) dir.x = -1; if (moveRight) dir.x = 1;
+                dir.normalize().applyEuler(new THREE.Euler(0, camera.rotation.y, 0));
+                camera.position.x += dir.x * PLAYER_SPEED * delta;
+                camera.position.z += dir.z * PLAYER_SPEED * delta;
+                if (moveJump) camera.position.y += PLAYER_SPEED * delta;
+                if (moveBackward && !moveForward) camera.position.y -= PLAYER_SPEED * delta;
+            } else {
+                const dir = new THREE.Vector3();
+                if (moveForward) dir.z = -1; if (moveBackward) dir.z = 1;
+                if (moveLeft) dir.x = -1; if (moveRight) dir.x = 1;
+                dir.normalize().applyEuler(playerControls.yaw.rotation);
+                const speed = isCrouching ? PLAYER_SPEED_CROUCH : PLAYER_SPEED;
+                playerVelocity.x = dir.x * speed;
+                playerVelocity.z = dir.z * speed;
+                if (moveJump && playerOnGround) { playerVelocity.y = PLAYER_JUMP_FORCE; playerOnGround = false; moveJump = false; }
+            }
+        }
+
+        function handleBlockActions() {
+            if (!breakAction && !placeAction) return;
+
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(Object.values(instancedMeshes));
+
+            const checkPlayerCollision = (nx, ny, nz) => {
+                const px = player.mesh.position.x;
+                const pz = player.mesh.position.z;
+                const currentHeight = isCrouching ? PLAYER_HEIGHT_CROUCH : PLAYER_HEIGHT;
+                const yMin = Math.floor(player.mesh.position.y);
+                const yMax = Math.floor(player.mesh.position.y + currentHeight - 0.01);
+                const minX = Math.floor(px - PLAYER_RADIUS);
+                const maxX = Math.floor(px + PLAYER_RADIUS);
+                const minZ = Math.floor(pz - PLAYER_RADIUS);
+                const maxZ = Math.floor(pz + PLAYER_RADIUS);
+
+                return (nx >= minX && nx <= maxX) &&
+                       (ny >= yMin && ny <= yMax) &&
+                       (nz >= minZ && nz <= maxZ);
+            };
+
+            if (intersects.length > 0) {
+                let intersection = null;
+                for (const inter of intersects) {
+                    const mat = inter.object.material;
+                    const transparent = Array.isArray(mat) ? false : mat.transparent;
+                    if (!transparent || inter.distance < 3) { intersection = inter; break; }
+                }
+                if (!intersection) { breakAction = placeAction = false; return; }
+
+                const instanceId = intersection.instanceId;
+                const mesh = intersection.object;
+                const matrix = new THREE.Matrix4(); mesh.getMatrixAt(instanceId, matrix);
+                const blockPos = new THREE.Vector3().setFromMatrixPosition(matrix).sub(new THREE.Vector3(0.5, 0.5, 0.5));
+                const normal = intersection.face.normal.clone();
+                const normalMatrix = new THREE.Matrix3().getNormalMatrix(matrix);
+                normal.applyMatrix3(normalMatrix).normalize();
+
+                const ix = Math.floor(blockPos.x), iy = Math.floor(blockPos.y), iz = Math.floor(blockPos.z);
+
+                if (breakAction) {
+                    setBlock(ix, iy, iz, BLOCKS.AIR);
+                } else if (placeAction) {
+                    const newPos = blockPos.clone().add(normal);
+                    const nx = Math.floor(newPos.x), ny = Math.floor(newPos.y), nz = Math.floor(newPos.z);
+
+                    if (getBlock(nx, ny, nz) !== BLOCKS.AIR) {
+                        placeAction = false;
+                        return;
+                    }
+                    
+                    if (!checkPlayerCollision(nx, ny, nz)) {
+                         setBlock(nx, ny, nz, selectedBlockId);
+                    }
+                }
+
+            } else if (placeAction) {
+                
+                const MAX_PLACE_DISTANCE = 4.5;
+                const placePos = new THREE.Vector3();
+                camera.getWorldPosition(placePos);
+                
+                const placeDir = new THREE.Vector3();
+                camera.getWorldDirection(placeDir);
+                
+                placePos.add(placeDir.multiplyScalar(MAX_PLACE_DISTANCE));
+
+                const nx = Math.floor(placePos.x);
+                const ny = Math.floor(placePos.y);
+                const nz = Math.floor(placePos.z);
+
+                if (getBlock(nx, ny, nz) === BLOCKS.AIR) {
+                    if (!checkPlayerCollision(nx, ny, nz)) {
+                         setBlock(nx, ny, nz, selectedBlockId);
+                    }
+                }
+            }
+
+            breakAction = placeAction = false;
+        }
+
+        function updatePhysics(delta) {
+            if (freeCamMode) return;
+
+            playerVelocity.y += GRAVITY * delta;
+
+            const px = player.mesh.position.x;
+            const pz = player.mesh.position.z;
+            const minX = Math.floor(px - PLAYER_RADIUS);
+            const maxX = Math.floor(px + PLAYER_RADIUS);
+            const minZ = Math.floor(pz - PLAYER_RADIUS);
+            const maxZ = Math.floor(pz + PLAYER_RADIUS);
+
+            playerOnGround = false;
+
+            const currentHeight = isCrouching ? PLAYER_HEIGHT_CROUCH : PLAYER_HEIGHT;
+            const newY = player.mesh.position.y + playerVelocity.y * delta;
+            const feetY = newY;
+            const floorY = Math.floor(feetY);
+            let groundLevel = -Infinity;
+            for (let x = minX; x <= maxX; x++) {
+                for (let z = minZ; z <= maxZ; z++) {
+                    if (isBlockSolid(getBlock(x, floorY, z))) {
+                        groundLevel = Math.max(groundLevel, floorY + 1);
+                    }
+                }
+            }
+            if (groundLevel > -Infinity && feetY <= groundLevel + 0.001) {
+                player.mesh.position.y = groundLevel;
+                playerVelocity.y = 0;
+                playerOnGround = true;
+            } else {
+                player.mesh.position.y = newY;
+            }
+
+            const headY = player.mesh.position.y + currentHeight;
+            const ceilY = Math.floor(headY);
+            let ceilingLevel = Infinity;
+            for (let x = minX; x <= maxX; x++) {
+                for (let z = minZ; z <= maxZ; z++) {
+                    if (isBlockSolid(getBlock(x, ceilY, z))) {
+                        ceilingLevel = Math.min(ceilingLevel, ceilY);
+                    }
+                }
+            }
+            if (ceilingLevel < Infinity && headY >= ceilingLevel - 0.001) {
+                player.mesh.position.y = ceilingLevel - currentHeight;
+                if (playerVelocity.y > 0) playerVelocity.y = 0;
+            }
+
+            const newX = player.mesh.position.x + playerVelocity.x * delta;
+            const newZ = player.mesh.position.z + playerVelocity.z * delta;
+
+            player.mesh.position.x = newX;
+            const feetCheckY = player.mesh.position.y;
+            const headCheckY = player.mesh.position.y + currentHeight - 0.01;
+            const yMin = Math.floor(feetCheckY);
+            const yMax = Math.floor(headCheckY);
+
+            if (playerVelocity.x > 0) {
+                const checkX = Math.floor(newX + PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let z = minZ; z <= maxZ; z++) {
+                    if (isBlockSolid(getBlock(checkX, y, z))) {
+                        player.mesh.position.x = checkX - PLAYER_RADIUS - 0.001;
+                        playerVelocity.x = 0;
+                    }
+                }
+            } else if (playerVelocity.x < 0) {
+                const checkX = Math.floor(newX - PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let z = minZ; z <= maxZ; z++) {
+                    if (isBlockSolid(getBlock(checkX, y, z))) {
+                        player.mesh.position.x = checkX + 1 + PLAYER_RADIUS + 0.001;
+                        playerVelocity.x = 0;
+                    }
+                }
+            }
+
+            player.mesh.position.z = newZ;
+            if (playerVelocity.z > 0) {
+                const checkZ = Math.floor(newZ + PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let x = minX; x <= maxX; x++) {
+                    if (isBlockSolid(getBlock(x, y, checkZ))) {
+                        player.mesh.position.z = checkZ - PLAYER_RADIUS - 0.001;
+                        playerVelocity.z = 0;
+                    }
+                }
+            } else if (playerVelocity.z < 0) {
+                const checkZ = Math.floor(newZ - PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let x = minX; x <= maxX; x++) {
+                    if (isBlockSolid(getBlock(x, y, checkZ))) {
+                        player.mesh.position.z = checkZ + 1 + PLAYER_RADIUS + 0.001;
+                        playerVelocity.z = 0;
+                    }
+                }
+            }
+
+            if (player.mesh.position.y < VOID_Y) respawn();
+        }
+
+        init();
+    </script>
+</body>
+</html>
