@@ -58,8 +58,8 @@
     <script type='module'>
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
 
-        const WORLD_WIDTH = 96, WORLD_HEIGHT = 8, WORLD_DEPTH = 96;
-        const VOID_Y = -20, RESPAWN_Y = WORLD_HEIGHT + 256;
+        const WORLD_WIDTH = 96, WORLD_HEIGHT = 64, WORLD_DEPTH = 96;
+        const VOID_Y = -64, RESPAWN_Y = WORLD_HEIGHT + 16;
         const PLAYER_HEIGHT = 1.8, PLAYER_HEIGHT_CROUCH = 1.2;
         const PLAYER_RADIUS = 0.3;
         const PLAYER_EYE_HEIGHT = 1.62, PLAYER_EYE_HEIGHT_CROUCH = 1.0;
@@ -455,7 +455,7 @@
                     for (let y = 0; y < WORLD_HEIGHT; y++) {
                         let blockId = BLOCKS.AIR;
                         if (y < WORLD_HEIGHT / 2 - 1) blockId = BLOCKS.STONE;
-                        else if (y < WORLD_HEIGHT / 2) blockId = BLOCKS.GRASS;
+                        else if (y < WORLD_HEIGHT / 4) blockId = BLOCKS.GRASS;
                         world[y * WORLD_WIDTH * WORLD_DEPTH + z * WORLD_WIDTH + x] = blockId;
                     }
                 }
