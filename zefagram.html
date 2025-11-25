@@ -56,7 +56,6 @@ button:hover{background:#0066cc;}
 <button class='menuBtn' id='publicChatBtn'>Общій чат</button>
 <button class='menuBtn' id='privateChatsBtn'>Пріватні чати</button>
 <button class='menuBtn' id='createPrivateBtn'>Створити пріватний чат</button>
-<button class='menuBtn' id='enableNotificationsBtn'>🔔 Включити увідамлєнія</button> 
 <div class='menuActions'>
 <button id='logoutMenu' class='back'>Вийті</button>
 <button id='backMenu' class='back'>⬅ Назад до меню</button>
@@ -271,20 +270,16 @@ document.querySelectorAll('#emojiPicker img').forEach(i=>i.onclick=e=>sendSticke
 
 document.getElementById('registerBtn').onclick=register
 document.getElementById('loginBtn').onclick=login
-document.getElementById('backMenu').onclick=()=>window.location.href='https://ua3012.github.io/ZefaApps/index.html'
+document.getElementById('backMenu').onclick=()=>window.location.href='https://zefa-apps.vercel.app/index.html'
 document.getElementById('logoutMenu').onclick=logout
 document.getElementById('backChat').onclick=()=>showMenu(true)
-document.getElementById('backAuth').onclick=()=>window.location.href='https://ua3012.github.io/ZefaApps/index.html'
+document.getElementById('backAuth').onclick=()=>window.location.href='https://zefa-apps.vercel.app/index.html'
 document.getElementById('publicChatBtn').onclick=()=>showChat('Общій чат')
 document.getElementById('sendBtn').onclick=sendMessage
 
 document.getElementById('privateChatsBtn').onclick=showPrivateChats;
 document.getElementById('createPrivateBtn').onclick=createPrivateChat;
 document.getElementById('backPrivateChats').onclick=()=>showMenu(true);
-
-document.getElementById('enableNotificationsBtn').onclick = ()=>{
-    // Відкриваємо сторінку Зєфаграм у новій вкладці
-    window.open('https://zefa-apps.vercel.app/zefagram.html', '_blank');
 };
 
 
