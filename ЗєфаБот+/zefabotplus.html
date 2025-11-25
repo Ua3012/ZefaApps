@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang='uk'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>ЗєфаБот+</title>
+<style>
+@font-face{font-family:'Minecraft';src:url('minecraft-mojangles.otf') format('opentype');}
+body{margin:0;font-family:Arial,sans-serif;background:url('zefagrambackground.png') center/cover no-repeat;display:flex;flex-direction:column;height:100vh;}
+.screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:600px;margin:auto;background:rgba(255,255,255,0.95);border-radius:12px;padding:15px;box-shadow:0 2px 6px rgba(0,0,0,0.2);height:95vh;}
+h2{text-align:center;margin:10px 0;}
+input,button{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;font-size:16px;}
+button{cursor:pointer;background:#0084ff;color:white;border:none;}
+button:hover{background:#0066cc;}
+.topbar{width:100%;display:flex;justify-content:center;align-items:center;position:relative;margin-bottom:10px;}
+.back{padding:8px 16px;border-radius:20px;color:white;border:none;cursor:pointer;background:#555;}
+.back:hover{background:#333;}
+#messages{flex:1;width:100%;overflow-y:auto;background:rgba(255,255,255,0.8);border-radius:10px;padding:10px;margin-bottom:0;}
+.message{display:inline-block;clear:both;margin:6px 0;padding:10px;border-radius:15px;max-width:70%;word-wrap:break-word;font-family:'Minecraft',Arial;position:relative;}
+.message strong{color:#0084ff;}
+.from-me{background:#cfe9ff;float:right;}
+.from-others{background:#e9ecef;float:left;}
+#audioMsg{width:100%;margin-top:5px;}
+#input-area{display:flex;width:100%;border-top:1px solid #ddd;padding:10px;background:rgba(255,255,255,0.95);}
+#messageInput{flex:1;border-radius:20px;padding:10px 15px;border:1px solid #ccc;font-size:16px;}
+#sendBtn{width:50px;margin-left:10px;border-radius:50%;font-size:20px;}
+#voiceMsgBtn{margin-left:5px;font-size:20px;border-radius:50%;background:#0084ff;width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center;}
+.emojiPicker{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;justify-content:center;}
+.emojiPicker img{width:40px;height:40px;cursor:pointer;}
+.menuBtn{padding:10px 15px;width:90%;margin:5px;text-align:center;border-radius:12px;background:#0084ff;color:white;}
+.menuBtn:hover{background:#0066cc;}
+#menuGreetingWrapper{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;}
+#menuGreeting{margin-bottom:10px;}
+.menuActions{display:flex;gap:10px;margin-top:10px;justify-content:center;}
+.privateChatLink{display: block; width: 90%; padding: 10px; margin: 5px; text-align: center; border-radius: 6px; background: #e0e0e0; color: #333; cursor: pointer; border: 1px solid #ccc;}
+.privateChatLink:hover{background: #d0d0d0;}
+@media(max-width:500px){.screen{width:95%;padding:10px;}#input-area{padding:5px;}#messageInput{font-size:14px;padding:8px;}}
+</style>
+</head>
+<body>
+
+<div id='authScreen' class='screen'>
+    <h2>ЗєфаБот+ (Містрал)</h2>
+    <input type='text' id='username' placeholder='Введіть юзєрнамє (любе)'>
+    <button id='loginBtn'>Ввійті</button>
+    <button id='backAuth' class='back'>⬅ Назад</button>
+</div>
+
+<div id='menuScreen' class='screen'>
+    <div id='menuGreetingWrapper'>
+        <h2 id='menuGreeting'></h2>
+    </div>
+    <button class='menuBtn' id='publicChatBtn'>Общій чат (ЗєфаБот)</button>
+    <button class='menuBtn' id='privateChatsBtn'>Пріватні чати</button>
+    <button class='menuBtn' id='createPrivateBtn'>Створити пріватний чат</button>
+    <button class='menuBtn' onclick="alert('Увідамлєнія нє роблять. Я лох!')">🔔 Включити увідамлєнія</button>
+    <div class='menuActions'>
+        <button id='logoutMenu' class='back'>Вийті</button>
+        <button id='backMenu' class='back'>⬅ Назад до меню</button>
+    </div>
+</div>
+
+<div id='chatScreen' class='screen'>
+    <div class='topbar'>
+        <h2 id='chatTitle'></h2>
+    </div>
+    <div id='messages'></div>
+    <div id='input-area'>
+        <input type='text' id='messageInput' placeholder='ПІШИ!!!'>
+        <button id='sendBtn'>→</button>
+        <button id='voiceMsgBtn' onclick="alert('Аудіоповідомлення нє роблять!')">🎙️</button>
+    </div>
+    <div class='emojiPicker' id='emojiPicker'>
+        <img src='zefasticker1.png' data-sticker-text='Я тіпа стікер #1'>
+        <img src='zefasticker2.png' data-sticker-text='Я тіпа стікер #2'>
+        <img src='zefasticker3.png' data-sticker-text='Я тіпа стікер #3'>
+        <img src='zefasticker4.png' data-sticker-text='Я тіпа стікер #4'>
+        <img src='zefasticker5.png' data-sticker-text='Я тіпа стікер #5'>
+        <img src='zefasticker6.png' data-sticker-text='Я тіпа стікер #6'>
+        <img src='zefasticker7.png' data-sticker-text='Я тіпа стікер #7'>
+    </div>
+    <div class='menuActions'>
+        <button id='clearMemBtn' class='back' style='background: red;'>/clear_mem</button>
+        <button id='backChat' class='back'>⬅ Назад</button>
+    </div>
+</div>
+
+<div id='privateChatsScreen' class='screen' style='display:none;'>
+    <h2>Пріватні чати</h2>
+    <div id='privateChatsList' style='width:100%; flex: 1; overflow-y: auto;'></div>
+    <div class='menuActions'>
+        <button id='backPrivateChats' class='back'>⬅ Назад</button>
+    </div>
+</div>
+
+<script>
+const BOT_NAME = 'ЗєфаБот';
+// >>> ВАЖЛИВО: ЗАМІНИ ЦЕЙ URL НА АДРЕСУ СВОГО РОЗГОРНУТОГО DJANGO БЕКЕНДУ! <<<
+const PROXY_BASE_URL = 'YOUR_DJANGO_DEPLOYMENT_URL/api/'; 
+
+let currentUser = localStorage.getItem('currentUser') || null;
+let currentChat = 'public'; 
+let userChats = JSON.parse(localStorage.getItem('userChats_' + currentUser)) || { 'public': BOT_NAME }; 
+let chatHistory = JSON.parse(localStorage.getItem('chatHistory_' + currentUser)) || {};
+
+const authScreen = document.getElementById('authScreen');
+const menuScreen = document.getElementById('menuScreen');
+const chatScreen = document.getElementById('chatScreen');
+const privateChatsScreen = document.getElementById('privateChatsScreen');
+const usernameInput = document.getElementById('username');
+const messagesDiv = document.getElementById('messages');
+const messageInput = document.getElementById('messageInput');
+const menuGreeting = document.getElementById('menuGreeting');
+const privateChatsList = document.getElementById('privateChatsList');
+
+function formatTime(date){
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+}
+
+function showScreen(screenId) {
+    const screens = [authScreen, menuScreen, chatScreen, privateChatsScreen];
+    screens.forEach(screen => {
+        screen.style.display = (screen.id === screenId) ? 'flex' : 'none';
+    });
+}
+
+function showMenu(show){
+    showScreen(show ? 'menuScreen' : 'authScreen');
+    if(show) menuGreeting.textContent = `Прівєт, дура ${currentUser}!`;
+}
+
+function getChatKey() {
+    return currentChat;
+}
+
+function showChat(chatName, title) {
+    currentChat = chatName;
+    messagesDiv.innerHTML = '';
+    
+    const history = chatHistory[getChatKey()] || [];
+    history.forEach(msg => renderMessage(msg.user, msg.text, msg.user === currentUser));
+
+    showScreen('chatScreen');
+    document.getElementById('chatTitle').textContent = title;
+}
+
+function renderMessage(user, text, isMe) {
+    const d = document.createElement('div');
+    d.className = 'message ' + (isMe ? 'from-me' : 'from-others');
+    
+    let formattedText;
+    if (text.startsWith('Я тіпа стікер')) {
+        const stickerNumber = text.split('#')[1];
+        formattedText = `<img src='zefasticker${stickerNumber.trim()}.png' style='width:50px;height:50px'>`;
+    } else {
+        formattedText = text
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+            .replace(/\*(.*?)\*/g, '<i>$1</i>')
+            .replace(/\n/g, '<br>');
+    }
+    
+    d.innerHTML = `<strong>${user}</strong>: ${formattedText} <small>(${formatTime(new Date())}</small>`;
+    
+    messagesDiv.appendChild(d);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function saveMessage(chatName, user, text) {
+    if (!chatHistory[chatName]) chatHistory[chatName] = [];
+    chatHistory[chatName].push({user, text});
+    localStorage.setItem('chatHistory_' + currentUser, JSON.stringify(chatHistory));
+}
+
+function login(){
+    const u = usernameInput.value.trim();
+    if(!u) return alert('Ввєді юзєрнамє, балбєс');
+    currentUser = u;
+    localStorage.setItem('currentUser', u);
+    
+    userChats = JSON.parse(localStorage.getItem('userChats_' + currentUser)) || { 'public': BOT_NAME };
+    chatHistory = JSON.parse(localStorage.getItem('chatHistory_' + currentUser)) || {};
+    
+    showMenu(true);
+}
+
+function logout(){
+    localStorage.removeItem('currentUser');
+    currentUser = null;
+    showScreen('authScreen');
+}
+
+function showPrivateChats() {
+    showScreen('privateChatsScreen');
+    privateChatsList.innerHTML = '';
+    
+    let hasPrivateChats = false;
+    for (const chatName in userChats) {
+        if (chatName !== 'public') {
+            hasPrivateChats = true;
+            const partnerName = userChats[chatName];
+            const d = document.createElement('button');
+            d.className = 'privateChatLink';
+            d.textContent = `Базар з: ${partnerName}`;
+            d.onclick = () => showChat(chatName, partnerName);
+            privateChatsList.appendChild(d);
+        }
+    }
+    
+    if (!hasPrivateChats) {
+        privateChatsList.innerHTML = '<p style=\'text-align: center; margin-top: 20px;\'>У тебе нема пріватних базарів, лох.</p>';
+    }
+}
+
+function createPrivateChat() {
+    const partner = prompt('Ввєдітє юзєрнамє співрозмовника:');
+    if (!partner || partner.trim() === currentUser || partner.trim() === BOT_NAME) {
+        return alert('Неправильний юзєрнамє.');
+    }
+    const cleanPartner = partner.trim();
+    const chatID = 'private_' + cleanPartner;
+    
+    if (userChats[chatID]) {
+        return alert(`Ти вже базариш з ${cleanPartner}.`);
+    }
+
+    userChats[chatID] = cleanPartner;
+    localStorage.setItem('userChats_' + currentUser, JSON.stringify(userChats));
+
+    alert(`Створено базар з ${cleanPartner}!`);
+    showChat(chatID, cleanPartner);
+}
+
+async function sendMessage(text = messageInput.value) {
+    const t = text.trim();
+    if (!t || !currentUser) return;
+    
+    renderMessage(currentUser, t, true);
+    saveMessage(currentChat, currentUser, t);
+    messageInput.value = '';
+
+    if (currentChat !== 'public') {
+        setTimeout(() => {
+            renderMessage(userChats[currentChat], 'Ти з кимось базариш? Тут тільки ти є.', false);
+            saveMessage(currentChat, userChats[currentChat], 'Ти з кимось базариш? Тут тільки ти є.');
+        }, 2000);
+        return;
+    }
+    
+    const messagesToSend = (chatHistory[getChatKey()] || []).map(msg => ({
+        role: msg.user === BOT_NAME ? 'assistant' : 'user',
+        content: msg.text
+    }));
+    
+    const isFirstMessage = messagesToSend.filter(msg => msg.role !== 'system').length <= 1;
+
+    try {
+        const response = await fetch(PROXY_BASE_URL + 'chat/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                user_id: currentUser,
+                messages: messagesToSend,
+                is_first_message: isFirstMessage
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.reply) {
+            const reply = data.reply;
+            renderMessage(BOT_NAME, reply, false);
+            saveMessage(currentChat, BOT_NAME, reply);
+        } else {
+            const errorMsg = data.error || 'ЗєфаБот зламався! Ашибка проксі.';
+            renderMessage(BOT_NAME, `**Помилка:** ${errorMsg}`, false);
+        }
+
+    } catch(e) {
+        renderMessage(BOT_NAME, `**Критична помилка мережі:** ЗєфаБот не достукався до API. ${e.message}`, false);
+        console.error('Chat error:', e);
+    }
+}
+
+async function clearMemory() {
+    if (!currentUser) return alert('Треба ввійті, дурик!');
+    
+    if (confirm('Точно стерти пам\'ять ЗєфаБота (і історію поточного чату)?')) {
+        
+        delete chatHistory[getChatKey()];
+        localStorage.setItem('chatHistory_' + currentUser, JSON.stringify(chatHistory));
+
+        if (currentChat === 'public') {
+            try {
+                const response = await fetch(PROXY_BASE_URL + 'clear_mem/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ user_id: currentUser })
+                });
+                const data = await response.json();
+                
+                messagesDiv.innerHTML = ''; 
+                alert(data.reply || 'У мєня амнезія без відновлення паміті. Бебе.');
+            } catch (e) {
+                 alert('Помилка очищення пам’яті на бекенді. Локальний чат скинуто.');
+            }
+        } else {
+             messagesDiv.innerHTML = ''; 
+             alert('У мєня амнезія без відновлення паміті. Бебе.');
+        }
+    }
+}
+
+document.getElementById('loginBtn').onclick = login;
+document.getElementById('logoutMenu').onclick = logout;
+document.getElementById('backChat').onclick = () => showMenu(true);
+document.getElementById('publicChatBtn').onclick = () => showChat('public', 'ЗєфаБот (Общій чат)');
+document.getElementById('sendBtn').onclick = () => sendMessage();
+document.getElementById('clearMemBtn').onclick = clearMemory;
+document.getElementById('backPrivateChats').onclick = () => showMenu(true);
+
+document.getElementById('privateChatsBtn').onclick = showPrivateChats;
+document.getElementById('createPrivateBtn').onclick = createPrivateChat;
+
+messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+document.querySelectorAll('.emojiPicker img').forEach(i => i.onclick = e => {
+    sendMessage(e.target.getAttribute('data-sticker-text'));
+});
+
+document.getElementById('backMenu').onclick = () => window.location.href='../index.html';
+document.getElementById('backAuth').onclick = () => window.location.href='../index.html';
+
+window.onload = () => {
+    if (currentUser) {
+        userChats = JSON.parse(localStorage.getItem('userChats_' + currentUser)) || { 'public': BOT_NAME };
+        chatHistory = JSON.parse(localStorage.getItem('chatHistory_' + currentUser)) || {};
+        showMenu(true);
+    } else {
+        showScreen('authScreen');
+    }
+};
+</script>
+</body>
+</html>
