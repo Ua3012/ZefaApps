@@ -3,7 +3,7 @@
 <head>
 <meta charset='UTF-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-<title>ЗєфаБот+</title>
+<title>ЗєфаБот+ (Пріват)</title>
 <style>
 @font-face{font-family:'Minecraft';src:url('minecraft-mojangles.otf') format('opentype');}
 body{margin:0;font-family:Arial,sans-serif;background:url('zefagrambackground.png') center/cover no-repeat;display:flex;flex-direction:column;height:100vh;}
@@ -19,7 +19,6 @@ button:hover{background:#0066cc;}
 .message{display:inline-block;clear:both;margin:6px 0;padding:10px;border-radius:15px;max-width:70%;word-wrap:break-word;font-family:'Minecraft',Arial;position:relative;}
 .message strong{color:#0084ff;}
 .from-me{background:#cfe9ff;float:right;}
-/* Спеціальний стиль для бота, щоб виділити його, як "інший" чат */
 .from-others{background:#e9ecef;float:left;}
 #audioMsg{width:100%;margin-top:5px;}
 #input-area{display:flex;width:100%;border-top:1px solid #ddd;padding:10px;background:rgba(255,255,255,0.95);}
@@ -88,15 +87,15 @@ button:hover{background:#0066cc;}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js'
 import { getDatabase, ref, set, push, get, child, onValue, update, remove } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
 
-// Конфігурація Firebase - залишається для автентифікації та зберігання чату
-const firebaseConfig={apiKey:'AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA',authDomain:'zefagram.firebaseapp.com',databaseURL:'https://zefagram-default-rtdb.europe-west1.firebasedatabase.app',projectId:'zefagram',storageBucket:'zefagram.firebasestorage.app',messagingSenderId:'664999563847',appId:'1:664999563847:web:3051100a05bdb41dc59762',measurementId:'G-CFS89PSQNK'}
+const firebaseConfig={apiKey:'AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA',authDomain:'zefagram.firebaseapp.com',databaseURL:'https://zefagram-default-rtdb.europe-west1.firebasedatabase.app',projectId:'zefagram',storageBucket:'zefagram.firebaseapp.com',messagingSenderId:'664999563847',appId:'1:664999563847:web:3051100a05bdb41dc59762',measurementId:'G-CFS89PSQNK'}
 const app=initializeApp(firebaseConfig)
 const db=getDatabase(app)
 let currentUser=localStorage.getItem('currentUser')||null
-let currentChat='zefabot_chat' // Завжди чат із ботом
+// Фіксований і унікальний чат для кожного користувача
+let currentChat='zefabot_chat' 
 let isFirstMessage = true;
 
-const API_KEY = 'Xe76umn1HmIw9FmpjjQbVSzYeEcJiCFn' // Твій ключ
+const API_KEY = 'Xe76umn1HmIw9FmpjjQbVSzYeEcJiCFn' 
 const API_URL = 'https://api.mistral.ai/v1/chat/completions'
 const SYSTEM_INSTRUCTIONS = `
 Карочє, Зєфа — це ютубєр, що рубається в Майнкрафт, Фнаф і троха Роблокс.
@@ -157,35 +156,33 @@ const messagesDiv=document.getElementById('messages')
 const chatTitle=document.getElementById('chatTitle')
 const messageInput=document.getElementById('messageInput')
 const menuGreeting=document.getElementById('menuGreeting')
-// Видалено: privateChatsScreen, privateChatsList
+// Видалені елементи приватних чатів
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
-async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Ввєдиі юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзєр вже є');await set(ref(db,'users/'+u),{password:p, chats: {}});alert('Ти зарегався!')}
+async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Ввєдиі юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзєр вже є');await set(ref(db,'users/'+u),{password:p});alert('Ти зарегався!')}
 async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Ввєді юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return alert('Неправильний юзєр ілі пароль');currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
 
 function showMenu(show){authScreen.style.display='none';menuScreen.style.display=show?'flex':'none';chatScreen.style.display='none';if(show)menuGreeting.textContent=`Прівєт, дура ${currentUser}!`}
 
-function getChatPath(){return 'messages/' + currentChat + (currentUser ? '/' + currentUser : '')} // Створення унікального шляху для чату кожного користувача з ботом
+// Унікальний шлях чату: messages/zefabot_chat/[currentUser]
+function getChatPath(){return 'messages/' + currentChat + (currentUser ? '/' + currentUser : '')} 
 
 function renderMessage(msgSnapshot){
     const msg = msgSnapshot.val();
     const messageKey = msgSnapshot.key;
     
     const d=document.createElement('div');
-    // Бот завжди 'from-others', користувач завжди 'from-me'
     d.className='message '+(msg.user===currentUser?'from-me':'from-others');
     let text=msg.text;
-    // ЗєфаБот+ не підтримує стікери чи аудіо, але залишаємо для сумісності
     if(msg.type==='sticker')text=`<img src='${msg.url}' style='width:50px;height:50px'>`;
     else if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;
     else text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>");
     
     d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;
     
-    // Видалення тільки своїх повідомлень
     if (msg.user === currentUser) {
-        d.ondblclick = () => deleteMessage(messageKey, msg.type);
+        d.ondblclick = () => deleteMessage(messageKey);
     }
     
     messagesDiv.appendChild(d);
@@ -202,20 +199,18 @@ async function deleteMessage(messageKey) {
 
 function showChat(){
     if (!currentUser) return;
-    isFirstMessage = true; // Скидаємо прапор при вході в чат
+    isFirstMessage = true; 
     messagesDiv.innerHTML='';
     authScreen.style.display='none';
     menuScreen.style.display='none';
     chatScreen.style.display='flex';
     chatTitle.textContent='Базар з ЗєфаБот+';
     
-    // Завантаження історії чату
     const chatRef=ref(db, getChatPath());
     onValue(chatRef,snapshot=>{
         messagesDiv.innerHTML='';
         snapshot.forEach(c=>{
             renderMessage(c);
-            // Якщо є повідомлення, то це не перше
             isFirstMessage = false; 
         });
     });
@@ -224,14 +219,38 @@ function showChat(){
 function logout(){localStorage.removeItem('currentUser');currentUser=null;authScreen.style.display='flex';menuScreen.style.display='none';chatScreen.style.display='none'}
 
 async function getZefaBotResponse(userMessage) {
-    // Додаємо привітання, якщо це перше повідомлення
-    const prefix = isFirstMessage ? `Здоров балбєси, я Зєфа. ` : '';
-    isFirstMessage = false;
+    const chatRef = ref(db, getChatPath());
+    const chatSnapshot = await get(chatRef);
+    const chatHistory = [];
+    chatSnapshot.forEach(msgSnap => {
+        const msg = msgSnap.val();
+        if (msg.type === 'text') {
+            chatHistory.push({
+                role: msg.user === 'ЗєфаБот+' ? "assistant" : "user",
+                content: msg.text
+            });
+        }
+    });
+    
+    // Останнє повідомлення від користувача, яке ще не в історії Firebase
+    chatHistory.push({ role: "user", content: userMessage });
 
-    const messages = [
-        { role: "system", content: SYSTEM_INSTRUCTIONS },
-        { role: "user", content: prefix + userMessage }
+    // Якщо це перше повідомлення в історії (тобто було лише одне 'user' повідомлення)
+    const isNewChat = chatHistory.length === 1;
+
+    let messages = [
+        { role: "system", content: SYSTEM_INSTRUCTIONS }
     ];
+    
+    // Привітання тільки при першому повідомленні в історії
+    if (isNewChat) {
+        chatHistory[0].content = `Здоров балбєси, я Зєфа. ` + chatHistory[0].content;
+    }
+
+    // Обмежуємо історію, щоб не було перевантаження
+    const historyToUse = chatHistory.slice(-10); // Використовуємо останні 10 повідомлень
+
+    messages = messages.concat(historyToUse);
 
     try {
         const response = await fetch(API_URL, {
@@ -243,7 +262,7 @@ async function getZefaBotResponse(userMessage) {
             body: JSON.stringify({
                 model: 'mistral-large-latest',
                 messages: messages,
-                temperature: 0.9 // Щоб відповіді були живішими
+                temperature: 0.9 
             })
         });
 
@@ -269,17 +288,20 @@ async function sendMessage(){
     if(!t||!currentUser)return;
 
     messageInput.value='';
-    messageInput.disabled = true; // Блокуємо, поки чекаємо відповіді
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.disabled = true;
+    messageInput.disabled = true;
 
     // 1. Відправляємо повідомлення користувача до Firebase
-    push(ref(db, getChatPath()),{user:currentUser,text:t,time:formatTime(new Date()),type:'text'});
+    await push(ref(db, getChatPath()),{user:currentUser,text:t,time:formatTime(new Date()),type:'text'});
 
-    // 2. Отримуємо відповідь від ЗєфаБот+
+    // 2. Отримуємо відповідь від ЗєфаБот+. Тепер з історією!
     const botResponseText = await getZefaBotResponse(t);
 
     // 3. Відправляємо відповідь бота до Firebase
-    push(ref(db, getChatPath()),{user:'ЗєфаБот+',text:botResponseText,time:formatTime(new Date()),type:'text'});
+    await push(ref(db, getChatPath()),{user:'ЗєфаБот+',text:botResponseText,time:formatTime(new Date()),type:'text'});
 
+    sendBtn.disabled = false;
     messageInput.disabled = false;
     messageInput.focus();
 }
@@ -287,8 +309,6 @@ async function sendMessage(){
 async function sendSticker(url){
     push(ref(db, getChatPath()),{user:currentUser,url,type:'sticker',time:formatTime(new Date())})
 }
-
-// Видалено: sendAudio та пов'язаний функціонал (використовуємо лише Mistral)
 
 document.querySelectorAll('#emojiPicker img').forEach(i=>i.onclick=e=>sendSticker(e.target.src))
 
@@ -300,9 +320,6 @@ document.getElementById('backChat').onclick=()=>showMenu(true)
 document.getElementById('backAuth').onclick=()=>window.location.href='https://zefa-apps.vercel.app/index.html'
 document.getElementById('publicChatBtn').onclick=showChat
 document.getElementById('sendBtn').onclick=sendMessage
-
-// Видалено: приватні чати
-// Видалено: функціонал голосових повідомлень
 
 window.onload=()=>{if(currentUser)showMenu(true);else authScreen.style.display='flex'}
 </script>
