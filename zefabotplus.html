@@ -3,7 +3,7 @@
 <head>
 <meta charset='UTF-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-<title>ЗєфаБот+ (Пріват)</title>
+<title>ЗєфаБот+ (Зєфаграм)</title>
 <style>
 @font-face{font-family:'Minecraft';src:url('minecraft-mojangles.otf') format('opentype');}
 body{margin:0;font-family:Arial,sans-serif;background:url('zefagrambackground.png') center/cover no-repeat;display:flex;flex-direction:column;height:100vh;}
@@ -53,7 +53,9 @@ button:hover{background:#0066cc;}
 <div id='menuGreetingWrapper'>
 <h2 id='menuGreeting'></h2>
 </div>
-<button class='menuBtn' id='publicChatBtn'>Базар з ЗєфаБот+</button>
+<button class='menuBtn' id='publicChatBtn'>Общій чат</button>
+<button class='menuBtn' id='privateChatsBtn'>Пріватні чати з Ботом</button>
+<button class='menuBtn' id='createPrivateBtn'>Створити новий базар з Ботом</button>
 <div class='menuActions'>
 <button id='logoutMenu' class='back'>Вийті</button>
 <button id='backMenu' class='back'>⬅ Назад до меню</button>
@@ -83,6 +85,14 @@ button:hover{background:#0066cc;}
 </div>
 </div>
 
+<div id='privateChatsScreen' class='screen' style='display:none;'>
+    <h2>Твої базари з ЗєфаБот+</h2>
+    <div id='privateChatsList' style='width:100%; flex: 1; overflow-y: auto;'></div>
+    <div class='menuActions'>
+        <button id='backPrivateChats' class='back'>⬅ Назад</button>
+    </div>
+</div>
+
 <script type='module'>
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js'
 import { getDatabase, ref, set, push, get, child, onValue, update, remove } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js'
@@ -91,9 +101,8 @@ const firebaseConfig={apiKey:'AIzaSyBp_RXjmWLfK0wX8sDb1d_VQogZgwzaNFA',authDomai
 const app=initializeApp(firebaseConfig)
 const db=getDatabase(app)
 let currentUser=localStorage.getItem('currentUser')||null
-// Фіксований і унікальний чат для кожного користувача
-let currentChat='zefabot_chat' 
-let isFirstMessage = true;
+let currentChat='public' // Може бути 'public' або ID приватного чату
+let isFirstMessage = false; // Використовуємо його тепер і для публічного, і для приватного
 
 const API_KEY = 'Xe76umn1HmIw9FmpjjQbVSzYeEcJiCFn' 
 const API_URL = 'https://api.mistral.ai/v1/chat/completions'
@@ -150,38 +159,53 @@ Ua3012dima30, нефертятко чян, лаксі, Вадім Мажонє, 
 const authScreen=document.getElementById('authScreen')
 const menuScreen=document.getElementById('menuScreen')
 const chatScreen=document.getElementById('chatScreen')
+const privateChatsScreen=document.getElementById('privateChatsScreen') // Відновлено
 const usernameInput=document.getElementById('username')
 const passwordInput=document.getElementById('password')
 const messagesDiv=document.getElementById('messages')
 const chatTitle=document.getElementById('chatTitle')
 const messageInput=document.getElementById('messageInput')
 const menuGreeting=document.getElementById('menuGreeting')
-// Видалені елементи приватних чатів
+const privateChatsList=document.getElementById('privateChatsList') // Відновлено
 
 function formatTime(date){return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+String(date.getMinutes()).padStart(2,'0')}
 
-async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Ввєдиі юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзєр вже є');await set(ref(db,'users/'+u),{password:p});alert('Ти зарегався!')}
+async function register(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Ввєдиі юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(s.exists())return alert('Такий юзєр вже є');await set(ref(db,'users/'+u),{password:p, chats: {}});alert('Ти зарегався!')}
 async function login(){const u=usernameInput.value.trim();const p=passwordInput.value.trim();if(!u||!p)return alert('Ввєді юзєрнамє і пароль');const s=await get(child(ref(db),'users/'+u));if(!s.exists()||s.val().password!==p)return alert('Неправильний юзєр ілі пароль');currentUser=u;localStorage.setItem('currentUser',u);showMenu(true)}
 
-function showMenu(show){authScreen.style.display='none';menuScreen.style.display=show?'flex':'none';chatScreen.style.display='none';if(show)menuGreeting.textContent=`Прівєт, дура ${currentUser}!`}
+function showScreen(screenId) {
+    const screens = [authScreen, menuScreen, chatScreen, privateChatsScreen];
+    screens.forEach(screen => {
+        screen.style.display = (screen.id === screenId) ? 'flex' : 'none';
+    });
+}
 
-// Унікальний шлях чату: messages/zefabot_chat/[currentUser]
-function getChatPath(){return 'messages/' + currentChat + (currentUser ? '/' + currentUser : '')} 
+function showMenu(show){
+    showScreen(show ? 'menuScreen' : 'authScreen');
+    if(show)menuGreeting.textContent=`Прівєт, дура ${currentUser}!`;
+}
+
+// Загальний чат: messages/public
+// Приватний чат: messages/private_bot_[chatID]
+function getChatPath(){return currentChat === 'public' ? 'messages/public' : 'messages/' + currentChat}
 
 function renderMessage(msgSnapshot){
     const msg = msgSnapshot.val();
     const messageKey = msgSnapshot.key;
     
     const d=document.createElement('div');
-    d.className='message '+(msg.user===currentUser?'from-me':'from-others');
+    // У "Общому чаті" currentUser, у приватних – currentUser або ЗєфаБот+
+    const sender = msg.user;
+    d.className='message '+(sender===currentUser?'from-me':'from-others');
     let text=msg.text;
+    // Форматування та стікери/аудіо залишаються
     if(msg.type==='sticker')text=`<img src='${msg.url}' style='width:50px;height:50px'>`;
     else if(msg.type==='audio')text=`<audio controls src='${msg.url}'></audio>`;
     else text=text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>').replace(/__(.*?)__/g,'<u>$1</u>').replace(/~~(.*?)~~/g,'<s>$1</s>').replace(/`(.*?)`/g,"<span style='font-family:monospace'>$1</span>");
     
-    d.innerHTML=`<strong>${msg.user}</strong>: ${text} <small>(${msg.time})</small>`;
+    d.innerHTML=`<strong>${sender}</strong>: ${text} <small>(${msg.time})</small>`;
     
-    if (msg.user === currentUser) {
+    if (sender === currentUser) {
         d.ondblclick = () => deleteMessage(messageKey);
     }
     
@@ -197,29 +221,32 @@ async function deleteMessage(messageKey) {
     }
 }
 
-function showChat(){
-    if (!currentUser) return;
-    isFirstMessage = true; 
+function showChat(chatId, title){
+    currentChat = chatId;
+    isFirstMessage = false;
     messagesDiv.innerHTML='';
-    authScreen.style.display='none';
-    menuScreen.style.display='none';
-    chatScreen.style.display='flex';
-    chatTitle.textContent='Базар з ЗєфаБот+';
+    showScreen('chatScreen');
+    chatTitle.textContent = title;
     
-    const chatRef=ref(db, getChatPath());
-    onValue(chatRef,snapshot=>{
-        messagesDiv.innerHTML='';
-        snapshot.forEach(c=>{
+    const chatRef = ref(db, getChatPath());
+    onValue(chatRef, snapshot => {
+        messagesDiv.innerHTML = '';
+        snapshot.forEach(c => {
             renderMessage(c);
             isFirstMessage = false; 
         });
+        if (!snapshot.exists()) {
+            isFirstMessage = true; // Якщо чат пустий, включаємо привітання
+        }
     });
 }
 
-function logout(){localStorage.removeItem('currentUser');currentUser=null;authScreen.style.display='flex';menuScreen.style.display='none';chatScreen.style.display='none'}
+function logout(){localStorage.removeItem('currentUser');currentUser=null;showScreen('authScreen')}
 
-async function getZefaBotResponse(userMessage) {
-    const chatRef = ref(db, getChatPath());
+
+// Функція для отримання історії чату для Mistral AI
+async function getChatHistory(currentChatPath, userMessage) {
+    const chatRef = ref(db, currentChatPath);
     const chatSnapshot = await get(chatRef);
     const chatHistory = [];
     chatSnapshot.forEach(msgSnap => {
@@ -232,25 +259,43 @@ async function getZefaBotResponse(userMessage) {
         }
     });
     
-    // Останнє повідомлення від користувача, яке ще не в історії Firebase
     chatHistory.push({ role: "user", content: userMessage });
 
-    // Якщо це перше повідомлення в історії (тобто було лише одне 'user' повідомлення)
+    // Перевіряємо, чи це перше повідомлення в історії (бо якщо chatHistory.length === 1, то в ньому тільки userMessage)
     const isNewChat = chatHistory.length === 1;
 
     let messages = [
         { role: "system", content: SYSTEM_INSTRUCTIONS }
     ];
     
-    // Привітання тільки при першому повідомленні в історії
     if (isNewChat) {
+        // Додаємо привітання Зєфи до першого повідомлення
         chatHistory[0].content = `Здоров балбєси, я Зєфа. ` + chatHistory[0].content;
     }
 
-    // Обмежуємо історію, щоб не було перевантаження
-    const historyToUse = chatHistory.slice(-10); // Використовуємо останні 10 повідомлень
+    // Обмежуємо історію
+    const historyToUse = chatHistory.slice(-10); 
 
     messages = messages.concat(historyToUse);
+    return messages;
+}
+
+async function getZefaBotResponse(userMessage, chatPath) {
+    const messages = await getChatHistory(chatPath, userMessage);
+    
+    if (currentChat === 'public') {
+        // Для загального чату видаляємо історію, щоб бот відповідав тільки на останнє повідомлення
+        // Інакше він буде відповідати як в приватному
+        messages.length = 0;
+        messages.push({ role: "system", content: SYSTEM_INSTRUCTIONS });
+        messages.push({ role: "user", content: userMessage });
+        // Якщо це перше повідомлення в public, додаємо привітання
+        if (isFirstMessage) {
+            messages[1].content = `Здоров балбєси, я Зєфа. ` + messages[1].content;
+            isFirstMessage = false;
+        }
+    }
+
 
     try {
         const response = await fetch(API_URL, {
@@ -291,15 +336,18 @@ async function sendMessage(){
     const sendBtn = document.getElementById('sendBtn');
     sendBtn.disabled = true;
     messageInput.disabled = true;
+    const chatPath = getChatPath();
 
     // 1. Відправляємо повідомлення користувача до Firebase
-    await push(ref(db, getChatPath()),{user:currentUser,text:t,time:formatTime(new Date()),type:'text'});
+    await push(ref(db, chatPath),{user:currentUser,text:t,time:formatTime(new Date()),type:'text'});
 
-    // 2. Отримуємо відповідь від ЗєфаБот+. Тепер з історією!
-    const botResponseText = await getZefaBotResponse(t);
+    // Якщо це приватний чи публічний чат, де відповідає бот
+    if (chatPath.startsWith('messages/public') || chatPath.startsWith('messages/private_bot_')) {
+        const botResponseText = await getZefaBotResponse(t, chatPath);
 
-    // 3. Відправляємо відповідь бота до Firebase
-    await push(ref(db, getChatPath()),{user:'ЗєфаБот+',text:botResponseText,time:formatTime(new Date()),type:'text'});
+        // 3. Відправляємо відповідь бота до Firebase
+        await push(ref(db, chatPath),{user:'ЗєфаБот+',text:botResponseText,time:formatTime(new Date()),type:'text'});
+    }
 
     sendBtn.disabled = false;
     messageInput.disabled = false;
@@ -310,6 +358,52 @@ async function sendSticker(url){
     push(ref(db, getChatPath()),{user:currentUser,url,type:'sticker',time:formatTime(new Date())})
 }
 
+// Функції для приватних чатів з ботом
+
+async function showPrivateChats() {
+    if (!currentUser) return;
+    showScreen('privateChatsScreen');
+    
+    const userChatsRef = ref(db, 'users/' + currentUser + '/chats_bot');
+    onValue(userChatsRef, (snapshot) => {
+        privateChatsList.innerHTML = '';
+        if (snapshot.exists()) {
+            const chats = snapshot.val();
+            for (const chatID in chats) {
+                const title = chats[chatID].title;
+                const d = document.createElement('button');
+                d.className = 'privateChatLink';
+                d.textContent = `Базар: ${title}`;
+                // ID чату буде private_bot_[ID]
+                d.onclick = () => showChat(chatID, title);
+                privateChatsList.appendChild(d);
+            }
+        } else {
+            privateChatsList.innerHTML = '<p style=\'text-align: center; margin-top: 20px;\'>Пуста. Створи новий базар.</p>';
+        }
+    });
+}
+
+async function createZefaBotChat() {
+    const title = prompt('Ввєдітє названіє для нового базару з ЗєфаБот+ (напріклад, "Про Майнкрафт"):');
+    if (!title || title.trim() === '') return alert('Назва потрібна, дурік.');
+    
+    const newChatRef = push(child(ref(db), 'messages/'));
+    const chatID = `private_bot_${newChatRef.key}`;
+    
+    const updates = {};
+    // Зберігаємо інфу про чат в юзера, щоб він його бачив
+    updates['/users/' + currentUser + '/chats_bot/' + chatID] = { title: title };
+    // Створюємо сам чат, але він поки пустий
+    updates['/messages/' + chatID] = { info: { createdBy: currentUser, title: title } }; 
+
+    await update(ref(db), updates);
+    alert(`Створено базар: ${title}!`);
+    showChat(chatID, title);
+}
+
+
+// З'єднання кнопок
 document.querySelectorAll('#emojiPicker img').forEach(i=>i.onclick=e=>sendSticker(e.target.src))
 
 document.getElementById('registerBtn').onclick=register
@@ -318,7 +412,15 @@ document.getElementById('backMenu').onclick=()=>window.location.href='https://ze
 document.getElementById('logoutMenu').onclick=logout
 document.getElementById('backChat').onclick=()=>showMenu(true)
 document.getElementById('backAuth').onclick=()=>window.location.href='https://zefa-apps.vercel.app/index.html'
-document.getElementById('publicChatBtn').onclick=showChat
+
+// Публічний чат
+document.getElementById('publicChatBtn').onclick=()=>showChat('public', 'Общій чат')
+
+// Приватні чати з ботом
+document.getElementById('privateChatsBtn').onclick=showPrivateChats;
+document.getElementById('createPrivateBtn').onclick=createZefaBotChat;
+document.getElementById('backPrivateChats').onclick=()=>showMenu(true);
+
 document.getElementById('sendBtn').onclick=sendMessage
 
 window.onload=()=>{if(currentUser)showMenu(true);else authScreen.style.display='flex'}
