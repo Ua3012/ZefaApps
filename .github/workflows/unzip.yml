@@ -1,45 +1,44 @@
-# name: GoatZefalator.zip
+name: GoatZefalator.zip
 
-# on:
-#   push:
-#     branches:
-#       - main
+on:
+  push:
+    branches:
+      - main
 
-# permissions:
-#   contents: write
+permissions:
+  contents: write
 
-# jobs:
-#   unzip:
-#     runs-on: ubuntu-latest
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
 
-#     steps:
-#       - name: Завантаження репозиторію (з LFS файлами)
-#         uses: actions/checkout@v4
-#         with:
-#           lfs: true
+    steps:
+      - name: Завантаження репозиторію (з LFS файлами)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
 
-#       - name: FFF
-#         run: |
-#           sudo apt-get update
-#           sudo apt-get install git-lfs -y
-#           git lfs install
+      - name: FFF
+        run: |
+          sudo apt-get update
+          sudo apt-get install git-lfs -y
+          git lfs install
 
-#           #git lfs track "ЗєфаляторКазла/*.pck"
+          #git lfs track "ЗєфаляторКазла/*.pck"
 
-#           git add .gitattributes
+          git add .gitattributes
 
-#       - name: Розпакування ZIP
-#         run: |
-#           mkdir -p ЗєфаляторКазла
-#           unzip -o "GoatZefalator.zip" -d ЗєфаляторКазла
+      - name: Розпакування ZIP
+        run: |
+          unzip -o "GoatZefalator.zip" -d ЗєфаляторКазла
 
-#       - name: Коміт і пуш результатів
-#         run: |
-#           git config user.name "github-actions"
-#           git config user.email "actions@github.com"
+      - name: Коміт і пуш результатів
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
 
-#           git add -A
+          git add -A
           
-#           git commit -m "Розпаковано GoatZefalator.zip та додано .pck в LFS" || echo "Немає змін"
+          git commit -m "Розпаковано GoatZefalator.zip та додано .pck в LFS" || echo "Немає змін"
           
-#           git push
+          git push
