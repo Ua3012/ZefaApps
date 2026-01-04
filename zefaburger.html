@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЗєфаБургєр</title>
+    <style>
+        :root {
+            --brown: #8B4513;
+            --lettuce: #228B22;
+            --cheese: #FFD700;
+            --meat: #5E2F0D;
+            --tomato: #FF6347;
+            --cucumber: #32CD32;
+            --sauce: #FF4500;
+            --bg: #2c3e50;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Courier New', cursive;
+            background-color: var(--bg);
+            color: white;
+            display: flex;
+            align-items: center; /* Центрування по вертикалі */
+            justify-content: center; /* Центрування по горизонталі */
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow: hidden; /* Вимикаємо зайвий скрол */
+        }
+
+        #game-container {
+            background: #34495e;
+            border: 5px solid #f1c40f;
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 950px;
+            width: 100%;
+            max-height: 95vh; /* Щоб не вилазило за екран */
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            text-align: center;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; /* Скрол тільки всередині гри, якщо треба */
+        }
+
+        #game-container.boss-active {
+            background: #600;
+            border-color: #f00;
+            box-shadow: 0 0 50px #f00;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .timer-display {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            font-weight: bold;
+            color: #e74c3c;
+            background: rgba(0,0,0,0.4);
+            padding: 5px 15px;
+            border-radius: 10px;
+            border: 2px solid #e74c3c;
+            min-width: 120px;
+        }
+
+        h1 {
+            color: #f1c40f;
+            text-shadow: 2px 2px #c0392b;
+            font-size: clamp(1.4rem, 4vw, 2.2rem);
+            margin: 0;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            padding: 5px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+
+        .game-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* Мобільна адаптація */
+        @media (max-width: 750px) {
+            .game-layout {
+                grid-template-columns: 1fr;
+            }
+            #game-container {
+                max-height: none;
+                overflow-y: visible;
+            }
+            body {
+                overflow-y: auto;
+            }
+        }
+
+        .customer-zone {
+            background: #ecf0f1;
+            color: #2c3e50;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-left: 5px solid #f1c40f;
+        }
+
+        #burger-display {
+            height: 300px;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            justify-content: flex-start;
+            border-bottom: 10px solid #95a5a6;
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+            padding-bottom: 5px;
+        }
+
+        .layer {
+            width: 170px;
+            height: 18px;
+            margin: 1px 0;
+            border-radius: 10px;
+            border: 2px solid rgba(0,0,0,0.2);
+        }
+        .layer.bun { background: #d35400; height: 32px; border-radius: 20px 20px 5px 5px; }
+        .layer.patty { background: var(--meat); height: 24px; }
+        .layer.cheese { background: var(--cheese); height: 8px; width: 180px; }
+        .layer.tomato { background: var(--tomato); height: 10px; }
+        .layer.cucumber { background: var(--cucumber); height: 8px; width: 150px; }
+        .layer.sauce { background: var(--sauce); height: 7px; border-radius: 50%; width: 110px; }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            padding: 15px 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            transition: 0.2s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+        }
+
+        button:active { transform: translateY(2px); box-shadow: 0 0 0; }
+
+        .btn-bun { background: #d35400; color: white; }
+        .btn-patty { background: var(--meat); color: white; }
+        .btn-cheese { background: var(--cheese); }
+        .btn-tomato { background: var(--tomato); }
+        .btn-cucumber { background: var(--cucumber); }
+        .btn-sauce { background: var(--sauce); color: white; }
+        .btn-serve { background: #27ae60; color: white; grid-column: span 2; font-size: 1.6rem; margin-top: 10px; }
+        .btn-clear { background: #c0392b; color: white; grid-column: span 2; padding: 8px; }
+
+        #zefa-comment {
+            margin-bottom: 15px;
+            padding: 15px;
+            font-weight: bold;
+            color: #f1c40f;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            min-height: 50px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-back {
+            background: #555;
+            color: white;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div class="header-top">
+            <a href="#" class="btn-back" onclick="history.back()">⬅ Назад</a>
+            <h1 id="game-title">ЗєфаБургєр</h1>
+            <div class="timer-display">ЧАС: <span id="time-left">15</span>с</div>
+        </div>
+
+        <div class="stats">
+            <div>💰 Гроші: <span id="money">100</span></div>
+            <div>⭐ Бали: <span id="score">0</span></div>
+        </div>
+
+        <div class="game-layout">
+            <div class="visual-section">
+                <div class="customer-zone">
+                    <div id="customer-type"><b>Прідурак зайшов: ...</b></div>
+                    <div id="order-text">Жду заказ...</div>
+                </div>
+                <div id="burger-display"></div>
+            </div>
+
+            <div class="controls-section">
+                <div id="zefa-comment">Дєлай бургєр бігом!</div>
+                
+                <div class="controls">
+                    <button class="btn-bun" onclick="addIngredient('bun')">Булочка</button>
+                    <button class="btn-patty" onclick="addIngredient('patty')">Катлєта</button>
+                    <button class="btn-cheese" onclick="addIngredient('cheese')">Сир</button>
+                    <button class="btn-tomato" onclick="addIngredient('tomato')">Памідор</button>
+                    <button class="btn-cucumber" onclick="addIngredient('cucumber')">Агурєц</button>
+                    <button class="btn-sauce" onclick="addIngredient('sauce')">Соус</button>
+                    
+                    <button class="btn-serve" onclick="serveBurger()">ПРАДАТЬ</button>
+                    <button class="btn-clear" onclick="clearBurger()">ВИКІНУТЬ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let money = 100;
+        let score = 0;
+        let nextBossAt = 100;
+        let currentBurger = ['bun'];
+        let currentOrder = [];
+        let customerType = '';
+        let timeLeft = 15;
+        let timerInterval;
+        let isBossMode = false;
+        let bossBurgersCount = 0;
+        
+        const ingredients = ['patty', 'cheese', 'tomato', 'cucumber', 'sauce'];
+        const names = {'bun':'Булочка','patty':'Катлєта','cheese':'Сир','tomato':'Памідор','cucumber':'Агурєц','sauce':'Соус'};
+
+        function startTimer(seconds) {
+            clearInterval(timerInterval);
+            timeLeft = seconds;
+            document.getElementById('time-left').innerText = timeLeft;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time-left').innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function handleTimeOut() {
+            if (isBossMode) {
+                money = Math.floor(money * 0.5);
+                score = Math.floor(score * 0.5);
+                document.getElementById('zefa-comment').innerText = "Ажирєта тебе зжер! Половина каси пропала!";
+                endBossMode();
+            } else {
+                money -= 30;
+                document.getElementById('zefa-comment').innerText = "Довго думаєш! Клієнт плюнув і пішов.";
+                updateUI();
+                setTimeout(newCustomer, 1500);
+            }
+        }
+
+        function newCustomer() {
+            if (score >= nextBossAt) {
+                startBossMode();
+                return;
+            }
+            isBossMode = false;
+            currentBurger = ['bun'];
+            const types = ['normal', 'normal', 'degrod', 'balbes'];
+            customerType = types[Math.floor(Math.random() * types.length)];
+            
+            currentOrder = ['bun'];
+            let numItems = Math.floor(Math.random() * 3) + 2;
+            for(let i=0; i<numItems; i++) {
+                currentOrder.push(ingredients[Math.floor(Math.random() * ingredients.length)]);
+            }
+            currentOrder.push('bun');
+
+            document.getElementById('customer-type').innerHTML = 
+                customerType === 'normal' ? "<b>Нормальний балбєс:</b>" : 
+                customerType === 'degrod' ? "<b>Дєгрод:</b>" : "<b>Балбєс:</b>";
+            
+            document.getElementById('order-text').innerText = 
+                customerType === 'degrod' ? "Хз шо я хачу, ти всьо равно гамно прігатовіш!" : 
+                customerType === 'balbes' ? "Давай любу фігню, я все зхаваю!" : 
+                "Хочу: " + currentOrder.map(i => names[i]).join(', ');
+            
+            renderBurger();
+            startTimer(15);
+        }
+
+        function startBossMode() {
+            isBossMode = true;
+            bossBurgersCount = 0;
+            document.getElementById('game-container').classList.add('boss-active');
+            document.getElementById('customer-type').innerHTML = "<b style='color:red'>АЖИРЄТА ПРІПЬОРСЯ!</b>";
+            document.getElementById('order-text').innerText = "ДАВАЙ 3 ГІГАНТСЬКИХ БУРГЄРА ШВИДКО!";
+            document.getElementById('zefa-comment').innerText = "ГОТУЙ БО ВОНО НАС ЗЖЕРЕ!";
+            currentBurger = ['bun'];
+            renderBurger();
+            startTimer(15);
+        }
+
+        function endBossMode() {
+            isBossMode = false;
+            nextBossAt += 100;
+            document.getElementById('game-container').classList.remove('boss-active');
+            updateUI();
+            setTimeout(newCustomer, 2000);
+        }
+
+        function addIngredient(ing) {
+            if (currentBurger.length < 10) {
+                currentBurger.push(ing);
+                renderBurger();
+            }
+        }
+
+        function clearBurger() {
+            currentBurger = ['bun'];
+            renderBurger();
+            document.getElementById('zefa-comment').innerText = "Ти шо дурак? Продукти не безкінечні!";
+        }
+
+        function renderBurger() {
+            const display = document.getElementById('burger-display');
+            display.innerHTML = '';
+            currentBurger.forEach(ing => {
+                const div = document.createElement('div');
+                div.className = `layer ${ing}`;
+                display.appendChild(div);
+            });
+        }
+
+        function serveBurger() {
+            if (isBossMode) {
+                if (currentBurger.length >= 6 && currentBurger[currentBurger.length-1] === 'bun') {
+                    bossBurgersCount++;
+                    document.getElementById('zefa-comment').innerText = `Норм! Ще ${3 - bossBurgersCount} штук!`;
+                    currentBurger = ['bun'];
+                    renderBurger();
+                    if (bossBurgersCount >= 3) {
+                        clearInterval(timerInterval);
+                        money = Math.floor(money * 1.5);
+                        score = Math.floor(score * 1.5);
+                        document.getElementById('zefa-comment').innerText = "Ажирєта наївся і дав тібє кучу дєнєг!";
+                        endBossMode();
+                    }
+                } else {
+                    document.getElementById('zefa-comment').innerText = "ЦЕ МАЛИЙ БУРГЄР! АЖИРЄТА ХОЧЕ ГІГАНТСЬКИЙ!";
+                }
+                return;
+            }
+
+            let win = false;
+            let msg = "";
+
+            if (customerType === 'balbes') { win = true; msg = "Балбєс зхавав і просить іщо!"; }
+            else if (customerType === 'degrod') { win = false; msg = "Дєгрод сказав, шо тут мало гамна!"; }
+            else {
+                win = JSON.stringify(currentBurger) === JSON.stringify(currentOrder);
+                msg = win ? "Дєржи гроши." : "Научісь гатовіть дура!";
+            }
+
+            clearInterval(timerInterval);
+            if (win) { money += 50; score += 20; } 
+            else { money -= 30; score -= 10; }
+
+            document.getElementById('zefa-comment').innerText = msg;
+            updateUI();
+            if (money > 0) setTimeout(newCustomer, 1500);
+            else checkGameOver();
+        }
+
+        function updateUI() {
+            document.getElementById('money').innerText = money;
+            document.getElementById('score').innerText = score;
+        }
+
+        function checkGameOver() {
+            if (money <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('game-container').innerHTML = `<h1>ТИ ДЄГРОД!</h1><p>Гроші скінчились. Ажирєта тебе пабіл.</p><button onclick="location.reload()" style="width:100%; font-size:2rem">Спробувати ще раз</button>`;
+            }
+        }
+
+        newCustomer();
+    </script>
+</body>
+</html>
