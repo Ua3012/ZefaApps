@@ -60,7 +60,7 @@
         const WORLD_WIDTH = 96, WORLD_HEIGHT = 48, WORLD_DEPTH = 96;
         const VOID_Y = -64, RESPAWN_Y = WORLD_HEIGHT + 5;
         const PLAYER_HEIGHT = 1.8, PLAYER_HEIGHT_CROUCH = 1.2;
-        const PLAYER_RADIUS = 0.4;
+        const PLAYER_RADIUS = 0.3;
         const PLAYER_EYE_HEIGHT = 1.62, PLAYER_EYE_HEIGHT_CROUCH = 1.0;
         const PLAYER_SPEED = 5.0, PLAYER_SPEED_CROUCH = 2.5, PLAYER_JUMP_FORCE = 7.0, GRAVITY = -20.0;
         const MOUSE_SENSITIVITY = 0.002, TOUCH_SENSITIVITY = 0.003;
@@ -176,17 +176,17 @@
                 pitch: new THREE.Object3D()
             };
             
-            scene.add(player.mesh);
-            player.mesh.add(playerControls.yaw);
-            playerControls.yaw.add(playerControls.pitch);
             playerControls.pitch.add(camera);
-            camera.position.set(0, PLAYER_EYE_HEIGHT, 0);
+            playerControls.yaw.add(playerControls.pitch);
+            player.mesh.add(playerControls.yaw);
+            scene.add(player.mesh);
 
-            const capsuleGeo = new THREE.CapsuleGeometry(PLAYER_RADIUS, PLAYER_HEIGHT - PLAYER_RADIUS * 2, 4, 8);
-            const capsuleMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-            playerMesh = new THREE.Mesh(capsuleGeo, capsuleMat);
+            const playerGeometry = new THREE.BoxGeometry(PLAYER_RADIUS * 2, PLAYER_HEIGHT, PLAYER_RADIUS * 2);
+            const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+            playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
             playerMesh.position.y = PLAYER_HEIGHT / 2;
-            playerControls.yaw.add(playerMesh);
+            player.mesh.add(playerMesh);
+            playerMesh.visible = false;
 
             renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -366,16 +366,20 @@
         function toggleFreeCamMode() {
             freeCamMode = !freeCamMode;
             playerMesh.visible = freeCamMode;
+
             if (freeCamMode) {
-                playerControls.pitch.remove(camera);
-                scene.add(camera);
+                playerControls.yaw.remove(playerControls.pitch);
+                scene.add(playerControls.pitch);
                 const worldPos = new THREE.Vector3();
                 camera.getWorldPosition(worldPos);
                 camera.position.copy(worldPos);
+                camera.rotation.copy(playerControls.pitch.rotation);
+                playerControls.pitch.rotation.set(0, 0, 0);
             } else {
-                scene.remove(camera);
-                playerControls.pitch.add(camera);
+                scene.remove(playerControls.pitch);
+                playerControls.yaw.add(playerControls.pitch);
                 camera.position.set(0, PLAYER_EYE_HEIGHT, 0);
+                playerControls.pitch.rotation.x = 0;
             }
         }
 
@@ -384,6 +388,7 @@
             const zefaTexture = loader.load(ZEFABLOCK_TEXTURE_URL);
             zefaTexture.magFilter = THREE.NearestFilter;
             zefaTexture.minFilter = THREE.NearestFilter;
+
             for (const blockId in BLOCK_TYPES) {
                 const block = BLOCK_TYPES[blockId];
                 if (block.transparent) continue;
@@ -402,12 +407,16 @@
                     blockMaterials[blockId] = new THREE.MeshLambertMaterial({ color: block.color || 0xff00ff });
                 }
             }
+
             blockMaterials[BLOCKS.LEAVES] = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[BLOCKS.LEAVES].color, transparent: true, opacity: BLOCK_TYPES[BLOCKS.LEAVES].opacity, alphaTest: 0.1, side: THREE.DoubleSide });
             blockMaterials[BLOCKS.WATER] = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[BLOCKS.WATER].color, transparent: true, opacity: BLOCK_TYPES[BLOCKS.WATER].opacity, side: THREE.DoubleSide });
+
             for (let i = 0; i < 16; i++) {
                 const blockId = BLOCKS.WHITE_GLASS + i;
                 const block = BLOCK_TYPES[blockId];
-                if (block) blockMaterials[blockId] = new THREE.MeshLambertMaterial({ color: block.color, transparent: true, opacity: block.opacity, side: THREE.DoubleSide });
+                if (block) {
+                    blockMaterials[blockId] = new THREE.MeshLambertMaterial({ color: block.color, transparent: true, opacity: block.opacity, side: THREE.DoubleSide });
+                }
             }
             blockMaterials[BLOCKS.GLASS] = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[BLOCKS.GLASS].color, transparent: true, opacity: BLOCK_TYPES[BLOCKS.GLASS].opacity, side: THREE.DoubleSide });
         }
@@ -470,8 +479,12 @@
                             const nType = BLOCK_TYPES[nId];
                             if (nId === BLOCKS.AIR || (nType && nType.transparent && nId !== blockId)) { isVisible = true; break; }
                         }
+                        if (!isVisible && BLOCK_TYPES[blockId].transparent) {
+                            for (const [nx,ny,nz] of neighbors) if (getBlock(nx,ny,nz) !== blockId) { isVisible = true; break; }
+                        }
                         if (!isVisible) continue;
                         const mesh = instancedMeshes[blockId];
+                        if (!mesh) continue;
                         if (!counts[blockId]) counts[blockId] = 0;
                         dummy.position.set(x + 0.5, y + 0.5, z + 0.5);
                         dummy.updateMatrix();
@@ -487,7 +500,7 @@
 
         function saveWorld() {
             try { localStorage.setItem('zefacraft_world', JSON.stringify(Array.from(world))); }
-            catch (e) { console.error(e); }
+            catch (e) { console.error('Ашибка какайта:', e); showMessage('Ашибка: хз шо тут', 2000); }
         }
 
         function loadWorld() {
@@ -495,10 +508,17 @@
             if (saved) {
                 try {
                     const loaded = JSON.parse(saved);
-                    if (Array.isArray(loaded) && loaded.length === world.length) world.set(loaded);
-                    else generateWorld();
-                } catch (e) { generateWorld(); }
-            } else generateWorld();
+                    if (Array.isArray(loaded) && loaded.length === world.length) {
+                        world.set(loaded);
+                    } else {
+                        generateWorld();
+                    }
+                } catch (e) {
+                    generateWorld();
+                }
+            } else {
+                generateWorld();
+            }
             updateWorldMesh();
         }
 
@@ -507,6 +527,7 @@
             playerVelocity.set(0, 0, 0);
             playerControls.yaw.rotation.y = 0;
             playerControls.pitch.rotation.x = 0;
+            camera.position.set(0, PLAYER_EYE_HEIGHT, 0);
             isCrouching = false;
             updatePlayerHeight();
         }
@@ -528,8 +549,13 @@
         function initPointerLock() {
             canvas.addEventListener('click', () => { if (!isMenuOpen && !isInventoryOpen && !document.pointerLockElement) canvas.requestPointerLock(); });
             document.addEventListener('pointerlockchange', () => {
-                if (document.pointerLockElement === canvas) document.addEventListener('mousemove', onMouseMove);
-                else document.removeEventListener('mousemove', onMouseMove);
+                if (document.pointerLockElement === canvas) {
+                    crosshair.style.display = 'block';
+                    document.addEventListener('mousemove', onMouseMove);
+                } else {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    crosshair.style.display = 'block';
+                }
             });
         }
 
@@ -610,8 +636,10 @@
         function handleJoystickStart(e) {
             e.preventDefault();
             if (joystickTouchId !== null) return;
+            if (e.changedTouches.length === 0) return;
             const touch = e.changedTouches[0];
             joystickTouchId = touch.identifier;
+            handleJoystickMove(e);
         }
 
         function handleJoystickMove(e) {
@@ -621,16 +649,21 @@
                 const touch = e.touches[i];
                 if (touch.identifier === joystickTouchId) {
                     const rect = joystickArea.getBoundingClientRect();
-                    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-                    let dx = touch.clientX - cx, dy = touch.clientY - cy;
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+                    let dx = touch.clientX - cx;
+                    let dy = touch.clientY - cy;
                     const maxDist = rect.width / 2 - 30;
                     const dist = Math.min(maxDist, Math.hypot(dx, dy));
                     const angle = Math.atan2(dy, dx);
                     joystickDelta.x = (dist / maxDist) * Math.cos(angle);
                     joystickDelta.y = (dist / maxDist) * Math.sin(angle);
                     joystickThumb.style.transform = `translate(${joystickDelta.x * maxDist}px, ${joystickDelta.y * maxDist}px)`;
-                    moveForward = -joystickDelta.y > 0.3; moveBackward = -joystickDelta.y < -0.3;
-                    moveLeft = joystickDelta.x < -0.3; moveRight = joystickDelta.x > 0.3;
+                    moveForward = -joystickDelta.y > 0.3;
+                    moveBackward = -joystickDelta.y < -0.3;
+                    moveLeft = joystickDelta.x < -0.3;
+                    moveRight = joystickDelta.x > 0.3;
+                    return;
                 }
             }
         }
@@ -640,7 +673,9 @@
                 if (e.changedTouches[i].identifier === joystickTouchId) {
                     joystickTouchId = null;
                     joystickThumb.style.transform = 'translate(-50%, -50%)';
+                    joystickDelta = { x: 0, y: 0 };
                     moveForward = moveBackward = moveLeft = moveRight = false;
+                    return;
                 }
             }
         }
@@ -649,9 +684,12 @@
             e.preventDefault();
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
-                if (touch.identifier !== joystickTouchId && lookTouchId === null) {
+                const rect = lookArea.getBoundingClientRect();
+                if (touch.clientX > rect.left && touch.clientY > rect.top && touch.clientX < rect.right && touch.clientY < rect.bottom && touch.identifier !== joystickTouchId) {
+                    if (lookTouchId !== null) return;
                     lookTouchId = touch.identifier;
                     lastTouch = { x: touch.clientX, y: touch.clientY };
+                    return;
                 }
             }
         }
@@ -665,6 +703,7 @@
                     lookDelta.x = touch.clientX - lastTouch.x;
                     lookDelta.y = touch.clientY - lastTouch.y;
                     lastTouch = { x: touch.clientX, y: touch.clientY };
+                    return;
                 }
             }
         }
@@ -674,6 +713,7 @@
                 if (e.changedTouches[i].identifier === lookTouchId) {
                     lookTouchId = null;
                     lookDelta = { x: 0, y: 0 };
+                    return;
                 }
             }
         }
@@ -698,7 +738,14 @@
         function updateDebugInfo() {
             if (!debugMode) return;
             const pos = player.mesh.position;
-            debugInfo.innerHTML = `XYZ: ${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}`;
+            const camPos = new THREE.Vector3(); camera.getWorldPosition(camPos);
+            debugInfo.innerHTML = `
+                ТИ!!! 🫵🤣: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})<br>
+                Камера: (${camPos.x.toFixed(2)}, ${camPos.y.toFixed(2)}, ${camPos.z.toFixed(2)})<br>
+                Прісіданіє: ${isCrouching ? 'Да' : 'Нє'}<br>
+                ФрікАм: ${freeCamMode ? 'УВІМК' : 'ВИМК'}<br>
+                ЕФПЕЕС: ${(1 / clock.getDelta()).toFixed(0)}
+            `;
         }
 
         function handleInput(delta) {
@@ -714,21 +761,25 @@
                 }
                 lookDelta.x = lookDelta.y = 0;
             }
+
             if (freeCamMode) {
                 const dir = new THREE.Vector3();
                 if (moveForward) dir.z = -1; if (moveBackward) dir.z = 1;
                 if (moveLeft) dir.x = -1; if (moveRight) dir.x = 1;
                 dir.normalize().applyEuler(new THREE.Euler(0, camera.rotation.y, 0));
-                camera.position.addScaledVector(dir, PLAYER_SPEED * delta);
+                camera.position.x += dir.x * PLAYER_SPEED * delta;
+                camera.position.z += dir.z * PLAYER_SPEED * delta;
+                if (moveJump) camera.position.y += PLAYER_SPEED * delta;
+                if (moveBackward && !moveForward) camera.position.y -= PLAYER_SPEED * delta;
             } else {
                 const dir = new THREE.Vector3();
                 if (moveForward) dir.z = -1; if (moveBackward) dir.z = 1;
                 if (moveLeft) dir.x = -1; if (moveRight) dir.x = 1;
-                dir.normalize().applyEuler(new THREE.Euler(0, playerControls.yaw.rotation.y, 0));
+                dir.normalize().applyEuler(playerControls.yaw.rotation);
                 const speed = isCrouching ? PLAYER_SPEED_CROUCH : PLAYER_SPEED;
                 playerVelocity.x = dir.x * speed;
                 playerVelocity.z = dir.z * speed;
-                if (moveJump && playerOnGround) { playerVelocity.y = PLAYER_JUMP_FORCE; playerOnGround = false; }
+                if (moveJump && playerOnGround) { playerVelocity.y = PLAYER_JUMP_FORCE; playerOnGround = false; moveJump = false; }
             }
         }
 
@@ -736,15 +787,41 @@
             if (!breakAction && !placeAction) return;
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
             const intersects = raycaster.intersectObjects(Object.values(instancedMeshes));
+
+            const checkPlayerCollision = (nx, ny, nz) => {
+                const px = player.mesh.position.x;
+                const pz = player.mesh.position.z;
+                const currentHeight = isCrouching ? PLAYER_HEIGHT_CROUCH : PLAYER_HEIGHT;
+                const yMin = Math.floor(player.mesh.position.y);
+                const yMax = Math.floor(player.mesh.position.y + currentHeight - 0.01);
+                const minX = Math.floor(px - PLAYER_RADIUS);
+                const maxX = Math.floor(px + PLAYER_RADIUS);
+                const minZ = Math.floor(pz - PLAYER_RADIUS);
+                const maxZ = Math.floor(pz + PLAYER_RADIUS);
+                return (nx >= minX && nx <= maxX) && (ny >= yMin && ny <= yMax) && (nz >= minZ && nz <= maxZ);
+            };
+
             if (intersects.length > 0) {
-                const inter = intersects[0];
-                const matrix = new THREE.Matrix4(); inter.object.getMatrixAt(inter.instanceId, matrix);
+                let intersection = null;
+                for (const inter of intersects) {
+                    const mat = inter.object.material;
+                    const transparent = Array.isArray(mat) ? false : mat.transparent;
+                    if (!transparent || inter.distance < 3) { intersection = inter; break; }
+                }
+                if (!intersection) { breakAction = placeAction = false; return; }
+                const instanceId = intersection.instanceId;
+                const mesh = intersection.object;
+                const matrix = new THREE.Matrix4(); mesh.getMatrixAt(instanceId, matrix);
                 const blockPos = new THREE.Vector3().setFromMatrixPosition(matrix).sub(new THREE.Vector3(0.5, 0.5, 0.5));
-                if (breakAction) setBlock(blockPos.x, blockPos.y, blockPos.z, BLOCKS.AIR);
+                const normal = intersection.face.normal.clone();
+                const normalMatrix = new THREE.Matrix3().getNormalMatrix(matrix);
+                normal.applyMatrix3(normalMatrix).normalize();
+                const ix = Math.floor(blockPos.x), iy = Math.floor(blockPos.y), iz = Math.floor(blockPos.z);
+                if (breakAction) { setBlock(ix, iy, iz, BLOCKS.AIR); } 
                 else if (placeAction) {
-                    const normal = inter.face.normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(matrix));
-                    const newPos = blockPos.add(normal);
-                    setBlock(newPos.x, newPos.y, newPos.z, selectedBlockId);
+                    const newPos = blockPos.clone().add(normal);
+                    const nx = Math.floor(newPos.x), ny = Math.floor(newPos.y), nz = Math.floor(newPos.z);
+                    if (getBlock(nx, ny, nz) === BLOCKS.AIR && !checkPlayerCollision(nx, ny, nz)) { setBlock(nx, ny, nz, selectedBlockId); }
                 }
             }
             breakAction = placeAction = false;
@@ -753,20 +830,44 @@
         function updatePhysics(delta) {
             if (freeCamMode) return;
             playerVelocity.y += GRAVITY * delta;
-            const nextX = player.mesh.position.x + playerVelocity.x * delta;
-            const nextZ = player.mesh.position.z + playerVelocity.z * delta;
-            const nextY = player.mesh.position.y + playerVelocity.y * delta;
-            
-            if (nextY < 0.5) {
-                player.mesh.position.y = 0.5;
-                playerVelocity.y = 0;
-                playerOnGround = true;
-            } else {
-                player.mesh.position.y = nextY;
-                playerOnGround = false;
+            const px = player.mesh.position.x;
+            const pz = player.mesh.position.z;
+            const minX = Math.floor(px - PLAYER_RADIUS);
+            const maxX = Math.floor(px + PLAYER_RADIUS);
+            const minZ = Math.floor(pz - PLAYER_RADIUS);
+            const maxZ = Math.floor(pz + PLAYER_RADIUS);
+            playerOnGround = false;
+            const currentHeight = isCrouching ? PLAYER_HEIGHT_CROUCH : PLAYER_HEIGHT;
+            const newY = player.mesh.position.y + playerVelocity.y * delta;
+            const floorY = Math.floor(newY);
+            let groundLevel = -Infinity;
+            for (let x = minX; x <= maxX; x++) for (let z = minZ; z <= maxZ; z++) if (isBlockSolid(getBlock(x, floorY, z))) groundLevel = Math.max(groundLevel, floorY + 1);
+            if (groundLevel > -Infinity && newY <= groundLevel + 0.001) { player.mesh.position.y = groundLevel; playerVelocity.y = 0; playerOnGround = true; } 
+            else { player.mesh.position.y = newY; }
+            const headY = player.mesh.position.y + currentHeight;
+            const ceilY = Math.floor(headY);
+            let ceilingLevel = Infinity;
+            for (let x = minX; x <= maxX; x++) for (let z = minZ; z <= maxZ; z++) if (isBlockSolid(getBlock(x, ceilY, z))) ceilingLevel = Math.min(ceilingLevel, ceilY);
+            if (ceilingLevel < Infinity && headY >= ceilingLevel - 0.001) { player.mesh.position.y = ceilingLevel - currentHeight; if (playerVelocity.y > 0) playerVelocity.y = 0; }
+            const newX = player.mesh.position.x + playerVelocity.x * delta;
+            const newZ = player.mesh.position.z + playerVelocity.z * delta;
+            player.mesh.position.x = newX;
+            const yMin = Math.floor(player.mesh.position.y), yMax = Math.floor(player.mesh.position.y + currentHeight - 0.01);
+            if (playerVelocity.x > 0) {
+                const checkX = Math.floor(newX + PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let z = minZ; z <= maxZ; z++) if (isBlockSolid(getBlock(checkX, y, z))) { player.mesh.position.x = checkX - PLAYER_RADIUS - 0.001; playerVelocity.x = 0; }
+            } else if (playerVelocity.x < 0) {
+                const checkX = Math.floor(newX - PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let z = minZ; z <= maxZ; z++) if (isBlockSolid(getBlock(checkX, y, z))) { player.mesh.position.x = checkX + 1 + PLAYER_RADIUS + 0.001; playerVelocity.x = 0; }
             }
-            player.mesh.position.x = nextX;
-            player.mesh.position.z = nextZ;
+            player.mesh.position.z = newZ;
+            if (playerVelocity.z > 0) {
+                const checkZ = Math.floor(newZ + PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let x = minX; x <= maxX; x++) if (isBlockSolid(getBlock(x, y, checkZ))) { player.mesh.position.z = checkZ - PLAYER_RADIUS - 0.001; playerVelocity.z = 0; }
+            } else if (playerVelocity.z < 0) {
+                const checkZ = Math.floor(newZ - PLAYER_RADIUS);
+                for (let y = yMin; y <= yMax; y++) for (let x = minX; x <= maxX; x++) if (isBlockSolid(getBlock(x, y, checkZ))) { player.mesh.position.z = checkZ + 1 + PLAYER_RADIUS + 0.001; playerVelocity.z = 0; }
+            }
             if (player.mesh.position.y < VOID_Y) respawn();
         }
 
