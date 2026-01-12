@@ -186,7 +186,7 @@
             const capsuleMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
             playerMesh = new THREE.Mesh(capsuleGeo, capsuleMat);
             playerMesh.position.y = PLAYER_HEIGHT / 2;
-            playerControls.yaw.add(playerMesh);
+            player.mesh.add(playerMesh);
 
             renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
