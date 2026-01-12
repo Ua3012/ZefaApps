@@ -5,7 +5,6 @@
     <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
     <title>Зєфакрафт</title>
     <style>
-        /*! tailwindcss v3.4.0 | MIT License | https://tailwindcss.com */
         *,::before,::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::before,::after{--tw-content:''}html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:Inter,system-ui,sans-serif;font-feature-settings:normal;font-variation-settings:normal}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,[type=button],[type=reset],[type=submit]{-webkit-appearance:button;appearance:none;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;appearance:none;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;appearance:none;font:inherit}summary{display:list-item}blockquote,dl,dd,h1,h2,h3,h4,h5,h6,hr,figure,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}ol,ul,menu{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}button,[role=button]{cursor:pointer}:disabled{cursor:default}img,svg,video,canvas,audio,iframe,embed,object{display:block}img,video{max-width:100%;height:auto}[hidden]{display:none}
         .container{width:100%}@media (min-width:640px){.container{max-width:640px}}@media (min-width:768px){.container{max-width:768px}}@media (min-width:1024px){.container{max-width:1024px}}@media (min-width:1280px){.container{max-width:1280px}}@media (min-width:1536px){.container{max-width:1536px}}
         body{font-family:'Inter',sans-serif;margin:0;background-color:#000;color:#fff;overflow:hidden}#game-canvas{display:block;width:100vw;height:100vh;cursor:pointer}#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;color:white;text-shadow:0 0 2px #000;pointer-events:none;z-index:10;display:block}#hotbar{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background-color:rgba(0,0,0,0.5);padding:4px;border-radius:8px;z-index:10}.hotbar-item{width:48px;height:48px;border:2px solid #555;border-radius:4px;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000;cursor:pointer;image-rendering:pixelated}.hotbar-item.selected{border-color:#fff;box-shadow:0 0 8px #fff}#mobile-controls{position:absolute;bottom:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20}#joystick-area{position:absolute;bottom:40px;left:40px;width:120px;height:120px;background-color:rgba(255,255,255,0.1);border-radius:50%;pointer-events:auto}#joystick-thumb{position:absolute;top:50%;left:50%;width:60px;height:60px;transform:translate(-50%,-50%);background-color:rgba(255,255,255,0.3);border-radius:50%;transition:transform .05s ease-out}#action-buttons{position:absolute;bottom:40px;right:20px;display:flex;flex-direction:column;gap:16px;pointer-events:auto}.action-button{width:64px;height:64px;border-radius:50%;background-color:rgba(255,255,255,0.3);color:white;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,0.5);user-select:none}#look-area{position:absolute;top:0;right:0;width:50%;height:100%;pointer-events:auto}.control-button{padding:8px 16px;background-color:rgba(0,122,255,0.7);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600}.control-button:hover{background-color:rgba(0,122,255,1)}#top-controls{position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:30}.modal-backdrop{position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.7);z-index:99;display:none}.modal-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background-color:rgba(30,30,30,0.95);color:white;padding:24px;border-radius:12px;z-index:100;border:1px solid #555;text-align:center}#menu-modal .modal-content{width:300px;display:flex;flex-direction:column;gap:16px}#menu-modal h2{margin:0 0 16px 0;font-size:1.5rem}#message-modal{display:none}#confirm-modal{display:none}#confirm-modal p{margin:0 0 20px 0}.confirm-button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:600;margin:0 10px}#confirm-yes{background-color:#dc2626;color:white}#confirm-yes:hover{background-color:#b91c1c}#confirm-no{background-color:#6b7280;color:white}#confirm-no:hover{background-color:#4b5563}#inventory-modal .modal-content{width:80%;max-width:800px;max-height:80vh;overflow-y:auto;position:relative}#inventory-modal h2{margin:0 0 16px 0;font-size:1.5rem}#inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px;background-color:rgba(0,0,0,0.3);padding:8px;border-radius:8px;min-height:200px;max-height:50vh;overflow-y:auto}.inventory-item{width:52px;height:52px;border:2px solid #777;border-radius:4px;background-size:cover;background-position:center;cursor:pointer;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000}.inventory-item:hover{border-color:#fff}#inventory-hotbar-container{margin-top:24px}#inventory-hotbar{display:flex;justify-content:center;gap:4px;background-color:rgba(0,0,0,0.5);padding:4px;border-radius:8px}#inventory-hand{position:absolute;width:52px;height:52px;border:2px solid #fff;border-radius:4px;background-size:cover;background-position:center;image-rendering:pixelated;pointer-events:none;z-index:200;display:none;transform:translate(-50%,-50%);font-weight:bold;font-size:10px;color:white;text-shadow:0 0 2px #000;display:flex;align-items:center;justify-content:center}.modal-close-button{position:absolute;top:10px;right:10px;width:30px;height:30px;background-color:#dc2626;color:white;border:none;border-radius:50%;font-size:18px;line-height:1;cursor:pointer;font-weight:bold;display:flex;align-items:center;justify-content:center}.modal-close-button:hover{background-color:#b91c1c}#debug-info{position:absolute;top:10px;left:10px;background-color:rgba(0,0,0,0.5);padding:8px;border-radius:4px;font-family:monospace;font-size:12px;color:white;z-index:1000;display:none}
@@ -29,7 +28,7 @@
         <button id='menu-button' class='control-button'>Меню</button>
         <button id='inventory-button' class='control-button'>Інвєнтар</button>
     </div>
-    <div id='message-modal' class='modal-content'><p>Загрузка Зєфакрафта... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)</p></div>
+    <div id='message-modal' class='modal-content'><p>Загрузка Зєфакрафта...</p></div>
     <div id='confirm-modal' class='modal-content'>
         <p id='confirm-text'>Чо?</p>
         <div><button id='confirm-yes' class='confirm-button'>Да</button><button id='confirm-no' class='confirm-button'>Нєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєє</button></div>
@@ -161,7 +160,7 @@
         let joystickTouchId = null;
 
         function init() {
-            showMessage('Загрузка Зєфакрафта... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)');
+            showMessage('Загрузка Зєфакрафта...');
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87CEEB);
             scene.fog = new THREE.Fog(0x87CEEB, 10, WORLD_WIDTH * 1.5);
@@ -176,6 +175,7 @@
                 yaw: new THREE.Object3D(),
                 pitch: new THREE.Object3D()
             };
+            
             playerControls.pitch.add(camera);
             playerControls.yaw.add(playerControls.pitch);
             player.mesh.add(playerControls.yaw);
@@ -229,11 +229,11 @@
             inventoryCloseButton.addEventListener('click', toggleInventory);
             resumeButton.addEventListener('click', closeAllModals);
             saveButton.addEventListener('click', () => { saveWorld(); showMessage('Мір збережено!', 1500); });
-            loadButton.addEventListener('click', () => { closeAllModals(); showMessage('Завантаження міра... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)'); loadWorld(); respawn(); hideMessage(500); });
+            loadButton.addEventListener('click', () => { closeAllModals(); showMessage('Завантаження міра...'); loadWorld(); respawn(); hideMessage(500); });
             resetButton.addEventListener('click', () => { confirmText.textContent = 'Чо?'; confirmModal.style.display = 'block'; menuModal.style.display = 'none'; });
             backToMenuButton.addEventListener('click', () => { window.location.href = 'zefagarymenu.html'; });
             confirmNo.addEventListener('click', () => { confirmModal.style.display = 'none'; toggleMenu(); });
-            confirmYes.addEventListener('click', () => { confirmModal.style.display = 'none'; showMessage('Генерація новава міра... (трі точкі, я хз зачєм. А вапщє який прідурак вигадав їх ставіть в загрузкє)'); setTimeout(() => { generateWorld(); updateWorldMesh(); saveWorld(); respawn(); hideMessage(500); }, 50); });
+            confirmYes.addEventListener('click', () => { confirmModal.style.display = 'none'; showMessage('Генерація новава міра...'); setTimeout(() => { generateWorld(); updateWorldMesh(); saveWorld(); respawn(); hideMessage(500); }, 50); });
             document.addEventListener('mousemove', (event) => { if (isInventoryOpen) { inventoryHand.style.left = event.clientX + 'px'; inventoryHand.style.top = event.clientY + 'px'; } });
         }
 
@@ -511,11 +511,9 @@
                     if (Array.isArray(loaded) && loaded.length === world.length) {
                         world.set(loaded);
                     } else {
-                        console.warn('Невірний размір сахранєнія. ОПРЛДВІРЛАРВІЛОРОЛПРРПОВРОПРВРПОВРАОРПОВОРОПРОВРО.');
                         generateWorld();
                     }
                 } catch (e) {
-                    console.error('Ашибка:', e);
                     generateWorld();
                 }
             } else {
@@ -744,7 +742,7 @@
             debugInfo.innerHTML = `
                 ТИ!!! 🫵🤣: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})<br>
                 Камера: (${camPos.x.toFixed(2)}, ${camPos.y.toFixed(2)}, ${camPos.z.toFixed(2)})<br>
-                Прісіданіє: ${isCrouching ? 'Да' : 'Нєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєєє'}<br>
+                Прісіданіє: ${isCrouching ? 'Да' : 'Нє'}<br>
                 ФрікАм: ${freeCamMode ? 'УВІМК' : 'ВИМК'}<br>
                 ЕФПЕЕС: ${(1 / clock.getDelta()).toFixed(0)}
             `;
@@ -787,7 +785,6 @@
 
         function handleBlockActions() {
             if (!breakAction && !placeAction) return;
-
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
             const intersects = raycaster.intersectObjects(Object.values(instancedMeshes));
 
@@ -801,10 +798,7 @@
                 const maxX = Math.floor(px + PLAYER_RADIUS);
                 const minZ = Math.floor(pz - PLAYER_RADIUS);
                 const maxZ = Math.floor(pz + PLAYER_RADIUS);
-
-                return (nx >= minX && nx <= maxX) &&
-                       (ny >= yMin && ny <= yMax) &&
-                       (nz >= minZ && nz <= maxZ);
+                return (nx >= minX && nx <= maxX) && (ny >= yMin && ny <= yMax) && (nz >= minZ && nz <= maxZ);
             };
 
             if (intersects.length > 0) {
@@ -815,7 +809,6 @@
                     if (!transparent || inter.distance < 3) { intersection = inter; break; }
                 }
                 if (!intersection) { breakAction = placeAction = false; return; }
-
                 const instanceId = intersection.instanceId;
                 const mesh = intersection.object;
                 const matrix = new THREE.Matrix4(); mesh.getMatrixAt(instanceId, matrix);
@@ -823,145 +816,58 @@
                 const normal = intersection.face.normal.clone();
                 const normalMatrix = new THREE.Matrix3().getNormalMatrix(matrix);
                 normal.applyMatrix3(normalMatrix).normalize();
-
                 const ix = Math.floor(blockPos.x), iy = Math.floor(blockPos.y), iz = Math.floor(blockPos.z);
-
-                if (breakAction) {
-                    setBlock(ix, iy, iz, BLOCKS.AIR);
-                } else if (placeAction) {
+                if (breakAction) { setBlock(ix, iy, iz, BLOCKS.AIR); } 
+                else if (placeAction) {
                     const newPos = blockPos.clone().add(normal);
                     const nx = Math.floor(newPos.x), ny = Math.floor(newPos.y), nz = Math.floor(newPos.z);
-
-                    if (getBlock(nx, ny, nz) !== BLOCKS.AIR) {
-                        placeAction = false;
-                        return;
-                    }
-                    
-                    if (!checkPlayerCollision(nx, ny, nz)) {
-                         setBlock(nx, ny, nz, selectedBlockId);
-                    }
-                }
-
-            } else if (placeAction) {
-                
-                const MAX_PLACE_DISTANCE = 4.5;
-                const placePos = new THREE.Vector3();
-                camera.getWorldPosition(placePos);
-                
-                const placeDir = new THREE.Vector3();
-                camera.getWorldDirection(placeDir);
-                
-                placePos.add(placeDir.multiplyScalar(MAX_PLACE_DISTANCE));
-
-                const nx = Math.floor(placePos.x);
-                const ny = Math.floor(placePos.y);
-                const nz = Math.floor(placePos.z);
-
-                if (getBlock(nx, ny, nz) === BLOCKS.AIR) {
-                    if (!checkPlayerCollision(nx, ny, nz)) {
-                         setBlock(nx, ny, nz, selectedBlockId);
-                    }
+                    if (getBlock(nx, ny, nz) === BLOCKS.AIR && !checkPlayerCollision(nx, ny, nz)) { setBlock(nx, ny, nz, selectedBlockId); }
                 }
             }
-
             breakAction = placeAction = false;
         }
 
         function updatePhysics(delta) {
             if (freeCamMode) return;
-
             playerVelocity.y += GRAVITY * delta;
-
             const px = player.mesh.position.x;
             const pz = player.mesh.position.z;
             const minX = Math.floor(px - PLAYER_RADIUS);
             const maxX = Math.floor(px + PLAYER_RADIUS);
             const minZ = Math.floor(pz - PLAYER_RADIUS);
             const maxZ = Math.floor(pz + PLAYER_RADIUS);
-
             playerOnGround = false;
-
             const currentHeight = isCrouching ? PLAYER_HEIGHT_CROUCH : PLAYER_HEIGHT;
             const newY = player.mesh.position.y + playerVelocity.y * delta;
-            const feetY = newY;
-            const floorY = Math.floor(feetY);
+            const floorY = Math.floor(newY);
             let groundLevel = -Infinity;
-            for (let x = minX; x <= maxX; x++) {
-                for (let z = minZ; z <= maxZ; z++) {
-                    if (isBlockSolid(getBlock(x, floorY, z))) {
-                        groundLevel = Math.max(groundLevel, floorY + 1);
-                    }
-                }
-            }
-            if (groundLevel > -Infinity && feetY <= groundLevel + 0.001) {
-                player.mesh.position.y = groundLevel;
-                playerVelocity.y = 0;
-                playerOnGround = true;
-            } else {
-                player.mesh.position.y = newY;
-            }
-
+            for (let x = minX; x <= maxX; x++) for (let z = minZ; z <= maxZ; z++) if (isBlockSolid(getBlock(x, floorY, z))) groundLevel = Math.max(groundLevel, floorY + 1);
+            if (groundLevel > -Infinity && newY <= groundLevel + 0.001) { player.mesh.position.y = groundLevel; playerVelocity.y = 0; playerOnGround = true; } 
+            else { player.mesh.position.y = newY; }
             const headY = player.mesh.position.y + currentHeight;
             const ceilY = Math.floor(headY);
             let ceilingLevel = Infinity;
-            for (let x = minX; x <= maxX; x++) {
-                for (let z = minZ; z <= maxZ; z++) {
-                    if (isBlockSolid(getBlock(x, ceilY, z))) {
-                        ceilingLevel = Math.min(ceilingLevel, ceilY);
-                    }
-                }
-            }
-            if (ceilingLevel < Infinity && headY >= ceilingLevel - 0.001) {
-                player.mesh.position.y = ceilingLevel - currentHeight;
-                if (playerVelocity.y > 0) playerVelocity.y = 0;
-            }
-
+            for (let x = minX; x <= maxX; x++) for (let z = minZ; z <= maxZ; z++) if (isBlockSolid(getBlock(x, ceilY, z))) ceilingLevel = Math.min(ceilingLevel, ceilY);
+            if (ceilingLevel < Infinity && headY >= ceilingLevel - 0.001) { player.mesh.position.y = ceilingLevel - currentHeight; if (playerVelocity.y > 0) playerVelocity.y = 0; }
             const newX = player.mesh.position.x + playerVelocity.x * delta;
             const newZ = player.mesh.position.z + playerVelocity.z * delta;
-
             player.mesh.position.x = newX;
-            const feetCheckY = player.mesh.position.y;
-            const headCheckY = player.mesh.position.y + currentHeight - 0.01;
-            const yMin = Math.floor(feetCheckY);
-            const yMax = Math.floor(headCheckY);
-
+            const yMin = Math.floor(player.mesh.position.y), yMax = Math.floor(player.mesh.position.y + currentHeight - 0.01);
             if (playerVelocity.x > 0) {
                 const checkX = Math.floor(newX + PLAYER_RADIUS);
-                for (let y = yMin; y <= yMax; y++) for (let z = minZ; z <= maxZ; z++) {
-                    if (isBlockSolid(getBlock(checkX, y, z))) {
-                        player.mesh.position.x = checkX - PLAYER_RADIUS - 0.001;
-                        playerVelocity.x = 0;
-                    }
-                }
+                for (let y = yMin; y <= yMax; y++) for (let z = minZ; z <= maxZ; z++) if (isBlockSolid(getBlock(checkX, y, z))) { player.mesh.position.x = checkX - PLAYER_RADIUS - 0.001; playerVelocity.x = 0; }
             } else if (playerVelocity.x < 0) {
                 const checkX = Math.floor(newX - PLAYER_RADIUS);
-                for (let y = yMin; y <= yMax; y++) for (let z = minZ; z <= maxZ; z++) {
-                    if (isBlockSolid(getBlock(checkX, y, z))) {
-                        player.mesh.position.x = checkX + 1 + PLAYER_RADIUS + 0.001;
-                        playerVelocity.x = 0;
-                    }
-                }
+                for (let y = yMin; y <= yMax; y++) for (let z = minZ; z <= maxZ; z++) if (isBlockSolid(getBlock(checkX, y, z))) { player.mesh.position.x = checkX + 1 + PLAYER_RADIUS + 0.001; playerVelocity.x = 0; }
             }
-
             player.mesh.position.z = newZ;
             if (playerVelocity.z > 0) {
                 const checkZ = Math.floor(newZ + PLAYER_RADIUS);
-                for (let y = yMin; y <= yMax; y++) for (let x = minX; x <= maxX; x++) {
-                    if (isBlockSolid(getBlock(x, y, checkZ))) {
-                        player.mesh.position.z = checkZ - PLAYER_RADIUS - 0.001;
-                        playerVelocity.z = 0;
-                    }
-                }
+                for (let y = yMin; y <= yMax; y++) for (let x = minX; x <= maxX; x++) if (isBlockSolid(getBlock(x, y, checkZ))) { player.mesh.position.z = checkZ - PLAYER_RADIUS - 0.001; playerVelocity.z = 0; }
             } else if (playerVelocity.z < 0) {
                 const checkZ = Math.floor(newZ - PLAYER_RADIUS);
-                for (let y = yMin; y <= yMax; y++) for (let x = minX; x <= maxX; x++) {
-                    if (isBlockSolid(getBlock(x, y, checkZ))) {
-                        player.mesh.position.z = checkZ + 1 + PLAYER_RADIUS + 0.001;
-                        playerVelocity.z = 0;
-                    }
-                }
+                for (let y = yMin; y <= yMax; y++) for (let x = minX; x <= maxX; x++) if (isBlockSolid(getBlock(x, y, checkZ))) { player.mesh.position.z = checkZ + 1 + PLAYER_RADIUS + 0.001; playerVelocity.z = 0; }
             }
-
             if (player.mesh.position.y < VOID_Y) respawn();
         }
 
